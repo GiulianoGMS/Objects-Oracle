@@ -1,6 +1,6 @@
--- Busca Ultimo pedido para o fornecedor parametrizado na tabela de config e retorna o próxima data de acordo com as configs
+-- Busca a ultima data de pedido gerado pelo lote modelo e calcula a próxima de acordo com as configs
 
-CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_Seqfornecedor NUMBER) RETURN DATE IS
+CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETURN DATE IS
                                                                            v_proxped DATE;
                                                                            v_diasconfig NUMBER;
                                                                            v_diasemana VARCHAR2(10);
@@ -16,14 +16,14 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_Seqfornecedor NUMBER) RETUR
                                                'DOMINGO' , 'SUNDAY')
     INTO v_diasconfig, v_diasemana
     FROM NAGT_ABASTECIMENTOCONFIG X
-   WHERE X.SEQFORNECEDOR = p_Seqfornecedor;
+   WHERE X.SEQLOTEMODELO = p_SeqLoteModelo;
 
   SELECT TRIM(TO_CHAR(MAX(DTAGERPEDIDO) + v_diasconfig,'DAY'))
     INTO v_diahoje
-    FROM CONSINCO.MAC_GERCOMPRA A INNER JOIN CONSINCO.MAC_GERCOMPRAFORN C ON A.SEQGERCOMPRA = C.SEQGERCOMPRA
+    FROM CONSINCO.MAC_GERCOMPRA A 
    WHERE 1=1
-     AND C.SEQFORNECEDOR = p_Seqfornecedor
-     AND A.SITUACAOLOTE = 'F';
+     AND A.SEQGERCOMPORIGEM = p_SeqLoteModelo
+     AND A.SITUACAOLOTE != 'C';
   --
   -- Se o dia da semana for igual hoje, retorna hoje
    IF v_diasemana = v_diahoje
@@ -38,10 +38,10 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_Seqfornecedor NUMBER) RETUR
    ELSE
 
   SELECT NEXT_DAY((SELECT MAX(DTAGERPEDIDO)
-    FROM CONSINCO.MAC_GERCOMPRA A INNER JOIN CONSINCO.MAC_GERCOMPRAFORN C ON A.SEQGERCOMPRA = C.SEQGERCOMPRA
+    FROM CONSINCO.MAC_GERCOMPRA A 
    WHERE 1=1
-     AND C.SEQFORNECEDOR = p_Seqfornecedor
-     AND A.SITUACAOLOTE = 'F')
+     AND A.SEQGERCOMPORIGEM = p_SeqLoteModelo
+     AND A.SITUACAOLOTE != 'C')
    + v_diasconfig, v_diasemana)
    INTO v_proxped
    FROM DUAL;
@@ -52,4 +52,6 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_Seqfornecedor NUMBER) RETUR
  EXCEPTION
    WHEN NO_DATA_FOUND THEN
      RETURN TRUNC(SYSDATE) -1;
+     WHEN OTHERS THEN
+     DBMS_OUTPUT.PUT_LINE(p_SeqLoteModelo);
 END;
