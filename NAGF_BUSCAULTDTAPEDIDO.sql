@@ -1,3 +1,5 @@
+-- Busca Ultimo pedido para o fornecedor parametrizado na tabela de config e retorna o próxima data de acordo com as configs
+
 CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_Seqfornecedor NUMBER) RETURN DATE IS
                                                                            v_proxped DATE;
                                                                            v_diasconfig NUMBER;
