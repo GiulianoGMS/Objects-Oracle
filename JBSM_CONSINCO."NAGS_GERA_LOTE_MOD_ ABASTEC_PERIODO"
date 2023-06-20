@@ -1,0 +1,11 @@
+BEGIN
+   FOR T IN (SELECT DISTINCT NROEMPRESAGERALOTE 
+                             FROM MAC_GERCOMPRA A 
+                             WHERE 1=1 
+                             AND A.TIPOLOTE = 'T'
+                             AND A.NROEMPRESAGERALOTE IN (501,506) )
+   LOOP
+     CONSINCO.NAGP_MAC_PROCLOTEMODELOABASTEC(T.NROEMPRESAGERALOTE);
+     COMMIT;
+   END LOOP;
+END;
