@@ -22,7 +22,7 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETUR
     INTO v_diahoje
     FROM CONSINCO.MAC_GERCOMPRA A 
    WHERE 1=1
-     AND A.SEQGERCOMPORIGEM = p_SeqLoteModelo
+     AND A.SEQGERCOMPORIGEM = p_SeqLoteModelo -- Para Lote de Compras Utilizar SEQGERMODELOCOMPRA
      AND A.SITUACAOLOTE != 'C';
   --
   -- Se o dia da semana for igual hoje, retorna hoje
@@ -40,7 +40,7 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETUR
   SELECT NEXT_DAY((SELECT MAX(DTAGERPEDIDO)
     FROM CONSINCO.MAC_GERCOMPRA A 
    WHERE 1=1
-     AND A.SEQGERCOMPORIGEM = p_SeqLoteModelo
+     AND A.SEQGERCOMPORIGEM = p_SeqLoteModelo -- Para Lote de Compras Utilizar SEQGERMODELOCOMPRA
      AND A.SITUACAOLOTE != 'C')
    + v_diasconfig, v_diasemana)
    INTO v_proxped
