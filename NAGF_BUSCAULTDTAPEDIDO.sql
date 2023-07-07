@@ -1,5 +1,3 @@
--- Busca a ultima data de pedido gerado pelo lote modelo e calcula a próxima de acordo com as configs
-
 CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETURN DATE IS
                                                                            v_proxped    DATE;
                                                                            v_diasconfig NUMBER;
@@ -24,10 +22,11 @@ CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMB
    WHERE X.SEQLOTEMODELO = p_SeqLoteModelo;
    
   -- Primeiro resultado para validar se o dia semana é igual ao dia atual
-  SELECT TRIM(TO_CHAR(MAX((DTAHORINCLUSAO)) + v_diasconfig,'DAY')), 
+  -- GREATEST pega a maior data entre Inclusão ou Fechamento
+  SELECT TRIM(TO_CHAR(TRUNC(GREATEST(MAX(DTAHORINCLUSAO), NVL(MAX(DTAHORFECHAMENTO),MAX(DTAHORINCLUSAO))) + v_diasconfig),'DAY')), 
   --
   -- Segundo resultado para validar se o dia inteiro é igual ao dia atual
-         TRUNC(MAX((DTAHORINCLUSAO)) + v_diasconfig),
+         TRUNC(GREATEST(MAX(DTAHORINCLUSAO), NVL(MAX(DTAHORFECHAMENTO),MAX(DTAHORINCLUSAO))) + v_diasconfig),
   -- Pega o tipo lote para diferenciar o tratamento para lote modelo inicial
          MIN(TIPOLOTE)
   --
@@ -57,7 +56,7 @@ CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMB
   -- Caso contrário, próximo dia da semana que está parametrizado
    ELSE
 
-  SELECT NEXT_DAY((SELECT MAX(TRUNC(DTAHORINCLUSAO))
+  SELECT NEXT_DAY((SELECT GREATEST(MAX(DTAHORINCLUSAO), NVL(MAX(DTAHORFECHAMENTO),MAX(DTAHORINCLUSAO))) -1
     FROM CONSINCO.MAC_GERCOMPRA A 
    WHERE 1=1
      AND A.SEQGERMODELOCOMPRA = p_SeqLoteModelo 
