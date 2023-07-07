@@ -1,12 +1,16 @@
 -- Busca a ultima data de pedido gerado pelo lote modelo e calcula a próxima de acordo com as configs
 
-CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETURN DATE IS
-                                                                           v_proxped DATE;
+CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETURN DATE IS
+                                                                           v_proxped    DATE;
                                                                            v_diasconfig NUMBER;
-                                                                           v_diasemana VARCHAR2(10);
-                                                                           v_diahoje VARCHAR(10);
+                                                                           v_diasemana  VARCHAR2(10);
+                                                                           v_dia        VARCHAR2(10);
+                                                                           v_dta        DATE;
+                                                                           v_tp         VARCHAR2(1);
  BEGIN
   -- Valida Parametrizacoes na NAGT_ABASTECIMENTOCONFIG
+  -- Tradur o dia configurado pra utilizar no Next_Day
+  
   SELECT DIASCONFIG, DECODE(UPPER(DIASEMANA),  'SEGUNDA' , 'MONDAY',
                                                'TERCA'   , 'TUESDAY',
                                                'QUARTA'  , 'WEDNESDAY',
@@ -14,39 +18,55 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETUR
                                                'SEXTA'   , 'FRIDAY',
                                                'SABADO ' , 'SATURDAY',
                                                'DOMINGO' , 'SUNDAY')
-    INTO v_diasconfig, v_diasemana
-    FROM NAGT_ABASTECIMENTOCONFIG X
-   WHERE X.SEQLOTEMODELO = p_SeqLoteModelo;
-
-  SELECT TRIM(TO_CHAR(MAX(DTAGERPEDIDO) + v_diasconfig,'DAY'))
-    INTO v_diahoje
-    FROM CONSINCO.MAC_GERCOMPRA A 
-   WHERE 1=1
-     AND A.SEQGERCOMPORIGEM = p_SeqLoteModelo -- Para Lote de Compras Utilizar SEQGERMODELOCOMPRA
-     AND A.SITUACAOLOTE != 'C';
   --
-  -- Se o dia da semana for igual hoje, retorna hoje
-   IF v_diasemana = v_diahoje
-
-   THEN
+    INTO v_diasconfig, v_diasemana
+    FROM CONSINCO.NAGT_CONTROLELOTECOMPRA X
+   WHERE X.SEQLOTEMODELO = p_SeqLoteModelo;
+   
+  -- Primeiro resultado para validar se o dia semana é igual ao dia atual
+  SELECT TRIM(TO_CHAR(MAX((DTAHORINCLUSAO)) + v_diasconfig,'DAY')), 
+  --
+  -- Segundo resultado para validar se o dia inteiro é igual ao dia atual
+         TRUNC(MAX((DTAHORINCLUSAO)) + v_diasconfig),
+  -- Pega o tipo lote para diferenciar o tratamento para lote modelo inicial
+         MIN(TIPOLOTE)
+  --
+  -- Insere nas variaveis
+    INTO v_dia, v_dta, v_tp
+  --
+    FROM CONSINCO.MAC_GERCOMPRA A
+   WHERE 1=1
+     AND A.SEQGERMODELOCOMPRA = p_SeqLoteModelo 
+     OR A.SEQGERCOMPRA = p_SeqLoteModelo AND TIPOLOTE = 'M';
+  --
+  -- Tratamento para Lote Modelo, valida apenas dia da semana programado e retorna hoje
+  IF v_tp = 'M'
+ AND v_diasemana = TRIM(TO_CHAR(SYSDATE, 'DAY'))
+  OR
+  --
+  -- Para lotes normais | Se o dia retorno do calculo for igual hoje, retorna hoje  
+      v_diasemana = v_dia 
+  AND v_dta = TRUNC(SYSDATE)
+  AND v_tp != 'M' -- Tira Modelo
+  
+     THEN
      SELECT TRUNC(SYSDATE)
        INTO v_proxped
        FROM DUAL;
-       
-   DBMS_OUTPUT.PUT_LINE(v_diahoje||'-'||v_diasemana); -- Teste
+  --
   -- Caso contrário, próximo dia da semana que está parametrizado
    ELSE
 
-  SELECT NEXT_DAY((SELECT MAX(DTAGERPEDIDO)
+  SELECT NEXT_DAY((SELECT MAX(TRUNC(DTAHORINCLUSAO))
     FROM CONSINCO.MAC_GERCOMPRA A 
    WHERE 1=1
-     AND A.SEQGERCOMPORIGEM = p_SeqLoteModelo -- Para Lote de Compras Utilizar SEQGERMODELOCOMPRA
-     AND A.SITUACAOLOTE != 'C')
+     AND A.SEQGERMODELOCOMPRA = p_SeqLoteModelo 
+      OR A.SEQGERCOMPRA = p_SeqLoteModelo AND TIPOLOTE = 'M')
    + v_diasconfig, v_diasemana)
    INTO v_proxped
    FROM DUAL;
 
-   END IF;
+    END IF;
 
  RETURN v_proxped;
  EXCEPTION
