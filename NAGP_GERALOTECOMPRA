@@ -1,0 +1,37 @@
+CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_GERALOTECOMPRA AS
+BEGIN
+DECLARE
+      i INTEGER := 0;
+
+      BEGIN
+        FOR t IN (SELECT D.SEQLOTEMODELO FROM CONSINCO.NAGV_BUSCADTAPEDIDO D 
+                   WHERE SYSDATE >= TO_DATE(TO_CHAR(D.DATA_VALIDA, 'DD/MM/YYYY')||' '||D.HORAMIN, 'DD/MM/YYYY HH24:MI')
+                   ORDER BY HORAMIN ASC)
+
+    LOOP
+      BEGIN
+      i := i+1;
+      CONSINCO.NAGP_spMac_GeraLoteCompra(TRUNC(SYSDATE), 'N',t.SEQLOTEMODELO);
+      INSERT INTO CONSINCO.NAGT_LOGGERAABASTAUTO VALUES (T.SEQLOTEMODELO, SYSDATE, 'JOBGERALOTECOMP', 'GERADO', 'COMPRAS');
+      IF i = 1 THEN COMMIT;
+      i := 0;
+      END IF;
+      
+      EXCEPTION
+        
+        WHEN OTHERS THEN
+      -- INSERE NA TABELA DE LOG SE OCORRER ERRO AO GERAR
+         INSERT INTO CONSINCO.NAGT_LOGGERAABASTAUTO VALUES (T.SEQLOTEMODELO, SYSDATE, 'JOBGERALOTECOMP', 'ERRO', 'COMPRAS');
+         COMMIT;
+      -- Envia e-mail quando pedido apresentar erro na geração
+         CONSINCO.SP_ENVIA_EMAIL(CONSINCO.C5_TP_PARAM_SMTP(1),
+                            'giuliano.gomes@nagumo.com.br;ricardo.santana@nagumo.com.br',                       -- DESTINÁRIO                                                   
+                            'Erro na geração de lote de compras - Lote Modelo: '              || T.SEQLOTEMODELO, -- ASSUNTO                                   
+                            'Lote Modelo: '|| T.SEQLOTEMODELO                                  ||CHR(10)||
+                            'Data:   '     || TO_CHAR(SYSDATE, 'DD/MM/YYYY HH24:Mi:ss')       ||CHR(10)||
+                            '* Erro na geração de lote de compras pelo Job *', 'N');  -- MENSAGEM
+      END;
+     END LOOP;
+    COMMIT;
+   END;
+END;
