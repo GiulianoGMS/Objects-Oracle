@@ -10,6 +10,24 @@ DECLARE
 
     LOOP
       BEGIN
+      UPDATE CONSINCO.MAC_GERCOMPRA X SET X.AGENDADOMINGO = 'N',
+                                          X.AGENDASEGUNDA = 'N',
+                                          X.AGENDATERCA   = 'N',
+                                          X.AGENDAQUARTA  = 'N',
+                                          X.AGENDAQUINTA  = 'N',
+                                          X.AGENDASEXTA   = 'N',
+                                          X.AGENDASABADO  = 'N'
+                                    WHERE X.SEQGERCOMPRA IN (SELECT SEQGERCOMPRA FROM CONSINCO.MAC_GERCOMPRA Z 
+                                                              WHERE Z.SEQGERCOMPRA = T.SEQLOTEMODELO
+                                                                AND (X.AGENDADOMINGO = 'S' OR
+                                                                     X.AGENDASEGUNDA = 'S' OR
+                                                                     X.AGENDATERCA   = 'S' OR
+                                                                     X.AGENDAQUARTA  = 'S' OR
+                                                                     X.AGENDAQUINTA  = 'S' OR
+                                                                     X.AGENDASEXTA   = 'S' OR
+                                                                     X.AGENDASABADO  = 'S'));
+      COMMIT;
+      
       i := i+1;
       CONSINCO.NAGP_spMac_GeraLoteCompra(TRUNC(SYSDATE), 'N',t.SEQLOTEMODELO);
       INSERT INTO CONSINCO.NAGT_LOGGERAABASTAUTO VALUES (T.SEQLOTEMODELO, SYSDATE, 'JOBGERALOTECOMP', 'GERADO', 'COMPRAS');
