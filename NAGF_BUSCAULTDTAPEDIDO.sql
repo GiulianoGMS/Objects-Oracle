@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMB
                                                                            v_diasemana  VARCHAR2(10);
                                                                            v_dia        VARCHAR2(10);
                                                                            v_dta        DATE;
-                                                                           v_tp         VARCHAR2(1);
+                                                                           v_datainicio DATE;
  BEGIN
   -- Valida Parametrizacoes na NAGT_CONTROLELOTECOMPRA
   -- Tradur o dia configurado pra utilizar no Next_Day
@@ -15,9 +15,9 @@ CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMB
                                                'QUINTA'  , 'THURSDAY',
                                                'SEXTA'   , 'FRIDAY',
                                                'SABADO'  , 'SATURDAY',
-                                               'DOMINGO' , 'SUNDAY')
+                                               'DOMINGO' , 'SUNDAY'), DATAINICIO
   --
-    INTO v_diasconfig, v_diasemana
+    INTO v_diasconfig, v_diasemana, v_datainicio
     FROM CONSINCO.NAGT_CONTROLELOTECOMPRA X
    WHERE X.SEQLOTEMODELO = p_SeqLoteModelo;
   --
@@ -26,45 +26,31 @@ CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMB
   SELECT TRIM(TO_CHAR(TRUNC(GREATEST(MAX(DTAHORINCLUSAO), NVL(MAX(DTAHORFECHAMENTO),MAX(DTAHORINCLUSAO))) + v_diasconfig),'DAY')), 
   --
   -- Segundo resultado para validar se o dia inteiro é igual ao dia atual
-         TRUNC(GREATEST(MAX(DTAHORINCLUSAO), NVL(MAX(DTAHORFECHAMENTO),MAX(DTAHORINCLUSAO))) + v_diasconfig),
-  -- Pega o tipo lote para diferenciar o tratamento para lote modelo inicial
-         MIN(TIPOLOTE)
+         TRUNC(GREATEST(MAX(DTAHORINCLUSAO), NVL(MAX(DTAHORFECHAMENTO),MAX(DTAHORINCLUSAO))) + v_diasconfig)
   --
-  -- Insere nas variaveis
-    INTO v_dia, v_dta, v_tp
-  --
+    INTO v_dia, v_dta
     FROM CONSINCO.MAC_GERCOMPRA A
    WHERE 1=1
-     AND A.SEQGERMODELOCOMPRA = p_SeqLoteModelo AND USUINCLUSAO = 'JOBGERALOTE'
-      OR A.SEQGERCOMPRA = p_SeqLoteModelo AND TIPOLOTE = 'M';
+     AND (A.SEQGERMODELOCOMPRA = p_SeqLoteModelo
+      OR A.SEQGERCOMPRA = p_SeqLoteModelo AND TIPOLOTE = 'M')
+     AND A.SITUACAOLOTE != 'C';
   --
-  -- Tratamento para Lote Modelo, valida apenas dia da semana programado e retorna hoje
+  -- Valida se a data de inicio é igual ou maior que o dia atual e retorna na variavel
        IF 
-             v_tp = 'M'
-         AND v_diasemana = TRIM(TO_CHAR(SYSDATE, 'DAY'))
-          OR
+             TRUNC(v_datainicio) >= TRUNC(SYSDATE) 
+        THEN v_proxped := v_datainicio;
   --
-  -- Para lotes normais | Se o dia retorno do calculo for igual hoje, retorna hoje  
-             v_diasemana = v_dia 
+  -- Caso contrário, valida se o prazo no calculo é igual ao dia atual
+       ELSIF v_diasemana = v_dia 
          AND v_dta = TRUNC(SYSDATE)
-         AND v_tp != 'M' -- Tira Modelo
+         AND v_datainicio < SYSDATE 
           
         THEN
       SELECT TRUNC(SYSDATE)
         INTO v_proxped
         FROM DUAL;
   --
-  -- Busca a próxima data valida para lotes modelos que não possuem o dia atual = diasemana config
-   ELSIF
-             v_tp = 'M'
-         AND v_diasemana != TRIM(TO_CHAR(SYSDATE, 'DAY'))
-         
-        THEN
-      SELECT NEXT_DAY(SYSDATE, v_diasemana)
-        INTO v_proxped
-        FROM DUAL;
-  --
-  -- Caso contrário, próximo dia da semana que está parametrizado
+  -- Se não for, retorna róximo dia da semana conforme calculo
    ELSE
 
       SELECT NEXT_DAY((SELECT GREATEST(MAX(DTAHORINCLUSAO), NVL(MAX(DTAHORFECHAMENTO),MAX(DTAHORINCLUSAO))) -1
@@ -81,7 +67,7 @@ CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMB
  RETURN v_proxped;
  EXCEPTION
    WHEN NO_DATA_FOUND THEN
-     RETURN NULL; --TRUNC(SYSDATE) + 100;
+     RETURN TRUNC(SYSDATE) + 100;
      WHEN OTHERS THEN
      DBMS_OUTPUT.PUT_LINE(p_SeqLoteModelo);
 END;
