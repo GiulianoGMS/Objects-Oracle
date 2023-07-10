@@ -1,0 +1,8 @@
+-- Tabela de Configuração | Lote de Compras
+
+CREATE TABLE CONSINCO.NAGT_CONTROLELOTECOMPRA (
+                  SEQLOTEMODELO NUMBER(20),
+                  DIASEMANA     VARCHAR2(10),
+                  DIASCONFIG    NUMBER(3)
+                  HORAMIN       VARCHAR2(5)
+                  DATAINICIO    DATE)
