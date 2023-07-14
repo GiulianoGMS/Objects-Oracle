@@ -57,6 +57,7 @@ CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMB
         FROM CONSINCO.MAC_GERCOMPRA A 
        WHERE 1=1
          AND A.SEQGERMODELOCOMPRA = p_SeqLoteModelo 
+         AND A.SITUACAOLOTE != 'C'
           OR A.SEQGERCOMPRA = p_SeqLoteModelo AND TIPOLOTE = 'M')
            + v_diasconfig, v_diasemana)
         INTO v_proxped
