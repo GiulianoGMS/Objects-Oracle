@@ -1,4 +1,4 @@
--- Criando a Tabela
+-- Criando a Tabela (utilizando select como base por preguiça)
 
 CREATE TABLE CONSINCO.NAGT_INCONSISTRECEBTO_LOG AS
 
@@ -25,8 +25,12 @@ DECLARE
                                                       INNER JOIN CONSINCO.MLF_AUXNFINCONSISTENCIA C ON C.SEQAUXNOTAFISCAL = A.SEQAUXNOTAFISCAL AND C.SEQAUXNFITEM = B.SEQAUXNFITEM
                    WHERE 1=1
                      AND A.NUMERONF != 0
-                     AND A.DTAHORLANCTO > TRUNC(SYSDATE) -3
-                     AND NOT EXISTS (SELECT 1 FROM CONSINCO.NAGT_INCONSISTRECEBTO_LOG X WHERE X.SEQAUXNOTAFISCAL = A.SEQAUXNOTAFISCAL AND X.SEQPRODUTO = B.SEQPRODUTO AND X.SEQINCONSISTENCIA = C.SEQINCONSISTENCIA))
+                     AND A.DTAHORLANCTO > TRUNC(SYSDATE) -1
+                     AND NOT EXISTS (SELECT 1 FROM CONSINCO.NAGT_INCONSISTRECEBTO_LOG X 
+                                             WHERE 1=1 
+                                               AND X.SEQAUXNOTAFISCAL = A.SEQAUXNOTAFISCAL 
+                                               AND X.SEQPRODUTO = B.SEQPRODUTO 
+                                               AND X.SEQINCONSISTENCIA = C.SEQINCONSISTENCIA))
 
      LOOP
       BEGIN
