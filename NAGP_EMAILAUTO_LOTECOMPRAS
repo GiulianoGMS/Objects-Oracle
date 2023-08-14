@@ -1,10 +1,21 @@
+CREATE TABLE CONSINCO.NAGT_EMAILCOMPRADORES 
+
+       (COMP_PRINC VARCHAR(30), 
+          COMP_SEC VARCHAR(30), 
+             EMAIL VARCHAR(50));    
+             
+INSERT INTO  CONSINCO.NAGT_EMAILCOMPRADORES VALUES ('PAES INDUSTRIALIZADOS','GI','giuliano.gomes@nagumo.com.br');
+COMMIT;
+             
 CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EMAILAUTO_LOTECOMPRAS AS
 
 BEGIN
-   FOR t IN (SELECT SEQLOTEMODELO, CONSINCO.NAGF_BUSCACOMPRADORLOTE(SEQLOTEMODELO) COMPRADOR, G.DESCRITIVO, NOMERAZAO FORNECEDOR,
-                    DATA_VALIDA, HORAMIN, 'giuliano.gomes@nagumo.com.br' EMAIL
+   FOR t IN (SELECT SEQLOTEMODELO, COMPRADOR, G.DESCRITIVO, NOMERAZAO FORNECEDOR,
+                    DATA_VALIDA, HORAMIN, E.EMAIL
                FROM CONSINCO.NAGV_BUSCADTAPEDIDO D INNER JOIN CONSINCO.MAC_GERCOMPRA G ON G.SEQGERCOMPRA = D.SEQLOTEMODELO AND G.TIPOLOTE = 'M'
                                                    INNER JOIN CONSINCO.GE_PESSOA     P ON P.SEQPESSOA    = G.SEQFORNECPRINCIPAL
+                                                   INNER JOIN CONSINCO.MAX_COMPRADOR C ON C.SEQCOMPRADOR = G.SEQCOMPRADOR
+                                                    LEFT JOIN CONSINCO.NAGT_EMAILCOMPRADORES E ON E.COMP_PRINC = C.COMPRADOR
               WHERE 1=1
                 AND TRUNC(SYSDATE) = D.DATA_VALIDA - 1)
  LOOP
@@ -21,8 +32,9 @@ BEGIN
                              - Lote Modelo: '||T.SEQLOTEMODELO||'                         <br/>
                              - Programação: '||TO_CHAR(T.DATA_VALIDA, 'DD/MM/YYYY')||' às '||T.HORAMIN||' hrs
                             <p style="color:red;">Para cancelar ou alterar a programação, entre em contato com o Departamento de TI<br/>
-                            <p style="color:blue;"> Este é um e-mail automático - Não responda </p>
+                            <p style="color:darkblue;"> Este é um e-mail automático - Não responda </p>
                             <p style="color:gray;"> TI - ERP | Sistemas<p>
+                            <p style="font-size: 12px; color:lightgray;">Desenvolvido por Giuliano | Cipolla - TI | Param.: Ricardo Santana</p>
                           </HTML>', 'N');
   /*<p style="font-size: 12px; color:lightgray;">Desenvolvido por Giuliano | Cipolla - TI</p>*/
         COMMIT; 
@@ -30,6 +42,10 @@ BEGIN
    END LOOP;
  END;
  
-  BEGIN
+BEGIN
    CONSINCO.NAGP_EMAILAUTO_LOTECOMPRAS;
-   END;
+  END;
+  
+
+       
+       
