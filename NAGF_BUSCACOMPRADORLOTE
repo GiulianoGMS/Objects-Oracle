@@ -1,0 +1,12 @@
+CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCACOMPRADORLOTE (p_SeqLoteModelo NUMBER) RETURN VARCHAR2 IS
+                                                                                     v_Comprador VARCHAR2(40);
+ BEGIN
+   
+  SELECT COMPRADOR
+    INTO v_Comprador
+    FROM CONSINCO.MAX_COMPRADOR C WHERE SEQCOMPRADOR = (
+  SELECT SEQCOMPRADOR FROM CONSINCO.MAC_GERCOMPRA X WHERE X.SEQGERCOMPRA = p_SeqLoteModelo AND TIPOLOTE = 'M');
+  
+  RETURN v_Comprador;
+  
+  END;
