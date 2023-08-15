@@ -52,7 +52,7 @@ DECLARE
       INSERT INTO CONSINCO.NAGT_LOGGERALOTEAUTO VALUES (T.SEQLOTEMODELO, SYSDATE, 'JOBGERALOTE', 'GERADO', 'COMPRAS');
       IF i = 1 THEN COMMIT;
       i := 0;
-   -- Teste - Envia email quando o lote for criado com sucesso
+   -- Envia email quando o lote for criado com sucesso
       CONSINCO.SP_ENVIA_EMAIL(CONSINCO.C5_TP_PARAM_SMTP(1),
                             'giuliano.gomes@nagumo.com.br;ricardo.santana@nagumo.com.br;marcel.cipolla@nagumo.com.br'
                             ||T.EMAIL||';',                                                                                                             
@@ -61,6 +61,7 @@ DECLARE
                             <strong>Informativo:</strong>                                 <br/>
                             <p>O Lote Modelo: '||T.SEQLOTEMODELO||' para o Fornecedor: '||T.FORNECEDOR||' 
                             <p>Foi gerado com SUCESSO! Programação: '||TO_CHAR(T.DATA_VALIDA, 'DD/MM/YYYY')||' às '||T.HORAMIN||' hrs
+                            <p>Descrição do Lote: '||T.DESCRITIVO||'
                             <p style="color:red;">Para cancelar ou alterar a programação deste lote, entre em contato com o Departamento de TI<br/>
                             <p style="color:darkblue;"> Este é um e-mail automático - Não responda </p>
                             <p style="color:gray;"> TI - ERP | Sistemas<p>
