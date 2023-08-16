@@ -70,10 +70,146 @@ DECLARE
                             <p>Foi gerado com SUCESSO! Programação: '||TO_CHAR(T.DATA_VALIDA, 'DD/MM/YYYY')||' às '||T.HORAMIN||' hrs
                             <p>Descrição do Lote: '||T.DESCRITIVO||'
                             <p style="color:red;">Para cancelar ou alterar a programação deste lote, entre em contato com o Departamento de TI<br/>
-                            <p style="color:darkblue;"> Este é um e-mail automático - Não responda </p>
-                            <p style="color:gray;"> TI - ERP | Sistemas<p>
-                            <p style="font-size: 12px; color:lightgray;">Desenvolvido por Giuliano | Cipolla - TI | Param.: Ricardo Santana</p>
-                          </HTML>', 'N');  -- MENSAGEM
+                            <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 12px;color:darkblue;"> Este é um e-mail automático - Não responda </p>
+                          </HTML>'||
+                          -- Começa a Assinatura
+                          '<!doctype html>
+                            <HTML>
+                            <head>
+                            <meta charset="UTF-8">
+                            <title>Supermercados Nagumo</title>
+                            </head>
+
+                            <body>
+                              
+                            <table width="726" border="0" cellspacing="0" cellpadding="0">
+                              <tbody>
+                                <tr>
+                                  <td colspan="3" style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color: #707070;">
+                                </td>
+                                </tr>
+                              <tr>
+                                 
+                                </tr>
+                                <tr>
+                                  <td width="194">
+                                <a href="https://www.nagumo.com.br" target="_blank" title="Supermercados Nagumo">
+                                    <img src="https://institucional.nagumo.com.br/assinatura/nagumo.png" width="193" height="171" alt="Supermercados Nagumo">
+                                </a>
+                                </td>
+                                  <td width="40" align="center">
+                                <img src="https://institucional.nagumo.com.br/assinatura/linha.png" width="1" height="153" alt="Supermercados Nagumo">
+                                </td>
+                                  <td width="492">
+                                
+                                  <font>
+                                  
+                                    <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color: #003865; font-weight: bold; margin-bottom: 0px;">
+                                    E-mail Automático
+                                  </p>
+                                                                   
+                                    <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color: #D50037; font-weight: bold; margin: 0px;">
+                                    Nagumo - TI | ERP | Sistemas
+                                  </p>
+                                    
+                                  <p></p>
+                                    
+                                  <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color:lightgray; font-weight: bold; margin: 0px;">
+                                    Desenvolvido por Giuliano Gomes | Marcel Cipolla 
+                                  </p>
+                                  
+                                  <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color:lightgray; font-weight: bold; margin: 0px;">
+                                    Parametrizações: Ricardo Santana
+                                  </p>
+                                  
+                                  <p></p>
+                                    
+                                  <a href="https://www.nagumo.com.br" target="_blank" title="www.nagumo.com.br" style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color: #3CBACC; font-weight: bold; margin: 0px; text-decoration: none;">
+                                    www.nagumo.com.br  
+                                  </a>
+                                  
+                                  </font>
+                                  
+                                  <br><br>
+                                  
+                                  <table width="366" border="0" cellspacing="0" cellpadding="0">
+                                    <tbody>
+                                    <tr>
+                                      <td width="20">
+                                      <a href="https://www.facebook.com/supermercadosnagumo" target="_blank" title="Facebook">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/facebook.png" width="8" height="16" alt="Facebook">
+                                      </a>
+                                      </td>
+                                      <td width="22">
+                                      <a href="https://www.instagram.com/supermercados_nagumo/" target="_blank" title="Instagram">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/instagram.png" width="16" height="16" alt="Instagram">
+                                      </a>
+                                      </td>
+                                      <td width="29">
+                                      <a href="https://twitter.com/nagumo" target="_blank" title="Twitter">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/twitter.png" width="20" height="16" alt="Twitter">
+                                      </a>
+                                      </td>
+                                      <td width="24">
+                                      <a href="https://www.youtube.com/channel/UCw84_S2C9HfcogPjrvko1nw" target="_blank" title="Youtube">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/youtube.png" width="13" height="16" alt="Youtube">
+                                      </a>
+                                      </td>
+                                      <td width="24">
+                                      <a href="https://api.whatsapp.com/send?phone=5511947246075" target="_blank" title="WhatsApp">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/whatsapp.png" width="16" height="16" alt="WhatsApp">
+                                      </a>
+                                      </td>
+                                      <td width="24">
+                                      <a href="https://www.tiktok.com/@supermercadosnagumo" target="_blank" title="TikTok">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/tiktok.png" width="14" height="16" alt="Tiktok">
+                                      </a>
+                                      </td>
+                                      <td width="24">
+                                      <a href="https://www.linkedin.com/company/supermercadosnagumo/" target="_blank" title="LinkedIn">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/in.png" width="16" height="16" alt="LinkedIn">
+                                      </a>
+                                      </td>
+                                      <td width="24">
+                                      <a href="https://open.spotify.com/user/31yb7g6xeyv6qu7dielr5zxfdara?si=c1bf458339b24b3f" target="_blank" title="Spotify">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/spotify.png" width="16" height="16" alt="Spotify">
+                                      </a>
+                                      </td>
+                                      <td width="175">
+                                      <a href="https://blog.nagumo.com.br" target="_blank" title="Blog">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/blog.png" width="16" height="16" alt="Blog">
+                                      </a>
+                                      </td>
+                                    </tr>
+                                    </tbody>
+                                  </table>
+                                  
+                                </td>
+                                </tr>
+                                <tr>
+                                  
+                                </tr>
+                                <tr>
+                                 
+                                </tr>
+                                <tr>
+                                  <td colspan="3">
+                                
+                                <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 12px; color:lightgray; font-weight: bold;">
+                                  PRIVACIDADE E CONFIDENCIALIDADE
+                                </p>
+                                  
+                                <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 12px; color:lightgray;">
+                                  Esta mensagem e seu conteúdo tem caráter absolutamente privativo e confidencial entre o remetente e o real destinatário, protegida pelas legislações brasileira e internacional. Se você recebeu indevida ou equivocadamente esta mensagem, pedimos desculpas pelo inconveniente e solicitamos que seja deletado imediatamente a mensagem e seus anexos da sua caixa postal, bem como da sua lixeira, construindo potencial infração o armazenamento indevido de qualquer das informações aqui veiculadas.
+                                </p>
+                                
+                                </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                              
+                            </body>
+                            </HTML>', 'N');  -- MENSAGEM
       END IF;
       
       EXCEPTION
