@@ -1,0 +1,313 @@
+CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_NFIMPXML_INCONS_FISCAL as
+
+  vtexto         clob;
+  vtitulo        clob;
+  vemail         long;
+  vmes           varchar2(100);
+  vtexto1        clob;
+  obj_param_smtp c5_tp_param_smtp;
+  vdir           varchar2(2000);
+  texto          sys.utl_file.file_type;
+  varq           varchar2(2000);
+  vlin           varchar2(4000);
+  email_destino  long;
+
+  -- datas dos periodos de vendas
+  vsDia                        varchar(2);
+  vsmes                        varchar(2);
+  vsano                        varchar(4);
+  vnfilial                     number (3);
+  --vnvlrtotoal                  number(38,5) :=0;
+  --vnvlrsubtotoal               number(38,5) :=0;
+   
+begin
+
+   vtexto := '<HTML> <strong>Informativo:</strong>  <br/>
+             Segue abaixo notas inconsistêntes no recebimento:
+                              <BODY bgColor=#ffffff>
+
+                            <TABLE width=60% cellspacing=0 cellpadding=0 >
+                            <TR>
+                                   <TD >
+
+                                   </TD>
+                                   <TR>
+                                   <TD>
+                                   </TD>
+                                   </TR>
+                                   <TR>
+                                   <TD>
+                                   </TD>
+                                   </TR>
+
+                            </TR>
+                            </table>
+
+                            <br />
+                            <br />
+
+
+
+                                <FONT size=1>
+                                    <TABLE width=90% style=BORDER-COLLAPSE: collapse; margin-left:300px  width=900 border=1 cellspacing=0 cellpadding=0>
+                                      <TBODY>
+
+
+<thead>
+    <TR>
+
+    <th width="5%" bgColor=#4682b4 colspan=22>
+      <B><FONT face=Calibri color=#FFFAFA size=4>Notas Inconsistentes no Recebimento</FONT></B>
+    </th>
+  </TR>
+
+
+  <TR>
+    <th width="6%" bgColor=#dceded >
+      <B><FONT face=Calibri color=#336699 size=2> Empresa </FONT></B>
+    </th>
+
+    <th width="7%" bgColor=#dceded >
+      <B><FONT face=Calibri color=#336699 size=2> Data do Lançamento</FONT></B>
+    </th>
+
+    <th width="6%" bgColor=#dceded >
+      <B><FONT face=Calibri color=#336699 size=2> Número Nota</FONT></B>
+    </th>
+
+    <th width="20%" bgColor=#dceded >
+      <B><FONT face=Calibri color=#336699 size=2> Fornecedor</FONT></B>
+    </th>
+
+    <th width="6%" bgColor=#dceded >
+      <B><FONT face=Calibri color=#336699 size=2> Comprador</FONT></B>
+    </th>
+
+    <th width="7%" bgColor=#dceded >
+      <B><FONT face=Calibri color=#336699 size=2> Tipo Inconsistência</FONT></B>
+    </th>
+
+  </TR>
+
+</thead>';
+
+  for xp in (
+ ---- Fiscal
+ SELECT     DISTINCT (X.SEQAUXNOTAFISCAL),
+                z.fantasia NROEMPRESA,
+                to_char (X.DTAHORLANCTO,'DD/MM/YYYY HH24:MM:SS') DATA,
+                X.NUMERONF,
+               (SELECT GE.SEQPESSOA || ' - ' || GE.NOMERAZAO FROM consinco.GE_PESSOA GE WHERE GE.SEQPESSOA = X.SEQPESSOA) FORNECEDOR,
+
+                (SELECT MAX(C.COMPRADOR)
+                from CONSINCO.MAP_FAMDIVISAO A, CONSINCO.MAP_FAMILIA B, CONSINCO.MAX_COMPRADOR C , CONSINCO.MAP_PRODUTO P
+                where 1 = 1
+                AND A.NRODIVISAO = '1'
+                AND A.SEQFAMILIA = B.SEQFAMILIA
+                AND C.SEQCOMPRADOR = A.SEQCOMPRADOR
+                AND P.SEQFAMILIA = B.SEQFAMILIA
+                AND P.SEQPRODUTO = I.SEQPRODUTO  ) COMPRADOR,
+                'FISCAL' INCONSISTENCIA
+FROM CONSINCO.MLF_AUXNOTAFISCAL X INNER JOIN CONSINCO.MLF_AUXNFITEM I ON (I.SEQAUXNOTAFISCAL = X.SEQAUXNOTAFISCAL)
+                                                                           inner join consinco.ge_empresa z on (z.nroempresa = x.nroempresa)
+
+WHERE exists (SELECT 1 FROM CONSINCO.MLF_AUXNFINCONSISTENCIA Y
+                                          WHERE Y.SEQAUXNOTAFISCAL = X.SEQAUXNOTAFISCAL
+                                          AND Y.Codinconsist IN (5,6,7,8,11,12,42,139)
+                                          AND Y.TIPOINCONSIST = 'N'
+                                          AND Y.SEQAUXNFITEM = 0  ) --- Inconsistencias Fiscais (Impostos)
+and       x.usulancto = 'CONSINCO' --- Apenas NF importadas automaticamente
+AND      X.DTAHORLANCTO >= TO_DATE(SYSDATE, 'DD/MM/YYYY')-7
+ ORDER BY NROEMPRESA, 5,6,7
+
+) loop   
+      vtexto := vtexto ||
+              to_char(
+
+                      '<TR>
+                           <TD vAlign=top align=middle ><FONT face=Calibri size=2> ' ||  xp.nroempresa ||    ' </FONT></TD>
+                           <TD vAlign=top align=middle ><FONT face=Calibri size=2> ' ||   xp.data ||                 ' </FONT></TD>
+                           <TD vAlign=top align=middle ><FONT face=Calibri size=2> ' ||   xp.numeronf ||       ' </FONT></TD>
+                           <TD vAlign=top align=left ><FONT face=Calibri size=2> ' ||    SUBSTR(xp.fornecedor,1,70) ||     ' </FONT></TD>
+                           <TD vAlign=top align=middle ><FONT face=Calibri size=2> ' ||   xp.comprador ||    ' </FONT></TD>
+                            <TD vAlign=top align=middle ><FONT face=Calibri size=2> ' ||   xp.inconsistencia ||    ' </FONT></TD>
+
+
+                      <TR>');
+  end loop;
+
+---rodape
+  vtexto := vtexto || '
+                                          </tbody>
+                                          </table>
+                                          </font>
+                                          <br>
+                                          <br>
+                                          <table width=80%>
+                                          <tr>
+                                              <tr>
+                                              <td align=left>
+                                              <FONT face=Calibri size=2><B>Este é um e-mail automático - Não responda.<BR>
+                                              </B></FONT><BR><BR>
+                                          </td>
+                                          </tr>
+
+
+        </table>
+
+                                            </BODY>
+                                          </HTML>'||
+                          -- Começa a Assinatura
+                          '<!doctype html>
+                            <HTML>
+                            <head>
+                            <meta charset="UTF-8">
+                            <title>Supermercados Nagumo</title>
+                            </head>
+
+                            <body>
+                              
+                            <table width="726" border="0" cellspacing="0" cellpadding="0">
+                              <tbody>
+                                <tr>
+                                  <td colspan="3" style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color: #707070;">
+                                </td>
+                                </tr>
+                              <tr>
+                                 
+                                </tr>
+                                <tr>
+                                  <td width="194">
+                                <a href="https://www.nagumo.com.br" target="_blank" title="Supermercados Nagumo">
+                                    <img src="https://institucional.nagumo.com.br/assinatura/nagumo.png" width="193" height="171" alt="Supermercados Nagumo">
+                                </a>
+                                </td>
+                                  <td width="40" align="center">
+                                <img src="https://institucional.nagumo.com.br/assinatura/linha.png" width="1" height="153" alt="Supermercados Nagumo">
+                                </td>
+                                  <td width="492">
+                                
+                                  <font>
+                                  
+                                    <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color: #003865; font-weight: bold; margin-bottom: 0px;">
+                                    E-mail Automático
+                                  </p>
+                                                                   
+                                    <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color: #D50037; font-weight: bold; margin: 0px;">
+                                    Nagumo - TI | ERP | Sistemas
+                                  </p>
+                                    
+                                  <p></p>
+                                    
+                                  <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color:lightgray; font-weight: bold; margin: 0px;">
+                                    Desenvolvido por Giuliano Gomes | Marcel Cipolla 
+                                  </p>
+                                  
+                                  <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color:lightgray; font-weight: bold; margin: 0px;">
+                                   Solic Ticket 269988
+                                  </p>
+                                  
+                                  <p></p>
+                                    
+                                  <a href="https://www.nagumo.com.br" target="_blank" title="www.nagumo.com.br" style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color: #3CBACC; font-weight: bold; margin: 0px; text-decoration: none;">
+                                    www.nagumo.com.br  
+                                  </a>
+                                  
+                                  </font>
+                                  
+                                  <br><br>
+                                  
+                                  <table width="366" border="0" cellspacing="0" cellpadding="0">
+                                    <tbody>
+                                    <tr>
+                                      <td width="20">
+                                      <a href="https://www.facebook.com/supermercadosnagumo" target="_blank" title="Facebook">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/facebook.png" width="8" height="16" alt="Facebook">
+                                      </a>
+                                      </td>
+                                      <td width="22">
+                                      <a href="https://www.instagram.com/supermercados_nagumo/" target="_blank" title="Instagram">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/instagram.png" width="16" height="16" alt="Instagram">
+                                      </a>
+                                      </td>
+                                      <td width="29">
+                                      <a href="https://twitter.com/nagumo" target="_blank" title="Twitter">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/twitter.png" width="20" height="16" alt="Twitter">
+                                      </a>
+                                      </td>
+                                      <td width="24">
+                                      <a href="https://www.youtube.com/channel/UCw84_S2C9HfcogPjrvko1nw" target="_blank" title="Youtube">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/youtube.png" width="13" height="16" alt="Youtube">
+                                      </a>
+                                      </td>
+                                      <td width="24">
+                                      <a href="https://api.whatsapp.com/send?phone=5511947246075" target="_blank" title="WhatsApp">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/whatsapp.png" width="16" height="16" alt="WhatsApp">
+                                      </a>
+                                      </td>
+                                      <td width="24">
+                                      <a href="https://www.tiktok.com/@supermercadosnagumo" target="_blank" title="TikTok">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/tiktok.png" width="14" height="16" alt="Tiktok">
+                                      </a>
+                                      </td>
+                                      <td width="24">
+                                      <a href="https://www.linkedin.com/company/supermercadosnagumo/" target="_blank" title="LinkedIn">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/in.png" width="16" height="16" alt="LinkedIn">
+                                      </a>
+                                      </td>
+                                      <td width="24">
+                                      <a href="https://open.spotify.com/user/31yb7g6xeyv6qu7dielr5zxfdara?si=c1bf458339b24b3f" target="_blank" title="Spotify">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/spotify.png" width="16" height="16" alt="Spotify">
+                                      </a>
+                                      </td>
+                                      <td width="175">
+                                      <a href="https://blog.nagumo.com.br" target="_blank" title="Blog">
+                                        <img src="https://institucional.nagumo.com.br/assinatura/blog.png" width="16" height="16" alt="Blog">
+                                      </a>
+                                      </td>
+                                    </tr>
+                                    </tbody>
+                                  </table>
+                                  
+                                </td>
+                                </tr>
+                                <tr>
+                                  
+                                </tr>
+                                <tr>
+                                 
+                                </tr>
+                                <tr>
+                                  <td colspan="3">
+                                
+                                <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 12px; color:lightgray; font-weight: bold;">
+                                  PRIVACIDADE E CONFIDENCIALIDADE
+                                </p>
+                                  
+                                <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 12px; color:lightgray;">
+                                  Esta mensagem e seu conteúdo tem caráter absolutamente privativo e confidencial entre o remetente e o real destinatário, protegida pelas legislações brasileira e internacional. Se você recebeu indevida ou equivocadamente esta mensagem, pedimos desculpas pelo inconveniente e solicitamos que seja deletado imediatamente a mensagem e seus anexos da sua caixa postal, bem como da sua lixeira, construindo potencial infração o armazenamento indevido de qualquer das informações aqui veiculadas.
+                                </p>
+                                
+                                </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                              
+                            </body>
+                            </HTML>';
+
+
+
+           
+  vemail := email_destino;
+
+  obj_param_smtp := c5_tp_param_smtp(1);
+
+   sp_envia_email(obj_param      => obj_param_smtp,
+                      psDestinatario => 'maiara.reboucas@nagumo.com.br;giuliano.gomes@nagumo.com.br',
+                      psAssunto      => 'Notas Inconsistentes no Recebimento - Todas as Lojas - '|| TO_CHAR(SYSDATE,'DD/MM/YYYY'),
+                      psMensagem     => vtexto,
+                      psindusahtml   => 'S',
+                      psAnexoBanco   => vdir || varq);
+
+end;
