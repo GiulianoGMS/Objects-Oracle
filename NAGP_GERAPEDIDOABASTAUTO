@@ -1,0 +1,61 @@
+CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_GERAPEDIDOABASTAUTO AS
+BEGIN
+DECLARE
+      I INTEGER := 0;
+   -- SELECIONA OS LOTES DE ABASTECIMENTO EM ABERTO NO DIA ATUAL PARA GERACAO
+      BEGIN
+        FOR T IN (SELECT DISTINCT A.SEQGERCOMPRA, B.HORAMINCONFIG
+                    FROM CONSINCO.MAC_GERCOMPRA A INNER JOIN CONSINCO.NAGT_CONTROLEABASTAUTO B ON A.SEQGERCOMPORIGEM = B.SEQLOTEMODELO
+                   WHERE 1=1
+                     AND NVL(A.INDORDEMPRODFINALIZADA, 'S') = 'S'
+                     AND A.TIPOLOTE = 'A'
+                     AND TRUNC(A.DTAHORINCLUSAO) >= TRUNC(SYSDATE) AND TRUNC(A.DTAHORINCLUSAO) <= TRUNC(SYSDATE)
+                     AND A.DTAHORFECHAMENTO IS NULL
+                     AND NROEMPRESAGERALOTE IN (501,506)
+                     AND SYSDATE > TO_DATE(TO_CHAR(SYSDATE, 'DD/MM/YYYY')||' '||B.HORAMINCONFIG, 'DD/MM/YYYY HH24:MI')
+
+                     ORDER BY B.HORAMINCONFIG ASC)
+
+    LOOP
+      BEGIN
+        I := I+1;
+     -- FECHA OS LOTES
+        UPDATE CONSINCO.MAC_GERCOMPRA
+           SET DTAHORFECHAMENTO = SYSDATE,
+               USUFECHAMENTO    = 'JOBABASTAUTO',
+               DTAGERPEDIDO     = TRUNC(SYSDATE),
+               USUGERPEDIDO     = 'JOBABASTAUTO',
+               SITUACAOLOTE     = 'F',
+               INCREMENTOMEDIAVENDA = NULL,
+               TIPOSUGCOMPRA    = 'P',
+               INDMINMAXQTD     = 'N',
+               INDMINMAXDIAVDA  = 'N'
+         WHERE SEQGERCOMPRA     = T.SEQGERCOMPRA;
+      --
+      -- GERA OS LOTES DE COMPRA/PED VENDA
+         BEGIN CONSINCO.PKG_ADM_COMPRA.SP_GERACARGAPEDVENDA(T.SEQGERCOMPRA, NULL,'S','A'); END;
+      --
+      -- INSERE NA TABELA DE LOG SE O LOTE FOI GERADO COM SUCESSO
+         INSERT INTO CONSINCO.NAGT_LOGGERALOTEAUTO VALUES (T.SEQGERCOMPRA, SYSDATE, 'JOBABASTAUTO', 'GERADO', 'ABASTECIMENTO');
+
+      IF I = 1 THEN COMMIT;
+      I := 0;
+      END IF;
+
+      EXCEPTION
+        WHEN OTHERS THEN
+      -- INSERE NA TABELA DE LOG SE OCORRER ERRO AO GERAR
+         INSERT INTO CONSINCO.NAGT_LOGGERALOTEAUTO VALUES (T.SEQGERCOMPRA, SYSDATE, 'JOBABASTAUTO', 'ERRO', 'ABASTECIMENTO');
+         COMMIT;
+      -- Envia e-mail quando pedido apresentar erro na geração
+         CONSINCO.SP_ENVIA_EMAIL(CONSINCO.C5_TP_PARAM_SMTP(1),
+                            'giuliano.gomes@nagumo.com.br;ricardo.santana@nagumo.com.br',                       -- DESTINÁRIO                                                   
+                            'Erro na emissão de pedido de abast. atuomatico - Lote Modelo: '  || T.SEQGERCOMPRA, -- ASSUNTO                                   
+                            'Lote Modelo: '|| T.SEQGERCOMPRA                                  ||CHR(10)||
+                            'Data:   '     || TO_CHAR(SYSDATE, 'DD/MM/YYYY HH24:Mi:ss')       ||CHR(10)||
+                            '* Erro na emissão do pedido AA *', 'N');  -- MENSAGEM
+      END;
+     END LOOP;
+    COMMIT;
+   END;
+   END;
