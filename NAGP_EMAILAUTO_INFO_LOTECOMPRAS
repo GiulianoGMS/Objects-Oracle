@@ -1,10 +1,10 @@
---CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EMAILAUTO_INFO_LOTECOMPRAS AS
+CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EMAILAUTO_INFO_LOTECOMPRAS AS
 
---DECLARE
+DECLARE
 
-BEGIN 
+BEGIN
    FOR t IN (SELECT SEQLOTEMODELO, C.COMPRADOR, G.DESCRITIVO, NOMERAZAO FORNECEDOR,
-                    DATA_VALIDA, HORAMIN, NVL(A.EMAIL||CASE WHEN E.EMAIL IS NULL OR A.EMAIL IS NULL THEN NULL ELSE ';' END||E.EMAIL, 'X') EMAIL, U.NOME, E.EMAIL EMAIL_ASSIST
+                    DATA_VALIDA, HORAMIN, NVL(A.EMAIL||CASE WHEN E.EMAIL IS NULL OR A.EMAIL IS NULL THEN NULL ELSE ';' END||E.EMAIL, 'X') EMAIL, U.NOME, E.EMAIL EMAIL_ASSIST, D.EMAIL_FORNEC
                FROM CONSINCO.NAGV_BUSCADTAPEDIDO D LEFT JOIN CONSINCO.MAC_GERCOMPRA G ON G.SEQGERCOMPRA = D.SEQLOTEMODELO AND G.TIPOLOTE = 'M'
                                                   INNER JOIN CONSINCO.GE_PESSOA     P ON P.SEQPESSOA    = G.SEQFORNECPRINCIPAL
                                                   INNER JOIN CONSINCO.MAX_COMPRADOR C ON C.SEQCOMPRADOR = G.SEQCOMPRADOR
@@ -14,11 +14,11 @@ BEGIN
 
                    WHERE 1=1 
                 AND (TRUNC(SYSDATE) = D.DATA_VALIDA - 7 OR TRUNC(SYSDATE) = D.DATA_VALIDA - 1)
-                AND D.DIASCONFIG > 7 ) -- ricardo.santana@nagumo.com.br;marcel.cipolla@nagumo.com.br
+                AND D.DIASCONFIG > 7 )
  LOOP
    BEGIN
       CONSINCO.SP_ENVIA_EMAIL(CONSINCO.C5_TP_PARAM_SMTP(1),
-                            'giuliano.gomes@nagumo.com.br;ricardo.santana@nagumo.com.br;marcel.cipolla@nagumo.com.br;recepcao@nagumo.com.br;'||T.EMAIL||;||T.EMAIL_ASSIST,                                                                                                        
+                            'giuliano.gomes@nagumo.com.br;ricardo.santana@nagumo.com.br;marcel.cipolla@nagumo.com.br;andressa.frontelli@nagumo.com.br;'||EMAIL||';'||D.EMAIL_FORNEC,                                                                                                        
                             'Nagumo - Comercial | Programação de Geração de Lote de Compras - Fornec: '|| T.FORNECEDOR,                             
                            '<html>
                             <head>
@@ -193,3 +193,5 @@ BEGIN
      END ;
    END LOOP;
  END;
+ 
+ colo
