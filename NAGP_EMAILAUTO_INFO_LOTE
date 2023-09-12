@@ -1,9 +1,8 @@
-CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EMAILAUTO_INFO_LOTECOMPRAS AS
-
-DECLARE
+CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EMAILAUTO_INFO_LOTE AS
 
 BEGIN
-   FOR t IN (SELECT SEQLOTEMODELO, C.COMPRADOR, G.DESCRITIVO, NOMERAZAO FORNECEDOR,
+   
+   BEGIN FOR t IN (SELECT SEQLOTEMODELO, C.COMPRADOR, G.DESCRITIVO, NOMERAZAO FORNECEDOR,
                     DATA_VALIDA, HORAMIN, NVL(A.EMAIL||CASE WHEN E.EMAIL IS NULL OR A.EMAIL IS NULL THEN NULL ELSE ';' END||E.EMAIL, 'X') EMAIL, U.NOME, E.EMAIL EMAIL_ASSIST, D.EMAIL_FORNEC
                FROM CONSINCO.NAGV_BUSCADTAPEDIDO D LEFT JOIN CONSINCO.MAC_GERCOMPRA G ON G.SEQGERCOMPRA = D.SEQLOTEMODELO AND G.TIPOLOTE = 'M'
                                                   INNER JOIN CONSINCO.GE_PESSOA     P ON P.SEQPESSOA    = G.SEQFORNECPRINCIPAL
@@ -12,22 +11,22 @@ BEGIN
                                                    LEFT JOIN CONSINCO.NAGT_EMAILCOMPRADORES E ON UPPER(E.COMPRADOR) = D.ASSISTENTE --AND E.EMAIL != A.EMAIL
                                                    LEFT JOIN CONSINCO.GE_USUARIO            U ON U.CODUSUARIO = D.ASSISTENTE
 
-                   WHERE 1=1 
+                   WHERE 1=1
                 AND (TRUNC(SYSDATE) = D.DATA_VALIDA - 7 OR TRUNC(SYSDATE) = D.DATA_VALIDA - 1)
                 AND D.DIASCONFIG > 7 )
  LOOP
    BEGIN
       CONSINCO.SP_ENVIA_EMAIL(CONSINCO.C5_TP_PARAM_SMTP(1),
-                            'giuliano.gomes@nagumo.com.br;ricardo.santana@nagumo.com.br;marcel.cipolla@nagumo.com.br;andressa.frontelli@nagumo.com.br;'||EMAIL||';'||D.EMAIL_FORNEC,                                                                                                        
-                            'Nagumo - Comercial | Programação de Geração de Lote de Compras - Fornec: '|| T.FORNECEDOR,                             
+                            'giuliano.gomes@nagumo.com.br;ricardo.santana@nagumo.com.br;marcel.cipolla@nagumo.com.br;andressa.frontelli@nagumo.com.br;'||T.EMAIL||';'||T.EMAIL_FORNEC,
+                            'Nagumo - Comercial | Programação de Geração de Lote de Compras - Fornec: '|| T.FORNECEDOR,
                            '<html>
                             <head>
                             <style>
                               .light-blue-line {
                                 border: none;
-                                border-top: 2px solid lightblue; 
-                                margin-top: 20px; 
-                                margin-bottom: 20px; 
+                                border-top: 2px solid lightblue;
+                                margin-top: 20px;
+                                margin-bottom: 20px;
                               }
                             </style>
                             </head>
@@ -43,7 +42,7 @@ BEGIN
                             <p> - Programação: '||TO_CHAR(T.DATA_VALIDA, 'DD/MM/YYYY')||' às '||T.HORAMIN||' hrs
                             <hr class="light-blue-line">
                             <p style="color:red;">Para cancelar ou alterar a programação desta agenda, entre em contato por e-mail: <br/>
-                            <p style="color:black;"> - Recepção: email@nagumo.com.br <br/>
+                            <p style="color:black;"> - Recepção: andressa.frontelli@nagumo.com.br <br/>
                             <p> - Comprador(a)/Assistente: '|| T.EMAIL_ASSIST||'<br/>
                             <hr class="light-blue-line">
                             <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 12px;color: #003865;">Este é um e-mail automático - Não responda</P>
@@ -59,7 +58,7 @@ BEGIN
                             </head>
 
                             <body>
-                              
+
                             <table width="726" border="0" cellspacing="0" cellpadding="0">
                               <tbody>
                                 <tr>
@@ -67,7 +66,7 @@ BEGIN
                                 </td>
                                 </tr>
                               <tr>
-                                 
+
                                 </tr>
                                 <tr>
                                   <td width="194">
@@ -79,37 +78,37 @@ BEGIN
                                 <img src="https://institucional.nagumo.com.br/assinatura/linha.png" width="1" height="153" alt="Supermercados Nagumo">
                                 </td>
                                   <td width="492">
-                                
+
                                   <font>
-                                  
+
                                     <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color: #003865; font-weight: bold; margin-bottom: 0px;">
                                     E-mail Automático
                                   </p>
-                                                                   
+
                                     <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color: #D50037; font-weight: bold; margin: 0px;">
                                     Nagumo - TI | ERP | Sistemas
                                   </p>
-                                    
+
                                   <p></p>
-                                    
+
                                   <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color:lightgray; font-weight: bold; margin: 0px;">
-                                    Desenvolvido por Giuliano Gomes | Marcel Cipolla 
+                                    Desenvolvido por Giuliano Gomes | Marcel Cipolla
                                   </p>
-                                  
+
                                   <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color:lightgray; font-weight: bold; margin: 0px;">
                                     Parametrizações: Ricardo Santana
                                   </p>
-                                  
+
                                   <p></p>
-                                    
+
                                   <a href="https://www.nagumo.com.br" target="_blank" title="www.nagumo.com.br" style="font-family: Arial, Helvetica, Sans Serif; font-size: 14px; color: #3CBACC; font-weight: bold; margin: 0px; text-decoration: none;">
-                                    www.nagumo.com.br  
+                                    www.nagumo.com.br
                                   </a>
-                                  
+
                                   </font>
-                                  
+
                                   <br><br>
-                                  
+
                                   <table width="366" border="0" cellspacing="0" cellpadding="0">
                                     <tbody>
                                     <tr>
@@ -161,31 +160,31 @@ BEGIN
                                     </tr>
                                     </tbody>
                                   </table>
-                                  
+
                                 </td>
                                 </tr>
                                 <tr>
-                                  
+
                                 </tr>
                                 <tr>
-                                 
+
                                 </tr>
                                 <tr>
                                   <td colspan="3">
-                                
+
                                 <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 12px; color:lightgray; font-weight: bold;">
                                   PRIVACIDADE E CONFIDENCIALIDADE
                                 </p>
-                                  
+
                                 <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 12px; color:lightgray;">
                                   Esta mensagem e seu conteúdo tem caráter absolutamente privativo e confidencial entre o remetente e o real destinatário, protegida pelas legislações brasileira e internacional. Se você recebeu indevida ou equivocadamente esta mensagem, pedimos desculpas pelo inconveniente e solicitamos que seja deletado imediatamente a mensagem e seus anexos da sua caixa postal, bem como da sua lixeira, construindo potencial infração o armazenamento indevido de qualquer das informações aqui veiculadas.
                                 </p>
-                                
+
                                 </td>
                                 </tr>
                               </tbody>
                             </table>
-                              
+
                             </body>
                             </HTML>', 'N');
   /*<p style="font-size: 12px; color:lightgray;">Desenvolvido por Giuliano | Cipolla - TI</p>*/
@@ -193,5 +192,4 @@ BEGIN
      END ;
    END LOOP;
  END;
- 
- colo
+ END;
