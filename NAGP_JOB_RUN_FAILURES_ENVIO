@@ -1,0 +1,209 @@
+-- Criando Tabela de Log para envio (Nao utilizado)
+
+CREATE TABLE CONSINCO.NAGT_JOB_RUN_FAILURES AS
+
+SELECT DISTINCT LOG_ID, TO_CHAR(LOG_DATE, 'DD/MM/YYYY HH24:MI') LOG_DATE, LOG_DATE FULL_LOG_DATE, OWNER, JOB_NAME, STATUS, ERROR#, ERRORS, INSTANCE_ID
+
+  FROM ALL_SCHEDULER_JOB_RUN_DETAILS X
+
+ WHERE 1=1
+   AND STATUS = 'FAILED' 
+   AND LOG_DATE > SYSDATE - 2
+
+ORDER BY 2 DESC
+
+-- Tabela Criada
+
+SELECT * FROM CONSINCO.NAGT_JOB_RUN_FAILURES F
+
+-- Delete para teste
+
+DELETE FROM CONSINCO.NAGT_JOB_RUN_FAILURES F WHERE 1=1;
+COMMIT;
+
+-- Procedure para incluir
+
+CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_JOB_RUN_FAILURES AS
+
+   BEGIN
+  
+        INSERT INTO CONSINCO.NAGT_JOB_RUN_FAILURES F 
+       
+  SELECT DISTINCT LOG_ID, TO_CHAR(LOG_DATE, 'DD/MM/YYYY HH24:MI') LOG_DATE, LOG_DATE FULL_LOG_DATE, OWNER, JOB_NAME, STATUS, ERROR#, ERRORS, INSTANCE_ID
+    FROM ALL_SCHEDULER_JOB_RUN_DETAILS X
+   WHERE 1=1
+     AND  STATUS = 'FAILED' 
+     AND LOG_DATE > SYSDATE - 2
+     AND NOT EXISTS (SELECT 1 FROM CONSINCO.NAGT_JOB_RUN_FAILURES F WHERE F.LOG_ID = X.LOG_ID);
+           
+        COMMIT;
+         
+   END;
+      SELECT SYSDATE - (30/1440) FROM DUAL
+      
+-- Procedure para Job sem tabela de log do Nagumo
+
+CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_JOB_RUN_FAILURES_ENVIO as
+
+  vtexto         clob;
+  vtitulo        clob;
+  vemail         long;
+  vmes           varchar2(100);
+  vtexto1        clob;
+  obj_param_smtp c5_tp_param_smtp;
+  vdir           varchar2(2000);
+  texto          sys.utl_file.file_type;
+  varq           varchar2(2000);
+  vlin           varchar2(4000);
+  email_destino long;
+  vCount NUMBER(10);
+
+  -- datas dos periodos de vendas
+  vsDia                        varchar(2);
+  vsmes                        varchar(2);
+  vsano                        varchar(4);
+  vnfilial                     number (3);
+  --vnvlrtotoal                  number(38,5) :=0;
+  --vnvlrsubtotoal                  number(38,5) :=0;
+
+
+begin
+
+   vtexto := '<HTML>
+          <p style="color:red;">Aviso:
+          <p style="font-family: Roboto, sans-serif;">Houve falha de execução na(s) rotina(s) abaixo:
+                              <BODY bgColor=#ffffff>
+
+                            <TABLE width=90% cellspacing=0 cellpadding=0 >
+                            <TR>
+                                   <TD >
+
+                                   </TD>
+                                   <TR>
+                                   <TD>
+                                   </TD>
+                                   </TR>
+                                   <TR>
+                                   <TD>
+                                   </TD>
+                                   </TR>
+
+                            </TR>
+                            </table>
+
+                            <br />
+                            <br />
+
+
+
+                                <FONT size=1>
+                                    <TABLE width=90% style=BORDER-COLLAPSE: collapse; margin-left:100px  width=900 border=1 cellspacing=0 cellpadding=0>
+                                      <TBODY>
+
+
+<thead>
+   
+
+
+  <TR>
+   <th width="7%" bgColor=#A9A9A9 >
+      <B><FONT face=Calibri color=white size=2>Log_Date</FONT></B>
+    </th>
+
+    <th width="6%" bgColor=#A9A9A9 >
+      <B><FONT face=Calibri color=white size=2>Job_Name</FONT></B>
+    </th>
+
+    <th width="30%" bgColor=#A9A9A9 >
+      <B><FONT face=Calibri color=white size=2>Error</FONT></B>
+    </th>
+
+    <th width="7%" bgColor=#A9A9A9 >
+      <B><FONT face=Calibri color=white size=2>Instance_ID</FONT></B>
+    </th>
+
+  </TR>
+
+</thead>';
+
+    SELECT COUNT(1) 
+      INTO vCount 
+      FROM ALL_SCHEDULER_JOB_RUN_DETAILS X WHERE TO_DATE(TO_CHAR(LOG_DATE, 'DD/MM/YYYY HH24:MI'), 'DD/MM/YYYY HH24:MI') >=  SYSDATE - (10/1440) AND STATUS = 'FAILED';
+          
+    FOR XP IN
+     (
+    SELECT * FROM ALL_SCHEDULER_JOB_RUN_DETAILS X WHERE TO_DATE(TO_CHAR(LOG_DATE, 'DD/MM/YYYY HH24:MI'), 'DD/MM/YYYY HH24:MI') 
+                                            >=  SYSDATE - (10/1440) AND STATUS = 'FAILED' ORDER BY 1 DESC
+      )
+    LOOP
+
+      vtexto := vtexto ||
+              to_char(
+
+                      '<TR>
+                           <TD vAlign=top align=middle ><FONT face=Calibri size=2> ' ||  xp.LOG_DATE ||                 ' </FONT></TD>
+                           <TD vAlign=top align=left   ><FONT face=Calibri size=2> ' ||  SUBSTR(xp.JOB_NAME,1,100) ||     ' </FONT></TD>
+                           <TD vAlign=top align=middle ><FONT face=Calibri size=2> ' ||  xp.ERROR#||'-'||xp.ERRORS ||    ' </FONT></TD>
+                           <TD vAlign=top align=middle ><FONT face=Calibri size=2> ' ||  xp.INSTANCE_ID ||    ' </FONT></TD>
+
+
+                      <TR>');
+    END LOOP;
+        
+---rodape
+  vtexto := vtexto || '
+                                          </tbody>
+                                          </table>
+                                          </font>
+                                          <br>
+                                          <br>
+                                          <table width=80%>
+                                          <tr>
+                                              <tr>
+                                              <td align=left>
+                                              <FONT face=Calibri size=2><B>Este é um e-mail automático.<BR>
+                                              </B></FONT><BR><BR>
+                                          </td>
+                                          </tr>
+
+
+                                           <tr>
+                                              <td align=left>
+                                              <FONT face=Calibri color=#D3D3D3 size=2> Supermercados Nagumo - Depto TI - Sistemas. </FONT>
+                                              </td>
+                                           </tr>
+
+
+                                           <tr>
+                                              <td align=left>
+                                              <FONT face=Calibri color=#D3D3D3 size=1> Desenvolvido por Giuliano | Cipolla </FONT>
+                                              </td>
+                                           </tr>
+
+
+        </table>
+
+                                            </BODY>
+                                          </HTML>';
+
+
+
+
+  vemail := 'giuliano.gomes@nagumo.com.br';
+
+  obj_param_smtp := c5_tp_param_smtp(1);
+  
+  IF vCount > 0 THEN
+  
+   sp_envia_email(obj_param      => obj_param_smtp,
+                      psDestinatario => vemail,
+                      psAssunto      => 'Report - JOB_RUN_FAILURE - '|| TO_CHAR(SYSDATE,'DD/MM/YYYY HH24:MI'),
+                      psMensagem     => vtexto,
+                      psindusahtml   => 'S',
+                      psAnexoBanco   => vdir || varq);
+                      
+   END IF;
+
+END;
+
+
