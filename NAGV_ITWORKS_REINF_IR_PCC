@@ -96,7 +96,6 @@ CREATE OR REPLACE VIEW CONSINCO.NAGV_ITWORKS_REINF_IR_PCC AS
 SELECT /*Para view por Vencto Sem Crtao - Criada por Giuliano  em 28/09/2023 - Solic Aamalia */
        /*REINF R4020 IR e PCC Sobre Notas - Chamado 268634 - Amalia Petronilio | Criado por Giuliano em 04/08/2023*/
        /*Solicitado separacao de IR e PCC por Amalia - 11/09/2023 - PCC sera retornado no segundo select*/
-       
        X.NROEMPRESA, (SELECT LPAD(MA.NROCGC,12,0)||LPAD(MA.DIGCGC,2,0) FROM CONSINCO.MAX_EMPRESA MA WHERE MA.NROEMPRESA = X.NROEMPRESA) CNPJ_EMP,
        TO_CHAR(X.DTAEMISSAO, 'DD/MM/YYYY') AS DTAEMISSAO,
        TO_CHAR(X.DTAENTRADA, 'DD/MM/YYYY') AS DTAENTRADA,
@@ -111,7 +110,8 @@ SELECT /*Para view por Vencto Sem Crtao - Criada por Giuliano  em 28/09/2023 - S
        LPAD(A.NROCGCCPF, 12, 0) || LPAD(A.DIGCGCCPF, 2, 0) AS CNPJ,
        COD.COD_NAT_REND AS COD_NAT_REND,
        X.CODHISTORICO AS NATUREZA,
-       X.VALOR AS VALOR_NF_COMISSAO,
+     --LEAST(X.VALOR,VLRBASEIR) AS VALOR_NF_COMISSAO,
+       X.VLRBASEIR AS VALOR_NF_COMISSAO,
        B.VALOR AS VALOR_PARC,
        D.VALOR AS IRRF,
        CASE WHEN D.VALOR IS NOT NULL THEN X.ALIQIR ELSE NULL END AS ALIQIR,
@@ -139,4 +139,6 @@ SELECT /*Para view por Vencto Sem Crtao - Criada por Giuliano  em 28/09/2023 - S
    AND COALESCE(ALIQPIS, ALIQCOFINS, ALIQCSSLL, X.ALIQIR) IS NOT NULL
 
  ORDER BY 6,1
+;
+
 ;
