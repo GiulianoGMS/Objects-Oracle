@@ -1,12 +1,12 @@
 CREATE OR REPLACE VIEW CONSINCO.NAGV_ITWORKS_REINF_CT_IR_PCC AS
 SELECT /*Views Unificadas - Criada por Giuliano  em 30/08/2023 - Solic Aamalia */
+       /*Retirado Cartoes (coment) - Alt RF nao sera mais necessario*/
        /*REINF R4020 IR e PCC Sobre Notas - Chamado 268634 - Amalia Petronilio | Criado por Giuliano em 04/08/2023*/
        /*Solicitado separacao de IR e PCC por Amalia - 11/09/2023 - PCC sera retornado no segundo select*/
        /*Regra Mes Ano:
                IR = Mes/Ano Entrada
                PCC = Mes/Ano Vencimento
                Cartoes = Mes/Ano Incclusao*/
-
        X.NROEMPRESA, (SELECT LPAD(MA.NROCGC,12,0)||LPAD(MA.DIGCGC,2,0) FROM CONSINCO.MAX_EMPRESA MA WHERE MA.NROEMPRESA = X.NROEMPRESA) CNPJ_EMP,
        TO_CHAR(X.DTAEMISSAO, 'DD/MM/YYYY') AS DTAEMISSAO,
        TO_CHAR(X.DTAENTRADA, 'DD/MM/YYYY') AS DTAENTRADA,
@@ -17,7 +17,8 @@ SELECT /*Views Unificadas - Criada por Giuliano  em 30/08/2023 - Solic Aamalia *
        LPAD(A.NROCGCCPF, 12, 0) || LPAD(A.DIGCGCCPF, 2, 0) AS CNPJ,
        COD.COD_NAT_REND AS COD_NAT_REND,
        X.CODHISTORICO AS NATUREZA,
-       X.VALOR AS VALOR_NF_COMISSAO,
+     --LEAST(X.VALOR,VLRBASEIR) AS VALOR_NF_COMISSAO,
+       X.VLRBASEIR AS VALOR_NF_COMISSAO,
        B.VALOR AS VALOR_PARC,
        D.VALOR AS IRRF,
        CASE WHEN D.VALOR IS NOT NULL THEN X.ALIQIR ELSE NULL END AS ALIQIR,
@@ -58,7 +59,8 @@ SELECT X.NROEMPRESA, (SELECT LPAD(MA.NROCGC,12,0)||LPAD(MA.DIGCGC,2,0) FROM CONS
        LPAD(A.NROCGCCPF, 12, 0) || LPAD(A.DIGCGCCPF, 2, 0) AS CNPJ,
        COD.COD_NAT_REND AS COD_NAT_REND,
        X.CODHISTORICO AS NATUREZA,
-       X.VALOR AS VALOR_NF_COMISSAO,
+     --LEAST(X.VALOR,VLRBASEIR) AS VALOR_NF_COMISSAO,
+       X.VLRBASEIR AS VALOR_NF_COMISSAO,
        B.VALOR AS VALOR_PARC,
        NULL AS IRRF,
        NULL ALIQIR,
@@ -87,9 +89,11 @@ SELECT X.NROEMPRESA, (SELECT LPAD(MA.NROCGC,12,0)||LPAD(MA.DIGCGC,2,0) FROM CONS
  WHERE 1=1
    AND COALESCE(ALIQPIS, ALIQCOFINS, ALIQCSSLL) IS NOT NULL
 
+/*  Retirado Cartoes - Alteracao da RF nao sera mais necessario*/
+/*
 UNION ALL
 
-SELECT /*Adm. de Cartões - Chamado 268630 - Amalia Petronilio | Criado por Giuliano em 07/08/2023*/
+SELECT --Adm. de Cartões - Chamado 268630 - Amalia Petronilio | Criado por Giuliano em 07/08/2023
        X.NROEMPRESA, (SELECT LPAD(MA.NROCGC,12,0)||LPAD(MA.DIGCGC,2,0) FROM CONSINCO.MAX_EMPRESA MA WHERE MA.NROEMPRESA = X.NROEMPRESA) CNPJ_EMP,
        TO_CHAR(X.DTAEMISSAO, 'DD/MM/YYYY')  AS DTAEMISSAO,
        TO_CHAR(X.DTAINCLUSAO, 'DD/MM/YYYY') AS DTAENTRADA,
@@ -133,6 +137,6 @@ SELECT /*Adm. de Cartões - Chamado 268630 - Amalia Petronilio | Criado por Giul
        TO_CHAR(X.DTAINCLUSAO, 'YYYY'),
        TO_CHAR(X.DTAALTERACAO, 'DD/MM/YYYY'),
        B.NOMERAZAO , LPAD(B.NROCGCCPF,12,0)||LPAD(B.DIGCGCCPF,2,0)
-
+*/
  ORDER BY 6,1
 ;
