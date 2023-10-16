@@ -13,8 +13,8 @@ BEGIN
 
                    WHERE 1=1
                 AND (TRUNC(SYSDATE) = D.DATA_VALIDA - 7 OR TRUNC(SYSDATE) = D.DATA_VALIDA - 
-                                    (CASE WHEN TO_CHAR(D.DATA_VALIDA - 1, 'DAY') = 'MONDAY' THEN 3
-                                                                                            ELSE 1 END))
+                                    (CASE WHEN TRIM(TO_CHAR(D.DATA_VALIDA - 1, 'DAY')) = 'MONDAY' THEN 3
+                                                                                                  ELSE 1 END))
                 AND D.DIASCONFIG > 7 )
  LOOP
    BEGIN
