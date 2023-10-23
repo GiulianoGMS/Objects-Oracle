@@ -1,0 +1,22 @@
+CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_CARGA_PRECO_ECOMM_MANUAL (psNroEmpresa IN VARCHAR2)
+
+   IS
+
+   BEGIN
+
+     FOR dados IN (SELECT NROSEGMENTO, NROEMPRESA FROM CONSINCO.NAGV_EMPSEG_ECOMMERCE A
+                 WHERE 1=1
+                   AND A.NROEMPRESA IN (SELECT * FROM TABLE(CONSINCO.FC5_STRTOKENIZE(psNroEmpresa, ',')))
+                 )
+     LOOP
+
+             --Gerando promocao
+             CONSINCO.pkg_mad_admpreco.SP_GeraPromocao(dados.Nrosegmento, dados.Nroempresa, trunc(sysdate), 'AUTOMATICO');
+             --Validando precos
+             CONSINCO.pkg_mad_admpreco.SP_ValidaPreco (dados.Nrosegmento, dados.Nroempresa, 'AUTOMATICO', 'T');
+     COMMIT;
+       
+     END LOOP;
+
+END ;
+
