@@ -9,7 +9,7 @@ BEGIN
     INTO vsHora, vsMin
     FROM DUAL;
 
-  IF vsHora IN ('01', '09', '13') OR vsHora = '18' AND vsMin = '30'
+  IF vsHora IN ('01', '09', '13') AND vsMin = '00' OR vsHora = '18' AND vsMin = '30'
 
     THEN
 
