@@ -1,0 +1,44 @@
+CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_ANTECIPACAOPROMOC (
+    vsSeqPromocao IN NUMBER,
+    vsNovaDataIni IN DATE
+) AS
+   vsOldDataIni DATE;
+   vsOldDataFim DATE;
+   
+BEGIN
+
+   SELECT MAX(DTAINICIOPROM)
+     INTO vsOldDataIni
+     FROM CONSINCO.MRL_PROMOCAOITEM X
+    WHERE X.SEQPROMOCAO = vsSeqPromocao;
+
+   SELECT MAX(DTAFIMPROM)
+     INTO vsOldDataFim
+     FROM CONSINCO.MRL_PROMOCAOITEM X
+    WHERE X.SEQPROMOCAO = vsSeqPromocao;
+
+  IF vsOldDataIni > vsNovaDataIni
+ AND vsOldDataFim < vsNovaDataIni
+
+ THEN
+
+    UPDATE CONSINCO.MRL_PROMOCAOITEM PI
+       SET PI.DTAINICIOPROM = vsNovaDataIni,
+           PI.USUALTERACAO = 'GIGOMES',
+           PI.DTAHORAALTERACAO = SYSDATE
+     WHERE SEQPROMOCAO = vsSeqPromocao;
+    COMMIT;
+
+    UPDATE CONSINCO.MRL_PROMOCAO P
+       SET P.DTAINICIO          = vsNovaDataIni,
+           P.INDGEROUREPLICACAO = NULL,
+           P.INDREPLICACAO      = 'S',
+           P.USUALTERACAO       = 'GIGOMES',
+           P.DTAHORAALTERACAO   = SYSDATE
+     WHERE P.SEQPROMOCAO = vsSeqPromocao
+       AND P.CENTRALLOJA = 'M';
+    COMMIT;
+
+  END IF;
+
+END;
