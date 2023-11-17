@@ -1,0 +1,83 @@
+CREATE OR REPLACE VIEW CONSINCO.NAGV_LOTESAGERAR_SPMAC AS
+
+ select trunc(case when a.periodomedvda = 'Últimos N Dias' then
+                                 sysdate - a.qtdmedvda
+                            when a.periodomedvda = 'Últimas N Semanas' then
+                                 sysdate - (a.qtdmedvda * 7)
+                            when a.periodomedvda = 'Últimos N Meses' then
+                                 sysdate - (a.qtdmedvda * 30)
+                            when a.periodomedvda = 'Próximos N meses do ano anterior'   or
+                                 a.periodomedvda = 'Próximas N semanas do ano anterior' or
+                                 a.periodomedvda = 'Próximos N dias do ano anterior'    then
+                                 to_date(
+                                          to_char(to_date(sysdate), 'YYYY') - 1
+                                          ||
+                                          to_char(to_date(sysdate), 'mm')
+                                          ||
+                                          to_char(to_date(sysdate), 'DD') + 1
+                                 , 'YYYY-mm-DD')
+                            when a.periodomedvda = 'Mês em curso do ano anterior' then
+                                 to_date(
+                                         to_char(to_date(sysdate), 'YYYY') - 1
+                                         ||
+                                         to_char(to_date(sysdate), 'mm')
+                                         ||
+                                         to_char('01')
+                                 , 'YYYY-mm-DD')
+                            when a.periodomedvda = 'Período Personalizado' then
+                                 sysdate - (1 + (a.dtafinalmedvda - a.dtainiciomedvda))
+                            when a.periodomedvda = 'Média Geral Atual' then
+                                (sysdate  - a.qtdmedvda)
+                     end) dtainiciomedvdacalc,
+              a.*
+        from mac_gercompra a
+        where a.tipolote = 'M'
+        and nvl(a.status,'A') = 'A'
+        and nvl(a.situacaolote,'A') != 'C'
+        and a.seqgercompra = nvl( NULL, a.seqgercompra)
+        --caso consiste o status do fornecedor, será gerado lotes apenas para fornecedores ativos
+        and ( ( ('S' = 'S' or 'S' = 'D') and
+                exists ( select 1
+                           from mac_gercompraforn cf, maf_fornecedor f
+                          where cf.seqgercompra = a.seqgercompra
+                            and f.seqfornecedor = cf.seqfornecedor
+                            and f.statusgeral = 'A' ) ) or
+                ( 'S' = 'N' ) or
+                ( 'S' = 'D' and
+                  exists ( SELECT 1
+                            FROM Mac_Gercompraforn Cf, Maf_Fornecdivisao f, Max_Empresa e,
+                                 Mac_Gercompraemp Ge
+                           WHERE Cf.Seqgercompra = a.seqgercompra
+                             AND f.Nrodivisao = e.Nrodivisao
+                             AND Cf.Seqfornecedor = f.Seqfornecedor
+                             AND e.Nroempresa = Ge.Nroempresa
+                             AND Ge.Seqgercompra = Cf.Seqgercompra
+                             AND f.Statusgeral = 'A'
+                             AND e.Status = 'A' ) ))
+         -- trata interrupcao do job devido ao commit RC 123376
+        And ('N' = 'S' Or
+             Not Exists (Select 1
+                         From   mac_gercompra x
+                         Where  x.Seqgermodelocompra = a.Seqgercompra
+                         And    trunc(x.Dtahorinclusao) = trunc(SYSDATE)))
+        --
+        and exists (select 1
+            from maf_fornecagenda b, mac_gercompraforn c, mac_gercompraemp d, max_empresa e
+            where b.seqfornecedor = c.seqfornecedor
+            and   c.seqgercompra = a.seqgercompra
+            and   b.dtavisita = trunc(SYSDATE)
+            and   b.seqcomprador = a.seqcomprador
+            and   d.seqgercompra = a.seqgercompra
+            and   d.nroempresa = e.nroempresa
+            and   e.nrodivisao = b.nrodivisao
+            and   nvl(b.nroempresa,d.nroempresa) = d.nroempresa
+            and   a.tipomodelocompra = 'A'
+            and   e.status = 'A'
+            union
+            select 1
+            from dual
+            where a.tipomodelocompra = 'D'
+            and (decode(to_char(SYSDATE,'D'),1,a.agendadomingo,2,a.agendasegunda,3,a.agendaterca,4,a.agendaquarta,5,
+                a.agendaquinta,6,a.agendasexta,a.agendasabado) = 'S') );
+   
+SELECT * FROM CONSINCO.NAGV_LOTESAGERAR_SPMAC
