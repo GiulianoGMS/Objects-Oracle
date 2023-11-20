@@ -641,8 +641,8 @@ N - NÃO ATUALIZA LOTE (TRATAMENTO PADRÃO DO SISTEMA)');
       NROCONDPAGTOTRANSF, INDDIASESPECIFMEDVDA, TIPOLIMRECEBTOEM, INDCOTACAOFLV )
         values( vnSeqGerCompra, t.seqcomprador,
                 t.descritivo, 'G',
-                sysdate, 'JOBGERALOTECOMP',
-                sysdate, 'JOBGERALOTECOMP',
+                sysdate, 'JOBGERALOTE',
+                sysdate, 'JOBGERALOTE',
                 'S', null,
                 t.tipoabastecate, vnQtdAbastecAte,
                 vdDtaAbastecAte, t.periodomedvda,
