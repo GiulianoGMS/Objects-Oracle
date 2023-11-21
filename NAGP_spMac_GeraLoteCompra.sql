@@ -417,7 +417,8 @@ N - NÃO ATUALIZA LOTE (TRATAMENTO PADRÃO DO SISTEMA)');
              Not Exists (Select 1
                          From   mac_gercompra x
                          Where  x.Seqgermodelocompra = a.Seqgercompra
-                         And    trunc(x.Dtahorinclusao) = trunc(pdDtaInclusao)))
+                         And    trunc(x.Dtahorinclusao) = trunc(pdDtaInclusao)
+                         AND X.SITUACAOLOTE != 'C'))
         --
        /* and exists (select 1
             from maf_fornecagenda b, mac_gercompraforn c, mac_gercompraemp d, max_empresa e
