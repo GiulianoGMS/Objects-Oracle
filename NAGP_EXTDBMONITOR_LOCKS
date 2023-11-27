@@ -1,0 +1,58 @@
+CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EXTDBMONITOR_LOCKS as
+
+    -- Exemplo de extração de dados e escrita em um arquivo txt
+
+   v_file UTL_FILE.file_type;
+   v_output VARCHAR2(4000); -- Tamanho máximo de uma linha no arquivo de texto
+
+BEGIN
+   -- Abre o arquivo para gravação (altere o caminho e o nome do arquivo conforme necessário)
+   v_file := UTL_FILE.fopen('/u02/app_acfs/arquivos/AdmGi - Data', 'dbdata_locks.TXT', 'w');
+
+   -- Consulta os dados que você deseja extrair
+   FOR rec IN (SELECT Z.SO,
+       Z.SID,
+       Z.SERIAL#,
+       Z.DURACAO,
+       Z.INST_ID,
+       Z.AMBIENTE,
+       Z.SID_LOCKED,
+       Z.LOCKING_INFO,
+       Z.STATUS,
+       Z.OSUSER,
+       Z.MACHINE,
+       Z.PROGRAMA,
+       Z.OBJETO,
+       Z.LOGON_TIME,
+       Z.MIN_ACTIVE FROM CONSINCO.NAGV_LOCKS Z) LOOP
+      -- Constrói a linha de texto a ser gravada no arquivo (ajuste conforme necessário)
+      v_output := rec.SO||';'||
+                  rec.SID||';'||
+                  rec.SERIAL#||';'||
+                  rec.DURACAO||';'||
+                  rec.INST_ID||';'||
+                  rec.AMBIENTE||';'||
+                  rec.SID_LOCKED||';'||
+                  rec.LOCKING_INFO||';'||
+                  rec.STATUS||';'||
+                  rec.OSUSER||';'||
+                  rec.MACHINE||';'||
+                  rec.PROGRAMA||';'||
+                  rec.OBJETO||';'||
+                  rec.LOGON_TIME||';'||
+                  rec.MIN_ACTIVE;
+
+      -- Escreve a linha no arquivo
+      UTL_FILE.put_line(v_file, v_output);
+   END LOOP;
+
+   -- Fecha o arquivo
+   UTL_FILE.fclose(v_file);
+EXCEPTION
+  WHEN OTHERS THEN
+
+      DBMS_OUTPUT.put_line('Erro: ' || SQLERRM);
+      IF UTL_FILE.is_open(v_file) THEN
+         UTL_FILE.fclose(v_file);
+      END IF;
+END;
