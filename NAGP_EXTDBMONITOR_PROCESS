@@ -1,0 +1,36 @@
+CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EXTDBMONITOR_PROCESS as
+
+   v_file UTL_FILE.file_type;
+   v_output VARCHAR2(4000); 
+   
+BEGIN
+   -- Remove o arquivo anterior
+   UTL_FILE.fremove('/u02/app_acfs/arquivos/AdmGi - Data', 'dbdata_sessions.TXT');
+   
+   -- Abre o arquivo para gravacao
+   v_file := UTL_FILE.fopen('/u02/app_acfs/arquivos/AdmGi - Data', 'process.TXT', 'w');
+
+   -- Dados para extracao
+   FOR rec IN (SELECT SID, 
+                  SESSION_TIME, 
+                  USUARIO_OS, 
+                  NVL(CLIENT_IDENTIFIER,USUARIO_OS) CLIENT,
+                  JOB_NAME
+                  FROM CONSINCO.NAGV_DBMONITOR X) LOOP
+      -- Constroi a linha de texto a ser gravada no arquivo
+      v_output := rec.SID||';'||rec.SESSION_TIME||';'||rec.USUARIO_OS||';'||rec.CLIENT||';'||rec.JOB_NAME;
+
+      -- Escreve a linha no arquivo
+      UTL_FILE.put_line(v_file, v_output);
+   END LOOP;
+
+   -- Fecha o arquivo
+   UTL_FILE.fclose(v_file);
+EXCEPTION
+  WHEN OTHERS THEN
+
+      DBMS_OUTPUT.put_line('Erro: ' || SQLERRM);
+      IF UTL_FILE.is_open(v_file) THEN
+         UTL_FILE.fclose(v_file);
+      END IF;
+END;
