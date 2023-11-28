@@ -1,0 +1,20 @@
+CREATE OR REPLACE FUNCTION CONSINCO.NAGF_INICIOPROMETIQUETA (pNroempresa  NUMBER,
+                                                             pSeqproduto  NUMBER,
+                                                             pPrecoPromoc NUMBER)
+  RETURN DATE IS
+  vsDataIni DATE;
+
+BEGIN  
+
+SELECT MAX(XX.DTAINICIOPROM)
+  INTO vsDataIni
+  FROM CONSINCO.MRL_PROMOCAOITEM XX
+
+ WHERE XX.SEQPRODUTO = pSeqproduto
+   AND XX.NROEMPRESA = pNroempresa
+   AND TRUNC(SYSDATE) BETWEEN XX.DTAINICIOPROM AND XX.DTAFIMPROM
+   AND PRECOPROMOCIONAL = pPrecoPromoc;
+
+   RETURN vsDataIni;
+   
+   END;
