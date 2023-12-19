@@ -79,26 +79,18 @@ begin
                              psMensagem     => 'Erro ao gerar a carga TOTAL da balança da empresa: ' || to_char(i.nroempresa),
                              psindusahtml   => 'N');
             END;
-          ELSE
+          ELSE -- Parcial
             BEGIN
-
-               FOR i2 IN (SELECT * FROM MAX_EMPRESA A
-               WHERE A.STATUS = 'A'
-               AND  MOD(A.NROEMPRESA,5) = PNMODEMPRESA
-               AND  NROEMPRESA < 500
-               ORDER BY 1)
-
-               LOOP
-                ESPP_CPT_GERACARGATOLETO(i2.NROEMPRESA,SYSDATE, 'N');
-               END LOOP;
-                COMMIT;
+              ESPP_CPT_GERACARGATOLETO(i.NROEMPRESA,SYSDATE, 'N');
+               COMMIT;                
+                
               exception
 
             when others then
 
               sp_envia_email(obj_param      => obj_param_smtp,
                              psDestinatario => 'giuliano.gomes@nagumo.com.br',
-                             psAssunto      => 'Erro ao gerar a carga PARCIAL da balança da empresa: ' || to_char(i.nroempresa),
+                             psAssunto      => 'Erro ao gerar a carga PARCIAL da balança da empresa: ' || to_char(i.NROEMPRESA),
                              psMensagem     => 'Erro ao gerar a carga PARCIAL da balança da empresa: ' || to_char(i.nroempresa),
                              psindusahtml   => 'N');
              END;
