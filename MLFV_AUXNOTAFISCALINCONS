@@ -187,6 +187,7 @@ SELECT distinct (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
 
  union all
 
+/* Crítica abaixo será tratada pelas novas 74 e 75
 
  -- Critica solicitada pelo Juan para não permitir entrada de produtos de uso e consumo que não sejam no CGO 02 08/09/2021 Cipolla
  --- Solicitação do Juan 06/09/2021
@@ -209,7 +210,7 @@ SELECT distinct (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
 --  and a.nroempresa = 14
 
 union all
-
+*/
  --- Critica solicitada pela Daniele do Fiscal - Ticket 97671 - Criado por Cipolla em 14/11/2022
 	 --- Essa view vai tratar apenas as consistencias de Pis e Cofins quando CGO for de entrada comum, bonificações estão sendo tratadas na view abaixo..
  SELECT  /*+optimizer_features_enable('11.2.0.4') */
@@ -319,7 +320,7 @@ SELECT DISTINCT(X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
 
    AND MP.PZOPAGAMENTO IS NOT NULL
    AND X.NUMERONF != 0
-	 AND X.SEQPESSOA NOT IN (120186, 117952, 116561) --- Não Criticar Fornecedores Unilever e Colgate Chamado 321883 - Solicitação Thaise e Miriam
+	 AND X.SEQPESSOA NOT IN (120186, 117952, 116561,1907856) --- Não Criticar Fornecedores Unilever e Colgate Chamado 321883 - Solicitação Thaise e Miriam + 1907856 EX
    AND MP.TIPPEDIDOSUPRIM NOT IN ('X','T')
 
 UNION ALL -- Trava para barrar entrada com CGO 200/900 e CST <> 000,020,040 - 01/02/2023 - Giuliano - Solic Danielle - Ticket 175967
@@ -593,18 +594,20 @@ UNION ALL
 
 -- Ticket 324275 - Solic Simone - Adicionado em 04/12/2023 por Giuliano
 -- Barra CEST NULO / CEST ou NCM divergente do cad no sistema
--- Retirado validacao do NCM
+-- Retirado validacao do NCM Temporariamente
 
-SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, 
+SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 A.NUMERONF,
                 A.NROEMPRESA,
                 0   AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 73  AS CODINCONSISTENC,
-                CASE WHEN L.CODCEST IS NULL                                                                    THEN 'Cod. CEST do produto '||B.SEQPRODUTO||' no XML está NULO - Abrir chamado para do Departamento Fiscal'
+                CASE WHEN L.CODCEST IS NULL                                                                    THEN 'Cod. CEST do produto '||
+                  B.SEQPRODUTO||' no XML está NULO - Abrir chamado para do Departamento Fiscal - CEST XML: '||NVL(TO_CHAR(L.CODCEST), 'NULO')||' - C5: '||E.CODCEST
                     -- WHEN NVL(L.CODCEST,0) != NVL(E.CODCEST,0) AND NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0)   THEN 'Codigo CEST e NCM do produto '||B.SEQPRODUTO||' no  XML estão divergentes do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributário'
-                     WHEN NVL(L.CODCEST,0) != NVL(E.CODCEST,0) /*AND NVL(L.M014_CD_NCM,0)  = NVL(CODNBMSH,0) */THEN 'Codigo CEST do produto '||B.SEQPRODUTO||' está divergente do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributário'
-                    -- WHEN NVL(L.CODCEST,0)  = NVL(E.CODCEST,0) AND NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0)   THEN 'Codigo NCM do produto '||B.SEQPRODUTO||' está divergente do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributário' 
+                     WHEN NVL(L.CODCEST,0) != NVL(E.CODCEST,0) /*AND NVL(L.M014_CD_NCM,0)  = NVL(CODNBMSH,0) */THEN 'Cod. CEST do produto '||
+                  B.SEQPRODUTO||' está divergente do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributário - CEST XML: '||L.CODCEST||' - C5: '||E.CODCEST
+                    -- WHEN NVL(L.CODCEST,0)  = NVL(E.CODCEST,0) AND NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0)   THEN 'Codigo NCM do produto '||B.SEQPRODUTO||' está divergente do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributário'
                        END AS MENSAGEM
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
@@ -614,9 +617,52 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                                     INNER JOIN TMP_M000_NF K ON (K.M000_NR_CHAVE_ACESSO = A.NFECHAVEACESSO)
                                     INNER JOIN TMP_M014_ITEM L ON (L.M000_ID_NF = K.M000_ID_NF AND L.M014_NR_ITEM = B.SEQITEMNFXML)
 
-WHERE A.CODGERALOPER = 1 
-  AND RPAD(L.M014_DM_TRIB_ICMS,3,0) IN (100,700,600,200,500)
-  AND A.NROEMPRESA = 501 -- Inicialmente apenas CD
+WHERE A.CODGERALOPER = 1
+  AND L.M014_DM_TRIB_ICMS IN (1,7,8,19,23) -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra Barra CST 10 70 60 202 e 500, respectivamente na clausula
+  -- AND A.NROEMPRESA = 501 -- Inicialmente apenas CD
   AND (NVL(L.CODCEST,0) != NVL(E.CODCEST,0))-- OR NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0))
 
+UNION ALL
+
+-- Ticket 325855 - Solic Dublia - Adicionado em 05/12/2023 por Giuliano
+-- Tratativa Uso/Cons da regra 58 - Trataamento entre Fornecedores e Grupo - Por Razao
+
+SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                A.NUMERONF,
+                A.NROEMPRESA,
+                B.SEQAUXNFITEM AS SEQAUXNFITEM,
+                'L' AS BLOQAUTOR,
+                74 AS CODINCONSISTENC,
+                'Item ' || B.SEQPRODUTO || ' está cadastrado com a Finalidade "Material de Uso e Consumo", portanto, só poderá ser lançado no CGO 02 (Fornec)' AS  MENSAGEM
+  FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON (A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL )
+                                    INNER JOIN CONSINCO.MAP_PRODUTO C ON (C.SEQPRODUTO = B.SEQPRODUTO)
+                                    INNER JOIN CONSINCO.MAP_FAMDIVISAO E ON (E.SEQFAMILIA = C.SEQFAMILIA)
+  WHERE E.FINALIDADEFAMILIA = 'U'
+  AND   A.CODGERALOPER != 2
+  AND   A.SEQPESSOA > 999 -- Fornecedores fora Emp Grupo
+  AND A.NROEMPRESA != 506
+  AND A.CODGERALOPER NOT IN (14,652,128)
+
+ UNION ALL
+
+SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                A.NUMERONF,
+                A.NROEMPRESA,
+                B.SEQAUXNFITEM AS SEQAUXNFITEM,
+                'L' AS BLOQAUTOR,
+                75 AS CODINCONSISTENC,
+                CASE WHEN A.CODGERALOPER = 59 AND (SELECT NAGF_BUSCACGCEMP(A.SEQPESSOA) FROM DUAL)  = (SELECT NAGF_BUSCACGCEMP(A.NROEMPRESA) FROM DUAL)
+                  THEN 'Item ' || B.SEQPRODUTO || ' está cadastrado com a Finalidade "Material de Uso e Consumo", portanto, só poderá ser lançado no CGO 61 (Mesma Razão)'
+                     WHEN A.CODGERALOPER = 61 AND (SELECT NAGF_BUSCACGCEMP(A.SEQPESSOA) FROM DUAL) != (SELECT NAGF_BUSCACGCEMP(A.NROEMPRESA) FROM DUAL)
+                  THEN 'Item ' || B.SEQPRODUTO || ' está cadastrado com a Finalidade "Material de Uso e Consumo", portanto, só poderá ser lançado no CGO 59 (Razão Diferente)' END
+                 MENSAGEM
+  FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON (A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL )
+                                    INNER JOIN CONSINCO.MAP_PRODUTO C ON (C.SEQPRODUTO = B.SEQPRODUTO)
+                                    INNER JOIN CONSINCO.MAP_FAMDIVISAO E ON (E.SEQFAMILIA = C.SEQFAMILIA)
+  WHERE E.FINALIDADEFAMILIA = 'U'
+  AND  (A.CODGERALOPER = 59 AND (SELECT NAGF_BUSCACGCEMP(A.SEQPESSOA) FROM DUAL)  = (SELECT NAGF_BUSCACGCEMP(A.NROEMPRESA) FROM DUAL)  -- 59 e Mesma Razao
+    OR  A.CODGERALOPER = 61 AND (SELECT NAGF_BUSCACGCEMP(A.SEQPESSOA) FROM DUAL) != (SELECT NAGF_BUSCACGCEMP(A.NROEMPRESA) FROM DUAL)) -- 61 e Mesma Razao
+  AND   A.SEQPESSOA < 999
+  AND A.NROEMPRESA != 506
+  AND A.CODGERALOPER NOT IN (14,652)
 ;
