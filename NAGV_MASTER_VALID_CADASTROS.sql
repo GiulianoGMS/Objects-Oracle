@@ -1,6 +1,6 @@
 CREATE OR REPLACE VIEW CONSINCO.NAGV_MASTER_VALID_CADASTROS AS 
-
--- Master Cadastros
+-- Criado por Giuliano - 05/01/2024 | Tkt 340887
+-- Master Cadastros | Reune validação de outras views em uma única query
 
 SELECT SEQPRODUTO PLU, SEQFAMILIA COD_FAMILIA, DESCCOMPLETA DESC_PRODUTO, 
        'Inconsistência(s): '||INC1||
@@ -30,7 +30,7 @@ SELECT SEQPRODUTO, SEQFAMILIA, DESCCOMPLETA,
            OR F.SITUACAONFIPISAI IS NULL
            OR F.SITUACAONFCOFINSSAI IS NULL)
           )
-       THEN 'Sem NCM e CST PIS/COFINS'             END INC2,
+       THEN 'Sem NCM e CST PIS/COFINS'               END INC2,
        -- Prod sem EAN com fleg 'EAN TRIB DANFE'
        CASE WHEN EXISTS (
          SELECT 1 FROM MAP_PRODCODIGO X
