@@ -1,5 +1,5 @@
 CREATE OR REPLACE PROCEDURE NAGP_EXCLUI_NF_CANCELADA_SEFAZ AS
-   -- Criado por Giuliano em 05/01/2024
+   -- Criado por Giuliano em 05/01/2024 - Tkt 339919
    -- Exclui notas canecladas pela Sefaz que estão na Primeira e Segunda Tela
       psSeqAuxNF NUMBER;
       
