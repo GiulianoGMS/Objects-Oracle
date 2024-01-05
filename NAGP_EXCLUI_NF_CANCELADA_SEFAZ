@@ -1,15 +1,16 @@
 CREATE OR REPLACE PROCEDURE NAGP_EXCLUI_NF_CANCELADA_SEFAZ AS
    -- Criado por Giuliano em 05/01/2024
-   -- Exclui notas canecladas pela Sefaz
+   -- Exclui notas canecladas pela Sefaz que estão na Primeira e Segunda Tela
       psSeqAuxNF NUMBER;
       
   BEGIN
         FOR t IN (SELECT A.CHAVEACESSO, SEQNOTAFISCAL, INSTR(SEQNOTAFISCAL,1) SEQUENCIAL,
                  (SELECT SEQAUXNOTAFISCAL FROM MLF_AUXNOTAFISCAL AUX WHERE AUX.NFECHAVEACESSO = A.CHAVEACESSO) SeqAuxNotaFiscal
-                    FROM MRLV_NFEIMPORTACAO A, MRL_NFEIMPORT_CANCREJ B
-                   WHERE A.DTAENTRADASAIDA > SYSDATE - 20
-                     AND A.CHAVEACESSO   = B.NFECHAVEACESSO
-                     AND B.INDCANCELREJEICAO = 'C')
+                    FROM MRLV_NFEIMPORTACAO A INNER JOIN MRL_NFEIMPORT_CANCREJ B ON A.CHAVEACESSO = B.NFECHAVEACESSO
+                                               LEFT JOIN TMP_M000_NF I           ON I.M000_NR_CHAVE_ACESSO = A.CHAVEACESSO
+                   WHERE 1=1
+                     AND B.INDCANCELREJEICAO = 'C'
+                     AND I.M000_DT_EMISSAO > SYSDATE - 20)
           
   LOOP
    BEGIN
