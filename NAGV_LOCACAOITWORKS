@@ -9,6 +9,8 @@ SELECT (SELECT LPAD(GE.NROCGC,12,0)||LPAD(GE.DIGCGC,2,0)       FROM CONSINCO.GE_
      -- Agrupa as NFs por Nro Requisição para pegar a data mais recente de alteração dentre as
      -- notas no grupo de requisições e retorna a data mais recente para todas elas
        --(SELECT MAX(X.DTAALTERACAO) FROM CONSINCO.OR_NFDESPESA X WHERE X.REQUISICOES = O.REQUISICOES) DTA_ALTERACAO
+     -- Ticket 341382 | Solic Silene | Alterado por Giuliano em 07/01/2024 - Agrupa nronotas e traz na coluna
+        LISTAGG(O.NRONOTA, ',') WITHIN GROUP (ORDER BY NRONOTA) NOTAS,
      -- Ticket 205255 | Solic Silene | Alterado por Giuliano 27/04/2023
        (SELECT MAX(X.DTAALTERACAO) FROM CONSINCO.OR_NFDESPESA X WHERE X.SEQPESSOA = O.SEQPESSOA AND X.DTAENTRADA = O.DTAENTRADA) DTA_ALTERACAO
 
