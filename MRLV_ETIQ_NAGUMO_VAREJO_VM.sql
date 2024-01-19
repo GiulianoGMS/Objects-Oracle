@@ -60,7 +60,7 @@ select  /*+optimizer_features_enable('11.2.0.4') */  d.marca, a."NROEMPRESA",a."
 
        -- Final Preco Meu Nagumo
        ELSE
-                                              CHR(13) || CHR(10) || 
+                                             CHR(13) || CHR(10) || 
         '^FO90,115^GB150,4,4^FS'          || CHR(13) || CHR(10) ||-- RISCO
         '^FO050,170^BY2.4^BEN,25,Y,N^FD'||A.CODACESSOPADRAO||'^FS'|| CHR(13) || CHR(10) ||
         '^FO50,20^A0N,40,40^FD'||SUBSTR(A.DESCCOMPLETA,0,40) ||' '||CASE WHEN J.QTDEMBALAGEM > 1 THEN J.EMBALAGEM ELSE NULL END||'^FS' || CHR(13) || CHR(10) ||
@@ -77,11 +77,11 @@ select  /*+optimizer_features_enable('11.2.0.4') */  d.marca, a."NROEMPRESA",a."
                                 DECODE(SIGN(J.PRECOGERPROMOC),+1,
                                 TRANSLATE(TO_CHAR(ROUND((J.PRECOGERPROMOC/(J.MULTEQPEMB*1000))*1000 ,2),'FM9990.00'), '.', ','),
                                 TRANSLATE(TO_CHAR(ROUND((J.PRECOGERNORMAL/(J.MULTEQPEMB*1000))*1000 ,2),'FM9990.00'), '.', ','))END )||'^FS' || CHR(13) || CHR(10) ||
-        '^FO690,85^A0N,090,40^FD  ^FS'|| CHR(13) || CHR(10) ||
-        '^FO50,95^A0N,25,25^FDR$^FS'|| CHR(13) || CHR(10) ||
-        '^FO51,125^A0N,20,20^FDDE^FS'|| CHR(13) || CHR(10) ||
+        '^FO690,85^A0N,090,40^FD  ^FS'    || CHR(13) || CHR(10) ||
+        '^FO50,95^A0N,25,25^FDR$^FS'      || CHR(13) || CHR(10) ||
+        '^FO51,125^A0N,20,20^FDDE^FS'     || CHR(13) || CHR(10) ||
         '^FO70,92^A0N,60,60^FD'||LPAD(TRUNC(H.PRECOVALIDNORMAL), 4, ' ' ) || ',' || LPAD((H.PRECOVALIDNORMAL - TRUNC(H.PRECOVALIDNORMAL)) * 100, 2, '0')|| '^FS' || CHR(13) || CHR(10) || -- PRECO NORMAL
-        '^FO260,60^GB230,180,1^FS'|| CHR(13) || CHR(10) ||
+        '^FO260,60^GB230,180,1^FS'        || CHR(13) || CHR(10) ||
         '^FO490,60^GB300,180,100^FR^FS'
 
        END -- Final do case para meu nagumo
