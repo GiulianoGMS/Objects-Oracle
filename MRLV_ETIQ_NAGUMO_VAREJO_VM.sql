@@ -17,7 +17,7 @@ select  /*+optimizer_features_enable('11.2.0.4') */  d.marca, a."NROEMPRESA",a."
              when (nvl(h.precovalidpromoc,0) > 0) and (nvl(h.precovalidpromoc,0))  < trunc((a.precovalidnormal * a.padraoembvenda),2)
                then
        -- Alterado por Giuliano | Tratamento Preco Meu Nagumo
-       CASE WHEN CONSINCO.NAGF_PRECOMN(A.CODACESSOPADRAO,A.NROEMPRESA) > 0 -- 7896232111064
+       CASE WHEN CONSINCO.NAGF_PRECOMN(A.CODACESSOPADRAO,A.NROEMPRESA) > 0 
 
        THEN                                   CHR(13) || CHR(10) ||
         '^FO90,115^GB150,4,4^FS'           || CHR(13) || CHR(10) || -- Risco
@@ -61,7 +61,7 @@ select  /*+optimizer_features_enable('11.2.0.4') */  d.marca, a."NROEMPRESA",a."
        -- Final Preco Meu Nagumo
        ELSE
                                               CHR(13) || CHR(10) || 
-        '^FO100,115^GB150,4,4^FS'          || CHR(13) || CHR(10) ||-- RISCO
+        '^FO90,115^GB150,4,4^FS'          || CHR(13) || CHR(10) ||-- RISCO
         '^FO050,170^BY2.4^BEN,25,Y,N^FD'||A.CODACESSOPADRAO||'^FS'|| CHR(13) || CHR(10) ||
         '^FO50,20^A0N,40,40^FD'||SUBSTR(A.DESCCOMPLETA,0,40) ||' '||CASE WHEN J.QTDEMBALAGEM > 1 THEN J.EMBALAGEM ELSE NULL END||'^FS' || CHR(13) || CHR(10) ||
         '^FO50,251^A0N,20,20^FD'||TO_CHAR(SYSDATE, 'DD/MM/YY HH24:MI')||'   Produto: '||A.SEQPRODUTO||'   Val. Prom.: '||
