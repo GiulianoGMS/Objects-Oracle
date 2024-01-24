@@ -17,7 +17,7 @@ select  /*+optimizer_features_enable('11.2.0.4') */  d.marca, a."NROEMPRESA",a."
              when (nvl(h.precovalidpromoc,0) > 0) and (nvl(h.precovalidpromoc,0))  < trunc((a.precovalidnormal * a.padraoembvenda),2)
                then
        -- Alterado por Giuliano | Tratamento Preco Meu Nagumo
-       CASE WHEN CONSINCO.NAGF_PRECOMN(A.CODACESSOPADRAO,A.NROEMPRESA) > 0
+       CASE WHEN CONSINCO.NAGF_PRECOMN(A.CODACESSOPADRAO,A.NROEMPRESA) > 0 -- Se existir meu nagumo, forma oferta + meu nagumo
 
        THEN                                   CHR(13) || CHR(10) ||
         '^FO90,115^GB150,4,4^FS'           || CHR(13) || CHR(10) || -- Risco
@@ -59,7 +59,8 @@ select  /*+optimizer_features_enable('11.2.0.4') */  d.marca, a."NROEMPRESA",a."
         '^FO490,60^GB300,85,50^FR^FS'
 
        -- Final Preco Meu Nagumo
-       ELSE
+       
+       ELSE -- Oferta Normal
                                              CHR(13) || CHR(10) ||
         '^FO90,115^GB150,4,4^FS'          || CHR(13) || CHR(10) ||-- RISCO
         '^FO050,170^BY2.4^BEN,25,Y,N^FD'||A.CODACESSOPADRAO||'^FS'|| CHR(13) || CHR(10) ||
@@ -70,7 +71,12 @@ select  /*+optimizer_features_enable('11.2.0.4') */  d.marca, a."NROEMPRESA",a."
         '^FO275,120^A0N,80,60^FDOFERTA^FS'|| CHR(13) || CHR(10) ||
         '^FO490,100^A0N,30,30^FD  R$  ^FS'|| CHR(13) || CHR(10) ||
         '^FO495,76^A0N,20,20^FD  POR  ^FS'|| CHR(13) || CHR(10) ||
-        '^FO470,80^A0N,150,110^FD'||LPAD(TRUNC(H.PRECOVALIDPROMOC), 4, ' ' ) || ',' || LPAD((H.PRECOVALIDPROMOC - TRUNC(H.PRECOVALIDPROMOC)) * 100, 2, 0)||'^FS' || CHR(13) || CHR(10) || -- Promoc
+        -- Tratativa LENGTH - Tamanho Preco Promoc
+        (CASE WHEN LENGTH(H.PRECOVALIDPROMOC) > 5 
+        THEN
+        '^FO540,90^A0N,130,90^FD'||LPAD(TRUNC(H.PRECOVALIDPROMOC), 4, ' ' ) || ',' || LPAD((H.PRECOVALIDPROMOC - TRUNC(H.PRECOVALIDPROMOC)) * 100, 2, 0)||'^FS' 
+        ELSE
+        '^FO475,80^A0N,150,110^FD'||LPAD(TRUNC(H.PRECOVALIDPROMOC), 4, ' ' ) || ',' || LPAD((H.PRECOVALIDPROMOC - TRUNC(H.PRECOVALIDPROMOC)) * 100, 2, 0)||'^FS' END)|| CHR(13) || CHR(10) || -- Promoc
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,215^A0N,15,15^FDNesta Embalagem '||
                                 CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'L' when  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
@@ -84,7 +90,7 @@ select  /*+optimizer_features_enable('11.2.0.4') */  d.marca, a."NROEMPRESA",a."
         '^FO260,60^GB230,180,1^FS'        || CHR(13) || CHR(10) ||
         '^FO490,60^GB300,180,100^FR^FS'
 
-       END -- Final do case para meu nagumo
+       END 
 
 ---------------INICIO PRECO UNICO normal ou promo¿¿¿¿o for MAIOR que Normal
          when /*round (a.preco1/a.qtdembalagem1,2) = trunc((a.precoembpadrao/a.padraoembvenda),2) or*/
