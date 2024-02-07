@@ -6,17 +6,17 @@ CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EXP_ETIQUETAS_V1 (pNroEmpresa CONSINCO
 
 BEGIN
    
-   FOR t IN (SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
+   FOR t IN (SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/ DISTINCT
                     '^XA' || '^PRA^FS' || '^LH00,00^FS'|| '^BY2^FS' || '^PQ' || '1' || '^FS'|| CHR(13) || CHR(10) ||
 
                     '^FO050,170^BY2.4^BEN,25,Y,N^FD'||PC.CODACESSO||'^FS'|| CHR(13) || CHR(10) ||
-                    '^FO50,20^A0N,40,40^FD'||SUBSTR(P.DESCCOMPLETA,0,40) ||' '||CASE WHEN J.QTDEMBALAGEM > 1 THEN J.EMBALAGEM ELSE NULL END||'^FS' || CHR(13) || CHR(10) ||'^FS'||
+                    '^FO50,20^A0N,40,40^FD'||SUBSTR(J.DESCCOMPLETA,0,40) ||' '||CASE WHEN J.QTDEMBALAGEM > 1 THEN J.EMBALAGEM ELSE NULL END||'^FS' || CHR(13) || CHR(10) ||'^FS'||
 
-                    '^FO50,251^A0N,20,20^FD'||TO_CHAR(SYSDATE, 'DD/MM/YY HH24:MI')||'   Produto: '||P.SEQPRODUTO||'   Val. Prom.: '||TO_CHAR(DTINICIO, 'DD/MM/YY')||' a '||TO_CHAR(DTFIM, 'DD/MM/YY')||' - Loja: '||G.NOMEREDUZIDO||'^FS'||CHR(13) || CHR(10) ||
+                    '^FO50,251^A0N,20,20^FD'||TO_CHAR(SYSDATE, 'DD/MM/YY HH24:MI')||'   Produto: '||J.SEQPRODUTO||'   Val. Prom.: '||TO_CHAR(DTINICIO, 'DD/MM/YY')||' a '||TO_CHAR(DTFIM, 'DD/MM/YY')||' - Loja: '||G.NOMEREDUZIDO||'^FS'||CHR(13) || CHR(10) ||
 
                     '^FO275,90^A0N,35,35^FDPreco^FS'      || CHR(13) || CHR(10) ||
                     '^FO490,90^A0N,30,30^FD  R$  ^FS'     || CHR(13) || CHR(10) ||
-                    '^FO580,73^A0N,58,58^FD'||LPAD(TRUNC(H.PRECOVALIDNORMAL), 4, ' ' ) || ',' || LPAD((H.PRECOVALIDNORMAL - TRUNC(H.PRECOVALIDNORMAL)) * 100, 2, '0')|| '^FS' || CHR(13) || CHR(10) || -- PRECO NORMAL
+                    '^FO580,73^A0N,58,58^FD'||LPAD(TRUNC(J.PRECOVALIDNORMAL), 4, ' ' ) || ',' || LPAD((J.PRECOVALIDNORMAL - TRUNC(J.PRECOVALIDNORMAL)) * 100, 2, '0')|| '^FS' || CHR(13) || CHR(10) || -- PRECO NORMAL
                      (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
                     '^FO590,128^A0N,15,15^FDNesta Embalagem '||
                                                    CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'L' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
@@ -53,19 +53,17 @@ BEGIN
                     CG7HFGET0R0GFG0G1GFG3GCG0G3GEG1HFGCG0G3HFG0GFG8G7G8G7GCG3HFGCT0R0GFH0GFG3GCG0G1GCG0G7GFG8G0G1GFGEG0G7G0G7G8G3G8G0HFU0,::::::::::::::::::::::::::::::::::::::::::::::::::::^FS'
                     --FIM DA ETIQUETA
                     || CHR(13) || CHR(10) || '^XZ'
-                    || CHR(13) || CHR(10) LINHA, P.SEQPRODUTO
+                    || CHR(13) || CHR(10) LINHA, J.SEQPRODUTO
 
                     FROM REMARCAPROMOCOES@INFOPROCMSSQL X INNER JOIN CONSINCO.MAP_PRODCODIGO PC           ON LPAD(PC.CODACESSO,14,0) = X.CODIGOPRODUTO AND TIPCODIGO = 'E'
-                                                          INNER JOIN CONSINCO.MRL_PRODEMPSEG H            ON H.SEQPRODUTO = PC.SEQPRODUTO AND H.NROEMPRESA = X.CODLOJA AND H.NROSEGMENTO = 2 AND H.QTDEMBALAGEM = 1
                                                           INNER JOIN CONSINCO.MRLV_BASEETIQUETAPROD_NAG J ON J.NROEMPRESA = X.CODLOJA AND J.SEQPRODUTO = PC.SEQPRODUTO AND J.NROSEGMENTO = 2 AND J.QTDEMBALAGEM = 1
                                                           INNER JOIN CONSINCO.MAX_EMPRESA G               ON G.NROEMPRESA = J.NROEMPRESA
-                                                          INNER JOIN CONSINCO.MAP_PRODUTO P               ON P.SEQPRODUTO = PC.SEQPRODUTO
                      WHERE 1=1 
                        AND CODLOJA = pNroEmpresa
                        AND SYSDATE BETWEEN DTINICIO AND DTFIM
                        AND X.TIPODESCONTO  = 4
                        AND X.PROMOCAOLIVRE = 0
-                       AND NVL(H.PRECOVALIDPROMOC,0) = 0) 
+                       AND NVL(J.PRECOVALIDPROMOC,0) = 0 )
    LOOP        
        v_file   := UTL_FILE.fopen('/u02/app_acfs/arquivos/importacao', 'Prod_'||t.SEQPRODUTO||'.txt', 'w');
        v_output := t.LINHA;
