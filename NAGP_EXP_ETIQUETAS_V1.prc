@@ -1,6 +1,6 @@
 CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EXP_ETIQUETAS_V1 (pNroEmpresa CONSINCO.MAX_EMPRESA.NROEMPRESA%TYPE) AS
 
-   v_file UTL_FILE.file_type;
+   v_file      UTL_FILE.file_type;
    v_output    VARCHAR2(4000); 
    v_diretorio VARCHAR2(100);
 
@@ -64,6 +64,7 @@ BEGIN
                        AND X.TIPODESCONTO  = 4
                        AND X.PROMOCAOLIVRE = 0
                        AND NVL(J.PRECOVALIDPROMOC,0) = 0 )
+                       
    LOOP        
        SELECT DISTINCT S.DIRETEXPORTARQUIVO 
          INTO v_diretorio
@@ -74,10 +75,10 @@ BEGIN
        -- v_diretorio := '/arquivos/importacao'; Teste
        
        IF v_diretorio IS NOT NULL THEN
-       
+       -- Abre
        v_file   := UTL_FILE.fopen('/u02/app_acfs/'||v_diretorio, 'Prod_'||t.SEQPRODUTO||'.txt', 'w');
        v_output := t.LINHA;
-
+       -- Grava
        UTL_FILE.put_line(v_file, v_output);
        -- Fecha o arquivo
        UTL_FILE.fclose(v_file);
@@ -90,6 +91,7 @@ EXCEPTION
   WHEN OTHERS THEN
 
       DBMS_OUTPUT.put_line('Erro: ' || SQLERRM);
+      -- Garante que foi fechado
       IF UTL_FILE.is_open(v_file) THEN
          UTL_FILE.fclose(v_file);
       END IF;
