@@ -1,8 +1,8 @@
 CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EXP_ETIQUETAS_V1 (pNroEmpresa CONSINCO.MAX_EMPRESA.NROEMPRESA%TYPE) AS
 
-
    v_file UTL_FILE.file_type;
-   v_output VARCHAR2(4000); 
+   v_output    VARCHAR2(4000); 
+   v_diretorio VARCHAR2(100);
 
 BEGIN
    
@@ -65,12 +65,24 @@ BEGIN
                        AND X.PROMOCAOLIVRE = 0
                        AND NVL(J.PRECOVALIDPROMOC,0) = 0 )
    LOOP        
-       v_file   := UTL_FILE.fopen('/u02/app_acfs/arquivos/importacao', 'Prod_'||t.SEQPRODUTO||'.txt', 'w');
+       SELECT DISTINCT S.DIRETEXPORTARQUIVO 
+         INTO v_diretorio
+         FROM CONSINCO.MRL_EMPSOFTPDV S 
+        WHERE S.SOFTPDV = 'ETQGONDNORMAL_MN'
+          AND S.NROEMPRESA = pNroEmpresa;
+          
+       -- v_diretorio := '/arquivos/importacao'; Teste
+       
+       IF v_diretorio IS NOT NULL THEN
+       
+       v_file   := UTL_FILE.fopen('/u02/app_acfs/'||v_diretorio, 'Prod_'||t.SEQPRODUTO||'.txt', 'w');
        v_output := t.LINHA;
 
        UTL_FILE.put_line(v_file, v_output);
        -- Fecha o arquivo
        UTL_FILE.fclose(v_file);
+       
+       END IF;
        
    END LOOP;
    
