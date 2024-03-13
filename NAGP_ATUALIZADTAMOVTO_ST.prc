@@ -17,7 +17,9 @@ DECLARE
         FOR t IN (SELECT Y.DTAMOVIMENTO DTADOCTO, X.* 
                     FROM CONSINCO.ESP_CORAL_MOVSUPERTROCO X INNER JOIN CONSINCO.PDV_DOCTOPAGTO Y ON X.NROLOJA = Y.NROEMPRESA 
                                                                                                 AND X.NROCUPOM = Y.NRODOCUMENTO 
-                                                                                                AND Y.DTAMOVIMENTO > DATE '2024-01-01'
+                                                                                                AND Y.DTAMOVIMENTO > DATE '2024-03-01'
+                                                                                                AND X.CODOPERADOR = Y.SEQOPERADOR
+                                                                                                --AND X.FORMAPAGTO = Y.NROFORMAPAGTO
                    WHERE X.DTAMOVIMENTO IS NULL)
           
       LOOP
@@ -27,7 +29,9 @@ DECLARE
                                                   AND A.NROLOJA = T.NROLOJA
                                                   AND A.NROCUPOM = T.NROCUPOM
                                                   AND A.DTAMOVIMENTO IS NULL
-                                                  AND A.ARQUIVO = T.ARQUIVO;
+                                                  AND A.ARQUIVO = T.ARQUIVO
+                                                  AND A.FORMAPAGTO = T.FORMAPAGTO 
+                                                  AND A.CODOPERADOR = Y.SEQOPERADOR;
       IF i = 10 THEN COMMIT;
          i:= 0;
          
