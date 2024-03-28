@@ -1,21 +1,24 @@
 CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_INCONS_DDA_FIN_02 (vEmp IN NUMBER) AS
 
-  vtexto         clob;
-  vtitulo        clob;
-  vemail         long;
-  vmes           varchar2(100);
-  vtexto1        clob;
-  obj_param_smtp c5_tp_param_smtp;
-  vdir           varchar2(2000);
-  texto          sys.utl_file.file_type;
-  varq           varchar2(2000);
-  vlin           varchar2(4000);
+  vTEXTO         CLOB;
+  vTITULO        CLOB;
+  vEMAIL         LONG;
+  vMES           VARCHAR2(100);
+  vTEXTO1        CLOB;
+  OBJ_PARAM_SMTP C5_TP_PARAM_SMTP;
+  vDIR           VARCHAR2(2000);
+  TEXTO          SYS.UTL_FILE.FILE_TYPE;
+  vARQ           VARCHAR2(2000);
+  vLIN           VARCHAR2(4000);
+  vCONTINUA      VARCHAR2(20);
 
 BEGIN
 
    vtexto := '<HTML>
-          <style="color:red;">[Teste] Informativo Automático:
+          <style="color:red;">Informativo Automático:
           <p style="font-family: Roboto, sans-serif;">Segue abaixo Títulos Não Conciliados via DDA para análise:<BODY bgColor=#ffffff>
+          <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 12px; color:lightgray;">
+          **Este é um projeto em desenvolvimento, pode ser necessário correções/ajustes**<BODY bgColor=#ffffff>
 
           <TABLE width=90% cellspacing=0 cellpadding=0 >
           <TR>
@@ -53,6 +56,10 @@ BEGIN
 
     <th width="7%" bgColor=#014ba0 >
       <B><FONT face=Calibri color=white size=2>Título</FONT></B>
+    </th>
+    
+    <th width="7%" bgColor=#014ba0 >
+      <B><FONT face=Calibri color=white size=2>Vencimento C5</FONT></B>
     </th>
 
           </TR>
@@ -258,8 +265,8 @@ WHERE GE.NROEMPRESA IN(vEmp)
 ORDER BY 1,6,7) XX
 
 WHERE XX.DIVERGENCIA NOT LIKE '%Divergencia Não Identificada%' AND XX.DIVERGENCIA != 'Titulo não encontrado'
-OR XX.CNPJ_CADASTRADO LIKE '%N%'         AND XX.DIVERGENCIA != 'Titulo não encontrado'
-OR XX.CNPJ_CADASTRADO LIKE '%Bloqueado%' AND XX.DIVERGENCIA != 'Titulo não encontrado')
+   OR XX.CNPJ_CADASTRADO LIKE '%N%'         AND XX.DIVERGENCIA != 'Titulo não encontrado'
+   OR XX.CNPJ_CADASTRADO LIKE '%Bloqueado%' AND XX.DIVERGENCIA != 'Titulo não encontrado')
 
 LOOP
   
@@ -271,9 +278,13 @@ LOOP
                            <TD vAlign=top align=left   ><FONT face=Calibri size=2> ' ||  T2.FORNECEDOR ||     ' </FONT></TD>
                            <TD vAlign=top align=middle ><FONT face=Calibri size=2> ' ||  T2.DIVERGENCIA ||    ' </FONT></TD>
                            <TD vAlign=top align=middle ><FONT face=Calibri size=2> ' ||  T2.DOC_C5 ||         ' </FONT></TD>
+                           <TD vAlign=top align=middle ><FONT face=Calibri size=2> ' ||  T2.VENCIMENTO ||     ' </FONT></TD>
 
 
                  <TR>');
+                 
+    vContinua := TO_CHAR(T2.EMPRESA);
+    
     END LOOP;
     
     vtexto := vtexto ||
@@ -336,11 +347,15 @@ LOOP
 
                 </body>
                 </HTML>';
+        
+    IF vContinua IS NOT NULL THEN
     
     CONSINCO.SP_ENVIA_EMAIL(CONSINCO.C5_TP_PARAM_SMTP(1),
-    'giuliano.gomes@nagumo.com.br;simone.eguti@nagumo.com.br;marcel.cipolla@nagumo.com.br',
+    'lista.contasapagar@nagumo.com.br;giuliano.gomes@nagumo.com.br',--;simone.eguti@nagumo.com.br;marcel.cipolla@nagumo.com.br',
     'Inconsistencias DDA - Loja: '||TO_CHAR(LPAD(vEmp,3,0))|| ' - '||TO_CHAR(SYSDATE, 'DD/MM/YYYY'),
     vtexto,
     'S');
+    
+    END IF;
     
   END;
