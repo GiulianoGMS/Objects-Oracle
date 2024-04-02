@@ -19,8 +19,10 @@ BEGIN
    vtexto := '<HTML>
           <style="color:red;">Informativo Automático:
           <p style="font-family: Roboto, sans-serif;">Segue abaixo Títulos Não Conciliados via DDA para análise:<BODY bgColor=#ffffff>
-          <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 12px; color:lightgray;">
+          <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 12px; color:#8f4d4d;">
           **Este é um projeto em desenvolvimento, pode ser necessário correções/ajustes**<BODY bgColor=#ffffff>
+          <p style="font-family: Arial, Helvetica, Sans Serif; font-size: 12px; color:#8f4d4d;">
+          **Os dados no campo *Inconsistencia* são referentes aos arquivos DDA enviados pelo fornecedor, que *PODEM* ou não estar relacionados aos títulos lançados**<BODY bgColor=#ffffff>
 
           <TABLE width=90% cellspacing=0 cellpadding=0 >
           <TR>
@@ -269,7 +271,8 @@ WHERE GE.NROEMPRESA = X.EMP
    
 ) XX
 
-WHERE XX.DIVERGENCIA NOT LIKE '%Divergencia Não Identificada%' --AND XX.DIVERGENCIA != 'Titulo não encontrado'
+WHERE XX.DIVERGENCIA NOT LIKE '%Divergencia Não Identificada%' AND XX.DIVERGENCIA != 'Titulo não encontrado'
+   OR XX.DIVERGENCIA NOT LIKE '%Titulo não encontrado%'
    OR XX.CNPJ_CADASTRADO LIKE '%N%'         AND XX.DIVERGENCIA != 'Titulo não encontrado'
    OR XX.CNPJ_CADASTRADO LIKE '%Bloqueado%' AND XX.DIVERGENCIA != 'Titulo não encontrado'
    
