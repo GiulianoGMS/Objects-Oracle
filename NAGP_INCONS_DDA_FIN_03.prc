@@ -249,11 +249,15 @@ IN (0.06,0.07,0.08,0.09,0.10,0.11,0.12,0.13,0.14,0.15,-0.06,-0.07,-0.08,-0.09,-0
 OR REPLACE(GE.NOMERAZAO, '.',' ') LIKE ('%'||DDA2.DESCFORNECEDOR||'%') AND F.VLRORIGINAL = DDA2.VALORDOCUMENTO AND DDA2.DTAVENCIMENTO BETWEEN (F.DTAVENCIMENTO - 10) AND (F.DTAVENCIMENTO + 10) AND (LPAD(DDA2.NROCNPJCPFSACADO,12,0)||LPAD(DDA2.DIGCNPJCPFSACADO,2,0) IN (SELECT LPAD(DE.NROCGCCPF,12,0)||LPAD(DE.DIGCGCCPF,2,0)  FROM CONSINCO.GE_PESSOA DE WHERE SEQPESSOA IN(F.NROEMPRESA))) AND NVL(DDA2.ACEITO,'N') = 'N'
 
 WHERE F.OBRIGDIREITO     = 'O'
+-- Simone solicitou que envie apenas DUPP
+AND F.CODESPECIE = 'DUPP'
+/*
 AND F.CODESPECIE NOT IN ('13SAL','ADIEMP','ADIPRP','ADISAL','ANTREC','ATIPCO','ATIVOC','BONIAC','BONIDV','CHQPG','DEVCOM','DEVPAG','DEVPCO',
                          'DUPCIM','DUPPCO','DUPPCX','DVRBEC','EMPAG','EMPAIM','FATNAG','FERIAS','FINAIM','FINANC','LEIROU','ORDSAL','PAGEST','PENSAO',
                          'RECARG','REEMB','RESCIS','VLDESC','COFINS','CONTDV','DSSLL','FGTS','FGTSQT','ICMS','IMPOST','INSS','INSSNF','INSTANG','IPI',
                          'IR','IRRFFP','IRRFNF','ISSQN','ISSQNP','ISSST','LEASIM','LEASIN','PCCNF','PIS','PROTRA','ALUGPG','FATICD', 'QTPRP','ADIPPG',
                          'DESP','ATVEFU','ATIVOC','ATIVO')
+                         */
                          
 AND F.ABERTOQUITADO    = 'A' 
 AND FI.TIPOESPECIE     = 'T' 
@@ -361,8 +365,7 @@ LOOP
     IF vContinua IS NOT NULL THEN
     
     CONSINCO.SP_ENVIA_EMAIL(CONSINCO.C5_TP_PARAM_SMTP(1),
-    --'lista.contasapagar@nagumo.com.br;
-    'giuliano.gomes@nagumo.com.br',--;simone.eguti@nagumo.com.br;marcel.cipolla@nagumo.com.br',
+    'lista.contasapagar@nagumo.com.br;giuliano.gomes@nagumo.com.br',--;simone.eguti@nagumo.com.br;marcel.cipolla@nagumo.com.br',
     'Inconsistencias DDA - Fornec.: '||vContinua|| ' - '||TO_CHAR(SYSDATE, 'DD/MM/YYYY'),
     vtexto,
     'S');
