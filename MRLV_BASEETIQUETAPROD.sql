@@ -159,11 +159,11 @@ select /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/  a.seqproduto,
        c.pmtmultiplicacao,
        a.statusvenda,
        d.qtdembalagem,
-       MAX(A.PRECOBASENORMAL) precobasenormal,
-       MAX(A.PRECOGERNORMAL) precogernormal,
-       MAX(A.PRECOGERPROMOC) precogerpromoc,
-       MAX(A.PRECOVALIDNORMAL) precovalidnormal,
-       MAX(A.PRECOVALIDPROMOC) precovalidpromoc,
+       MAX(round(a.precobasenormal  / a.qtdembalagem * d.qtdembalagem, 2)) ,
+       MAX(round(a.precogernormal   / a.qtdembalagem * d.qtdembalagem, 2)) ,
+       MAX(round(a.precogerpromoc   / a.qtdembalagem * d.qtdembalagem, 2)) ,
+       MAX(round(a.precovalidnormal / a.qtdembalagem * d.qtdembalagem, 2)) ,
+       MAX(round(a.precovalidpromoc / a.qtdembalagem * d.qtdembalagem, 2)) ,
        'N' INDEMIETIQUETA,
        CASE 
         WHEN TO_CHAR(SYSDATE, 'HH24:MI') <= '09:00' THEN 1
@@ -241,12 +241,7 @@ group  by
        c.pmtdecimal,
        c.pmtmultiplicacao,
        a.statusvenda,
-       d.qtdembalagem,
-/*       round(a.precobasenormal / a.qtdembalagem * d.qtdembalagem, 2) ,
-       round(a.precogernormal / a.qtdembalagem * d.qtdembalagem, 2) ,
-       round(a.precogerpromoc / a.qtdembalagem * d.qtdembalagem, 2) ,
-       round(a.precovalidnormal / a.qtdembalagem * d.qtdembalagem, 2) ,
-       round(a.precovalidpromoc / a.qtdembalagem * d.qtdembalagem, 2) ,*/
+       d.qtdembalagem
        a.indemietiqueta,
        e.qtdetiqueta,
        e.nrogondola,
@@ -258,7 +253,6 @@ group  by
        e.qtdreservadavda,
        e.qtdreservadareceb,
        e.qtdreservadafixa,
-       /*RC 51219 - RP 51582 - PAGOTTO*/
        d.multeqpemb,
        d.multeqpembalagem,
        E.NRODEPARTAMENTO,
