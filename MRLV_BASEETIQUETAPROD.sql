@@ -241,7 +241,7 @@ group  by
        c.pmtdecimal,
        c.pmtmultiplicacao,
        a.statusvenda,
-       d.qtdembalagem
+       d.qtdembalagem,
        a.indemietiqueta,
        e.qtdetiqueta,
        e.nrogondola,
