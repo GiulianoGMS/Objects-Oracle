@@ -205,8 +205,8 @@ WHERE EXISTS     (SELECT 1 FROM MRL_ENCARTE X INNER JOIN MRL_ENCARTEPRODUTO XI  
                                               INNER JOIN MAP_PRODSIMILAR SF         ON SF.SEQSIMILARIDADE = S.SEQSIMILARIDADE
                                                                               
                            WHERE 1=1
-                             --AND X.SEQGRUPOPROMOC NOT IN (7,9)  -- Retira PROPZ / VALIDADE
-                             --AND NVL(PP.PRECOCARTAO,0) > 0      -- Apenas os que possuem preco meu nagumo
+                             AND X.SEQGRUPOPROMOC NOT IN (7,9)  -- Retira PROPZ / VALIDADE
+                             AND NVL(PP.PRECOCARTAO,0) > 0      -- Apenas os que possuem preco meu nagumo
                              AND X.DTAFIM = TRUNC(SYSDATE) - 1  -- Retornando as saidas do dia anterior
                              AND XE.NROEMPRESA = A.NROEMPRESA   -- Retorna produtos da familia do produto que esta no encarte
                              AND(SF.SEQPRODUTO = A.SEQPRODUTO   -- Retorna produtos que estao na similaridade do produto que esta no encarte
