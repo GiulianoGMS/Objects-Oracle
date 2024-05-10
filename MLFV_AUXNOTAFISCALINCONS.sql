@@ -211,7 +211,7 @@ SELECT distinct (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
 
 union all
 */
- --- Critica solicitada pela Daniele do Fiscal - Ticket 97671 - Criado por Cipolla em 14/11/2022
+   --- Critica solicitada pela Daniele do Fiscal - Ticket 97671 - Criado por Cipolla em 14/11/2022
 	 --- Essa view vai tratar apenas as consistencias de Pis e Cofins quando CGO for de entrada comum, bonificações estão sendo tratadas na view abaixo..
  SELECT  /*+optimizer_features_enable('11.2.0.4') */
                 distinct (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
@@ -230,8 +230,19 @@ union all
   where 1=1
   and  exists (select 1 from max_codgeraloper z where z.codgeraloper = a.codgeraloper and z.tipuso = 'R') --- Apenas CGo de Recebimento
   and not exists (select 1 from ge_empresa ge where ge.seqpessoa = a.seqpessoa) --- Retirar empresas do Grupo Nagumo
-  and a.codgeraloper not  in (126,816,101,128,208,239,117,14,127,65, 116, 139, 652, 143,900,107,206) --- Dani solicitou que Bonificalções tem tratamento diferente, será acrescido na critica abaixo
-  and not exists (select 1 From NAGT_ENTRADAPISCOFINS r where l.m014_dm_st_trib_cf = r.cst_saidafornecedor and r.cst_entranagumo =  e.situacaonfpis and f.TIPO = r.fornecedor and r.tipo = 'N')
+  -- 136 Adicionado por Giuliano - Solic Danielle - Ticket 368314 - 11/03/24
+  and a.codgeraloper not  in (126,816,101,128,208,239,117,14,127,65, 116, 139, 652, 143,900,107,206,939,279,136) --- Dani solicitou que Bonificalções tem tratamento diferente, será acrescido na critica abaixo. Retirado CGO 279 DANI em 28/02/2024
+  -- COFINS
+  and (not exists (select 1 From NAGT_ENTRADAPISCOFINS r where (l.m014_dm_st_trib_cf = r.cst_saidafornecedor OR l.M014_Dm_St_Trib_Pis = r.cst_saidafornecedor )
+  and r.cst_entranagumo =  e.situacaonfpis and f.TIPO = r.fornecedor and r.tipo = 'N' --- De x Para tipo fornecedor com CST Saída x Entrada
+                                                         -- Adicionado por Giuliano em 04/01/2024 - Solic Danielle - Ticket 339477
+                                                         -- Começa a tratar permissao por UF - UF_PERM adicionada na tabela de/para NAGT_ENTRADAPISCOFINS
+                                                          AND (UF_PERM IS NULL OR
+                                                               UF_PERM LIKE '%'||(SELECT UF FROM GE_PESSOA GEP WHERE GEP.SEQPESSOA = A.SEQPESSOA)||'%'))
+  -- PIS
+    OR not exists (select 1 From NAGT_ENTRADAPISCOFINS r where l.M014_Dm_St_Trib_Pis = r.cst_saidafornecedor and r.cst_entranagumo =  e.situacaonfpis and r.fornecedor = F.TIPO and r.tipo = 'N' --- De x Para tipo fornecedor com CST Saída x Entrada
+                                                          AND (UF_PERM IS NULL OR
+                                                               UF_PERM LIKE '%'||(SELECT UF FROM GE_PESSOA GEP WHERE GEP.SEQPESSOA = A.SEQPESSOA)||'%')))
   -- Alterado por Giuliano em 06/10/2023 - Solic Danielle/Neides - Ticket 300200
   -- Retirado fornecedores Micro Empresa e Pis/Cofins 49 no Cadastro do Fornecedor
   AND NOT EXISTS (
@@ -263,7 +274,17 @@ union all
   where 1=1
   and not exists (select 1 from ge_empresa ge where ge.seqpessoa = a.seqpessoa) --- Retirar empresas do Grupo Nagumo
   and a.codgeraloper in (126,816,101,128,208,239,117,14,127,65, 116, 139, 652, 143,900,107) --- Bonificações Ticket 194151 Dani em 02/03/2023 Cipolla CGO 900
-  and not exists (select 1 From NAGT_ENTRADAPISCOFINS r where l.m014_dm_st_trib_cf = r.cst_saidafornecedor and r.cst_entranagumo =  e.situacaonfpis and r.fornecedor = F.GERAL and r.tipo = 'B'   ) --- De x Para tipo fornecedor com CST Saída x Entrada
+   -- COFINS
+  and (not exists (select 1 From NAGT_ENTRADAPISCOFINS r where (l.m014_dm_st_trib_cf = r.cst_saidafornecedor OR l.M014_Dm_St_Trib_Pis = r.cst_saidafornecedor )
+  and r.cst_entranagumo =  e.situacaonfpis and r.fornecedor = F.GERAL and r.tipo = 'B' --- De x Para tipo fornecedor com CST Saída x Entrada
+                                                         -- Adicionado por Giuliano em 04/01/2024 - Solic Danielle - Ticket 339477
+                                                         -- Começa a tratar permissao por UF - UF_PERM adicionada na tabela de/para NAGT_ENTRADAPISCOFINS
+                                                          AND (UF_PERM IS NULL OR
+                                                               UF_PERM LIKE '%'||(SELECT UF FROM GE_PESSOA GEP WHERE GEP.SEQPESSOA = A.SEQPESSOA)||'%'))
+  -- PIS
+    OR not exists (select 1 From NAGT_ENTRADAPISCOFINS r where l.M014_Dm_St_Trib_Pis = r.cst_saidafornecedor and r.cst_entranagumo =  e.situacaonfpis and r.fornecedor = F.GERAL and r.tipo = 'B' --- De x Para tipo fornecedor com CST Saída x Entrada
+                                                          AND (UF_PERM IS NULL OR
+                                                               UF_PERM LIKE '%'||(SELECT UF FROM GE_PESSOA GEP WHERE GEP.SEQPESSOA = A.SEQPESSOA)||'%')))
   -- Alterado por Giuliano em 06/10/2023 - Solic Danielle/Neides - Ticket 300200
   -- Retirado fornecedores Micro Empresa e Pis/Cofins 49 no Cadastro do Fornecedor
   AND NOT EXISTS (
@@ -348,7 +369,7 @@ SELECT distinct (a.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
                 a.NUMERONF,
                 a.NROEMPRESA,
                 0 AS SEQAUXNFITEM, -- Seq Item
-                'B' AS BLOQAUTOR, -- Indica se ¿ de bloqueio(B) ou permite Libera¿¿o (L)
+                'L' AS BLOQAUTOR, -- Indica se ¿ de bloqueio(B) ou permite Libera¿¿o (L)
                 63 AS CODINCONSISTENC, -- C¿digo de inconsist¿ncia. Nro Sequencial iniciando em 50
                 'NF excedeu o prazo de 180 dias e não pode ser recebida - Data Limite : '|| to_char(a.DTAEMISSAO + 180, 'DD/MM/YY') AS MENSAGEM -- Mensagem da inconsist¿ncia
 from MLF_AUXNOTAFISCAL a, ge_pessoa b , max_empresa c
@@ -506,6 +527,7 @@ UNION ALL
 
 -- Ticket 308911 - Solic Neides - Adicionado em 31/10/2023 por Giuliano
 -- Barra XML sem emissão/ocorrencia de transporte (Cod. 9)
+--- Adicionado CGO 214, saldo transferencia de saldo devedor, não tem transporte. Cipolla 20/02/2024
 
 SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 A.NUMERONF,
@@ -522,6 +544,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
 
  WHERE M006_DM_FRETE = 9
    AND A.DTAENTRADA > SYSDATE - 100
+   AND A.CODGERALOPER not in ( 939,214)
 
 UNION ALL
 
@@ -542,7 +565,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
 
  WHERE 1=1
    AND K.M000_INDFINAL = 1
-   AND A.CODGERALOPER  = 1
+   AND A.CODGERALOPER  IN (1, 101, 143, 208, 239, 900) -- Ajustado em 06/02/24 TIcket 366778 - Solic Simone
    AND A.DTAENTRADA > SYSDATE - 100
 
 UNION ALL
@@ -618,9 +641,9 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                                     INNER JOIN TMP_M014_ITEM L ON (L.M000_ID_NF = K.M000_ID_NF AND L.M014_NR_ITEM = B.SEQITEMNFXML)
 
 WHERE A.CODGERALOPER = 1
-  AND L.M014_DM_TRIB_ICMS IN (1,7,8,19,23) -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra Barra CST 10 70 60 202 e 500, respectivamente na clausula
+  AND L.M014_DM_TRIB_ICMS IN (1,9,8,19,23) -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra Barra CST 10 70 60 202 e 500, respectivamente na clausula
   -- AND A.NROEMPRESA = 501 -- Inicialmente apenas CD
-  AND (NVL(L.CODCEST,0) != NVL(E.CODCEST,0))-- OR NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0))
+  AND (NVL(L.CODCEST,0) != NVL(E.CODCEST,1))-- OR NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0))
 
 UNION ALL
 
@@ -665,4 +688,61 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
   AND   A.SEQPESSOA < 999
   AND A.NROEMPRESA != 506
   AND A.CODGERALOPER NOT IN (14,652)
+
+UNION ALL
+
+-- Adicionado por Giuliano para tratar CodOrigem EX -17/01/24
+-- PD EXIBE_ORIGEM_MERCADORIA
+
+SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                A.NUMERONF,
+                A.NROEMPRESA,
+                0   AS SEQAUXNFITEM,
+                'B' AS BLOQAUTOR,
+                76  AS CODINCONSISTENC,
+                'Cod. Origem da Mercadoria Oriunda EX deve ser 1. Altere na selecção de Itens' MENSAGEM
+
+  FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
+                                    INNER JOIN CONSINCO.GE_PESSOA G ON G.SEQPESSOA = A.SEQPESSOA
+WHERE G.UF = 'EX'
+  AND A.CODGERALOPER IN (43,5)
+  AND CODORIGEMTRIB != 1
+
+UNION ALL
+
+-- Criado por Giuliano em 29/01/2024 - Solic Neides Ticket 341549
+-- Barra Imp Ret Nulo ou Zerado com CST 60
+
+SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                A.NUMERONF,
+                A.NROEMPRESA,
+                0   AS SEQAUXNFITEM,
+                'L' AS BLOQAUTOR, -- SOLICITAÇÃO SILENE 19/02/2024 TEAMSN
+                77  AS CODINCONSISTENC,
+                'O(s) Campo(s): '||
+                CASE WHEN NVL(L.M014_VL_OP_PROP_DIST,0) = 0 THEN 'vICMSSubstituto' ELSE NULL END||
+                CASE WHEN NVL(L.M014_VL_BC_ST_RET,0)    = 0 THEN ' vBCSTRet'       ELSE NULL END||
+                CASE WHEN NVL(L.M014_VL_ICMS_ST_RET,0)  = 0 THEN ' vICMSSTRet'     ELSE NULL END||
+                --CASE WHEN M014_VL_BC_FCP_RET   IS NULL THEN ' vBCFCPSTRet'    ELSE NULL END||
+                --CASE WHEN M014_VL_FCP_RET      IS NULL THEN ' vFCPSTRet'      ELSE NULL END||
+                ' do produto '||B.SEQPRODUTO||' esta(o) nulo(s) no XML! Entre em contato com o Departamento Fiscal'
+                MENSAGEM
+
+  FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
+                                    INNER JOIN CONSINCO.MAP_PRODUTO C ON B.SEQPRODUTO = C.SEQPRODUTO
+                                    INNER JOIN CONSINCO.MAP_FAMILIA E ON E.SEQFAMILIA = C.SEQFAMILIA
+                                    INNER JOIN CONSINCO.MAP_FAMDIVISAO D ON D.SEQFAMILIA = E.SEQFAMILIA
+                                    INNER JOIN TMP_M000_NF K ON (K.M000_NR_CHAVE_ACESSO = A.NFECHAVEACESSO)
+                                    INNER JOIN TMP_M014_ITEM L ON (L.M000_ID_NF = K.M000_ID_NF AND L.M014_NR_ITEM = B.SEQITEMNFXML)
+
+WHERE A.CODGERALOPER = 1
+  --AND A.NROEMPRESA IN (501,11,8,26,1,7,9,14,22,23,25,28,31,40,46) -- Solicitadas por Neides
+  AND A.SEQPESSOA NOT IN (SELECT SEQPESSOA FROM GE_PESSOA G WHERE G.NROCGCCPF = 236433150110) -- Criar De/Para Posteriormente
+  AND L.M014_DM_TRIB_ICMS = 8 -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra barra apenas CST 60
+  -- Critérios que nao podem estar nulos
+  AND (NVL(L.M014_VL_OP_PROP_DIST,0) = 0  -- vICMSSubstituto
+   OR  NVL(L.M014_VL_BC_ST_RET,0)    = 0  -- vBCSTRet
+   OR  NVL(L.M014_VL_ICMS_ST_RET,0)  = 0)  -- vICMSSTRet
+ --OR  L.M014_VL_BC_FCP_RET   IS NULL  -- vBCFCPSTRet -- Removidos - Solic Neides
+ --OR  L.M014_VL_FCP_RET      IS NULL) -- vFCPSTRet   -- ^
 ;
