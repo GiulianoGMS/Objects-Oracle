@@ -211,8 +211,9 @@ WHERE EXISTS     (SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/ 1 FROM MRL_E
 
                              AND X.SEQGRUPOPROMOC NOT IN (7,9)      -- Retira PROPZ / VALIDADE
                              AND NVL(PP.PRECOCARTAO,0) > 0          -- Apenas os que possuem preco meu nagumo
-                             AND (NVL(XI.DTAVIGENCIAFIM,DTAFIM)        = TRUNC(SYSDATE) - 1 -- Retornando as saidas do dia anterior
-                              OR  NVL(XI.DTAVIGENCIAINI,X.DTAINICIO)   = TRUNC(SYSDATE))    -- (ou) Retorna os que iniciarem hoje
+                             AND NVL(XI.DTAVIGENCIAFIM,DTAFIM)        = TRUNC(SYSDATE) - 1 -- Retornando as saidas do dia anterior
+                             -- Retirado Solic Raquel pois esta antecipando
+                             -- OR  NVL(XI.DTAVIGENCIAINI,X.DTAINICIO)   = TRUNC(SYSDATE))    -- (ou) Retorna os que iniciarem hoje
                              AND XE.NROEMPRESA = A.NROEMPRESA       -- Join da empresa
                              AND SF.SEQPRODUTO = A.SEQPRODUTO       -- Join do produto similar
 
@@ -228,8 +229,8 @@ WHERE EXISTS     (SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/ 1 FROM MRL_E
 
                              AND X.SEQGRUPOPROMOC NOT IN (7,9)      -- Retira PROPZ / VALIDADE
                              AND NVL(PP.PRECOCARTAO,0) > 0          -- Apenas os que possuem preco meu nagumo
-                             AND (NVL(XI.DTAVIGENCIAFIM,DTAFIM)        = TRUNC(SYSDATE) - 1 -- Retornando as saidas do dia anterior
-                              OR  NVL(XI.DTAVIGENCIAINI,X.DTAINICIO)   = TRUNC(SYSDATE))    -- (ou) Retorna os que iniciarem hoje
+                             AND NVL(XI.DTAVIGENCIAFIM,DTAFIM)        = TRUNC(SYSDATE) - 1 -- Retornando as saidas do dia anterior
+                             -- Retirado Solic Raquel pois esta antecipando
                              AND XE.NROEMPRESA = A.NROEMPRESA       -- Join da empresa
                              AND PF.SEQPRODUTO = A.SEQPRODUTO)      -- Join do produto familiar
 
