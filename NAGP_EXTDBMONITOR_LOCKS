@@ -1,15 +1,19 @@
 CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EXTDBMONITOR_LOCKS as
-
-    -- Exemplo de extração de dados e escrita em um arquivo txt
-
-   v_file UTL_FILE.file_type;
-   v_output VARCHAR2(4000); -- Tamanho máximo de uma linha no arquivo de texto
-
+-- Importa sessoes ativas
+    v_file UTL_FILE.file_type;
+    v_line VARCHAR2(32767);
+    v_Cabecalho VARCHAR2(4000);
+    
 BEGIN
-   -- Abre o arquivo para gravação (altere o caminho e o nome do arquivo conforme necessário)
-   v_file := UTL_FILE.fopen('/u02/app_acfs/arquivos/AdmGi - Data', 'dbdata_locks.TXT', 'w');
+    -- Abre o arquivo para escrita
+    v_file := UTL_FILE.fopen('/u02/app_acfs/arquivos/dbmonitor','db_locks.csv', 'w', 32767);
+    
+    SELECT LISTAGG(COLUMN_NAME,';') WITHIN GROUP (ORDER BY COLUMN_ID)
+      INTO v_Cabecalho
+      FROM ALL_TAB_COLUMNS A
+     WHERE A.table_name = 'NAGV_LOCKS';
 
-   -- Consulta os dados que você deseja extrair
+   -- Dados para extracao
    FOR rec IN (SELECT Z.SO,
        Z.SID,
        Z.SERIAL#,
@@ -25,8 +29,8 @@ BEGIN
        Z.OBJETO,
        Z.LOGON_TIME,
        Z.MIN_ACTIVE FROM CONSINCO.NAGV_LOCKS Z) LOOP
-      -- Constrói a linha de texto a ser gravada no arquivo (ajuste conforme necessário)
-      v_output := rec.SO||';'||
+      -- Constrói a linha de texto a ser gravada no arquivo
+      v_line := rec.SO||';'||
                   rec.SID||';'||
                   rec.SERIAL#||';'||
                   rec.DURACAO||';'||
@@ -43,7 +47,7 @@ BEGIN
                   rec.MIN_ACTIVE;
 
       -- Escreve a linha no arquivo
-      UTL_FILE.put_line(v_file, v_output);
+      UTL_FILE.put_line(v_file, v_line);
    END LOOP;
 
    -- Fecha o arquivo
