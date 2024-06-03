@@ -1,14 +1,17 @@
 CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EXTDBMONITOR_SESSIONS as
-
-   v_file UTL_FILE.file_type;
-   v_output VARCHAR2(4000); 
-   
+-- Importa sessoes ativas
+    v_file UTL_FILE.file_type;
+    v_line VARCHAR2(32767);
+    v_Cabecalho VARCHAR2(4000);
+    
 BEGIN
-   -- Remove o arquivo anterior
-   UTL_FILE.fremove('/u02/app_acfs/arquivos/AdmGi - Data', 'dbdata_sessions.TXT');
-   
-   -- Abre o arquivo para gravação 
-   v_file := UTL_FILE.fopen('/u02/app_acfs/arquivos/AdmGi - Data', 'dbdata_sessions.TXT', 'w');
+    -- Abre o arquivo para escrita
+    v_file := UTL_FILE.fopen('/u02/app_acfs/arquivos/dbmonitor','db_user_sessions.csv', 'w', 32767);
+    
+    SELECT LISTAGG(COLUMN_NAME,';') WITHIN GROUP (ORDER BY COLUMN_ID)
+      INTO v_Cabecalho
+      FROM ALL_TAB_COLUMNS A
+     WHERE A.table_name = 'NAGV_DBMONITOR';
 
    -- Dados para extracao
    FOR rec IN (SELECT X.FIRSTROW,
@@ -41,7 +44,7 @@ BEGIN
        X.CHARSET
   FROM CONSINCO.NAGV_DBMONITOR X) LOOP
       -- Constroi a linha de texto a ser gravada no arquivo
-      v_output := rec.FIRSTROW||';'||
+      v_line := rec.FIRSTROW||';'||
                   rec.SESSION_USERNAME||';'||
                   rec.SID||';'||
                   rec.SERIAL#||';'||
@@ -71,7 +74,7 @@ BEGIN
                   rec.CHARSET;
 
       -- Escreve a linha no arquivo
-      UTL_FILE.put_line(v_file, v_output);
+      UTL_FILE.put_line(v_file, v_line);
    END LOOP;
 
    -- Fecha o arquivo
@@ -84,4 +87,3 @@ EXCEPTION
          UTL_FILE.fclose(v_file);
       END IF;
 END;
-
