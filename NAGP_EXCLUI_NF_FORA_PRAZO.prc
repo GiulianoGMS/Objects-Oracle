@@ -13,6 +13,9 @@ CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EXCLUI_NF_FORA_PRAZO AS
                      AND A.SEQPESSOA  = B.SEQPESSOA
                      AND (B.UF  = NVL(C.UF, 'X') AND A.DTAEMISSAO <= (A.DTARECEBIMENTO - 18) OR -- Mesma UF > 18
                           B.UF != NVL(C.UF, 'X') AND A.DTAEMISSAO <= (A.DTARECEBIMENTO - 32))   -- UF Dif   > 32
+                     AND NOT EXISTS (SELECT 1 FROM CONSINCO.MLF_AUXNFINCONSISTENCIA INC 
+                                      WHERE INC.SEQAUXNOTAFISCAL =  A.SEQAUXNOTAFISCAL
+                                        AND INC.AUTORIZADA = 'S')
                   )
   LOOP
    BEGIN
