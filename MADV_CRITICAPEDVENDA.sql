@@ -166,7 +166,7 @@ UNION ALL -- Ticket 178084 - Giuliano - 09/02/2023 - Solicitação Danielle
    AND SEQPESSOA < 999
    AND A.SITUACAOPED != 'C'
    AND DTAINCLUSAO > SYSDATE - 50
-   AND CODGERALOPER NOT IN (806,807,918,919)
+   AND CODGERALOPER NOT IN (806,807,918,919,10)
 
 UNION ALL -- Giuliano - Solic. Danielle Ticket 229724 | 15/05/2023
           -- Bloqueia emissão de Insumo/Uso Ativo pelas empresas 501,506 pelo CGO 93
@@ -201,7 +201,27 @@ SELECT DISTINCT A.NROPEDVENDA, A.NROEMPRESA, 'Tabela de Venda Incorreta' CODCRIT
 
    WHERE 1=1
    AND A.NROEMPRESA   = 503
-   AND A.NROTABVENDA  = 99
+   AND A.NROTABVENDA != 77
    AND A.CODGERALOPER = 64
    AND A.SITUACAOPED != 'C'
+
+UNION ALL
+
+-- Giuliano - 02/07/2024
+-- Barra Prod Sem Custo Informado (Base) na tabela de custos (503) 
+-- Barra Prod sem a 503 como fornec principal
+-- Só funciona o custo correto quando fornecedor de importação estiver como principal e existir custo base
+
+SELECT DISTINCT A.NROPEDVENDA, A.NROEMPRESA, 'G:Produto Sem Custo inf Tab.C' CODCRITICA
+   FROM CONSINCO.MAD_PEDVENDA A INNER JOIN MAD_PEDVENDAITEM B ON A.NROPEDVENDA = B.NROPEDVENDA
+                                                             AND A.NROEMPRESA  = B.NROEMPRESA
+                                INNER JOIN MAP_PRODUTO P      ON P.SEQPRODUTO  = B.SEQPRODUTO
+   
+   WHERE 1=1
+   AND A.NROEMPRESA   = 503
+   AND A.NROTABVENDA  = 77
+   AND A.CODGERALOPER = 64
+   AND A.SITUACAOPED != 'C'
+   AND NVL(FMSU_CUSTOCOMPRAATUAL(P.SEQFAMILIA,1,A.NROEMPRESA,'S','SP','TF',A.NROEMPRESA),0) = 0
 ;
+
