@@ -167,10 +167,11 @@ select /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/  a.seqproduto,
        MAX(round(a.precovalidnormal / a.qtdembalagem * d.qtdembalagem, 2)) ,
        MAX(round(a.precovalidpromoc / a.qtdembalagem * d.qtdembalagem, 2)) ,
        'N' INDEMIETIQUETA,
-       CASE
+       /*CASE
         WHEN TO_CHAR(SYSDATE, 'HH24:MI') <= '09:00' THEN 1
-        ELSE 0 -- Se a hora atual não for maior que 09:00, retorna 0 - Só irá emitir pela manha
-       END qtdetiqueta,
+        ELSE 0 -- Se a hora atual não for maior que 09:00, retorna 0 - Só irá emitir pela manha*/
+          1
+        qtdetiqueta,
        e.nrogondola,
        e.estqloja,
        e.estqdeposito,
@@ -197,6 +198,7 @@ FROM MRL_PRODEMPSEG A INNER JOIN MAP_PRODUTO B ON A.SEQPRODUTO = B.SEQPRODUTO
                       INNER JOIN MRL_PRODUTOEMPRESA E ON E.SEQPRODUTO = A.SEQPRODUTO AND E.NROEMPRESA = A.NROEMPRESA
                       INNER JOIN MAD_FAMSEGMENTO F    ON F.SEQFAMILIA = B.SEQFAMILIA AND F.NROSEGMENTO = A.NROSEGMENTO
                       INNER JOIN MRL_PRODLOCAL G      ON G.SEQPRODUTO = A.SEQPRODUTO AND G.SEQLOCAL = E.LOCSAIDA AND G.NROEMPRESA = A.NROEMPRESA
+                      INNER JOIN MAX_EMPRESA EMP      ON EMP.NROEMPRESA = A.NROEMPRESA
 
 -- Começa o tratamento para retorno dos produtos dentro dos encartes (Meu Nagumo)
 -- Busca Similares
@@ -211,9 +213,9 @@ WHERE EXISTS     (SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/ 1 FROM MRL_E
 
                              AND X.SEQGRUPOPROMOC NOT IN (7,9)      -- Retira PROPZ / VALIDADE
                              AND NVL(PP.PRECOCARTAO,0) > 0          -- Apenas os que possuem preco meu nagumo
-                             AND NVL(XI.DTAVIGENCIAFIM,DTAFIM)        = TRUNC(SYSDATE) - 1 -- Retornando as saidas do dia anterior
+                             AND (NVL(XI.DTAVIGENCIAFIM,DTAFIM)        = TRUNC(SYSDATE) - 1 -- Retornando as saidas do dia anterior
                              -- Retirado Solic Raquel pois esta antecipando
-                             -- OR  NVL(XI.DTAVIGENCIAINI,X.DTAINICIO)   = TRUNC(SYSDATE))    -- (ou) Retorna os que iniciarem hoje
+                              OR  NVL(XI.DTAVIGENCIAINI,X.DTAINICIO)   = TRUNC(SYSDATE))    -- (ou) Retorna os que iniciarem hoje
                              AND XE.NROEMPRESA = A.NROEMPRESA       -- Join da empresa
                              AND SF.SEQPRODUTO = A.SEQPRODUTO       -- Join do produto similar
 
@@ -229,8 +231,9 @@ WHERE EXISTS     (SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/ 1 FROM MRL_E
 
                              AND X.SEQGRUPOPROMOC NOT IN (7,9)      -- Retira PROPZ / VALIDADE
                              AND NVL(PP.PRECOCARTAO,0) > 0          -- Apenas os que possuem preco meu nagumo
-                             AND NVL(XI.DTAVIGENCIAFIM,DTAFIM)        = TRUNC(SYSDATE) - 1 -- Retornando as saidas do dia anterior
+                             AND (NVL(XI.DTAVIGENCIAFIM,DTAFIM)        = TRUNC(SYSDATE) - 1 -- Retornando as saidas do dia anterior
                              -- Retirado Solic Raquel pois esta antecipando
+                              OR NVL(XI.DTAVIGENCIAINI,X.DTAINICIO)   = TRUNC(SYSDATE))    -- (ou) Retorna os que iniciarem hoje
                              AND XE.NROEMPRESA = A.NROEMPRESA       -- Join da empresa
                              AND PF.SEQPRODUTO = A.SEQPRODUTO)      -- Join do produto familiar
 
@@ -241,9 +244,13 @@ WHERE EXISTS     (SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/ 1 FROM MRL_E
    AND d.qtdembalagem           =            decode( nvl(fc5maxparametro('EMISSAO_ETIQUETA', a.nroempresa, 'EMITE_ETIQ_PRECO_DIF'),'N'),
                                                      'N', f.padraoembvenda, 'M', fRetQtdEmbBaseEtiqProd(b.seqproduto, e.nroempresa, f.nrosegmento)/*fMaiorEmbVendaAtiva(b.seqproduto, e.nroempresa, f.nrosegmento) - COMENTADO NO RC 66994*/,
                                                           d.qtdembalagem)
+AND A.NROSEGMENTO = EMP.NROSEGMENTOPRINC
 
+-- Corta ja emitidos (De acordo com data de alteracao)
 
-
+AND NOT EXISTS (SELECT 1 FROM CONSINCO.NAGT_CONTROLEIMPRESSAO XX WHERE XX.SEQPRODUTO = A.SEQPRODUTO                                                            
+                                                                   AND XX.NROEMPRESA = A.NROEMPRESA
+                                                                   AND TRUNC(XX.DTAIMPRESSAO) = TRUNC(SYSDATE))
 
 group  by
        a.seqproduto,
