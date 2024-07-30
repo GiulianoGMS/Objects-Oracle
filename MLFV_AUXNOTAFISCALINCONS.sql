@@ -725,7 +725,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'B' AS BLOQAUTOR,
                 76  AS CODINCONSISTENC,
-                'Cod. Origem da Mercadoria Oriunda EX deve ser 1. PLU: '||B.SEQPRODUTO MENSAGEM
+                '(EX) Cod. Origem da Mercadoria Oriunda EX deve ser 1. PLU: '||B.SEQPRODUTO||' - Entrar em contato com Depto Cadastro Comercial' MENSAGEM
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
                                     INNER JOIN CONSINCO.GE_PESSOA G ON G.SEQPESSOA = A.SEQPESSOA
@@ -733,7 +733,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                                     INNER JOIN CONSINCO.MAP_FAMDIVISAO F ON F.SEQFAMILIA = P.SEQFAMILIA
 WHERE G.UF = 'EX'
   AND A.CODGERALOPER IN (43,5)
-  AND F.CODORIGEMTRIB != 1
+  AND F.CODORIGEMTRIB != 1 -- Olhar a tributacao da familia pois é o considerado na emissao
 
 UNION ALL
 
@@ -866,8 +866,8 @@ SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
        WHERE 1=1
        AND GE.UF = 'EX'
        AND UF.UFCLIENTEFORNEC = 'EX'
-       AND (NVL(NULLIF(UF.PERPISDIF,0),1.65)    = 1.65 AND UF.SITUACAONFPIS    NOT IN (73,70)
-         OR NVL(NULLIF(UF.PERCOFINSDIF,0),7.60) = 7.60 AND UF.SITUACAONFCOFINS NOT IN (73,70))
+       AND (NVL(NULLIF(UF.PERPISDIF,0),1.65)    = 1.65 AND NVL(UF.SITUACAONFPIS,0) NOT IN (73,70)
+         OR NVL(NULLIF(UF.PERCOFINSDIF,0),7.60) = 7.60  AND NVL(UF.SITUACAONFPIS,0) NOT IN (73,70))
        AND UF.NROREGTRIBUTACAO = 8 -- Importacao Direta
        AND UF.UFEMPRESA = 'SP'
        AND UF.TIPTRIBUTACAO = DECODE(NVL(FC.TIPFORNECEDORFAM,F.TIPFORNECEDOR) , 'I', 'EI', 'D', 'ED')
@@ -885,7 +885,7 @@ SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'B' AS BLOQAUTOR,
                 82  AS CODINCONSISTENC,
-                '(EX) Produto com entrada de IPI sem saída parametrizada. Entrar em contato com Depto Cadastro Tributário'
+                '(EX) Produto com entrada de IPI sem saída parametrizada. Entrar em contato com Depto Cadastro Comercial'
 
   FROM MLF_AUXNOTAFISCAL X INNER JOIN MLF_AUXNFITEM XI ON X.SEQAUXNOTAFISCAL = XI.SEQAUXNOTAFISCAL
                            INNER JOIN MAP_PRODUTO MP ON MP.SEQPRODUTO = XI.SEQPRODUTO
