@@ -405,8 +405,11 @@ UNION ALL
 -- Ticket 204660 - Adicionado por Giuliano - Solic Danielle 30/03
 -- Regra: Trava Cod Origem XML = 0 e C5 1,2,3,8 || OU || XML: 1,2,3,8 e C5 0,4,5,7
 -- Ultima atualizacao em 21/11/2023 - Ticket 320474
+-- Alterado em 25/06/24 por Giuliano - Ticket 417539 - Barrar todas divergencias
+-- Alterado em 28/06/24 por Giuliano - Ticket 419280 - Altera regra para FLV
 
-SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
+       DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 A.NUMERONF,
                 A.NROEMPRESA,
                 0   AS SEQAUXNFITEM,
@@ -420,7 +423,10 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                                     INNER JOIN CONSINCO.MAP_FAMDIVISAO D ON D.SEQFAMILIA = E.SEQFAMILIA
                                     INNER JOIN TMP_M000_NF K ON (K.M000_NR_CHAVE_ACESSO = A.NFECHAVEACESSO)
                                     INNER JOIN TMP_M014_ITEM L ON (L.M000_ID_NF = K.M000_ID_NF AND L.M014_NR_ITEM = B.SEQITEMNFXML)
+                                    --INNER JOIN DIM_CATEGORIA@CONSINCODW DC ON DC.SEQFAMILIA = E.SEQFAMILIA
 
+-- Alterado em 25/06/24 por Giuliano - Ticket 417539 - Barrar todas divergencias
+/*
 WHERE L.M014_DM_ORIG_ICMS IN (1,2,3,8) AND D.CODORIGEMTRIB IN (0,4,5,7) AND A.SEQPESSOA > 999
    OR L.M014_DM_ORIG_ICMS IN (0,4,5,7) AND D.CODORIGEMTRIB IN (1,2,3,8) AND A.SEQPESSOA > 999
 
@@ -428,7 +434,22 @@ WHERE L.M014_DM_ORIG_ICMS IN (1,2,3,8) AND D.CODORIGEMTRIB IN (0,4,5,7) AND A.SE
 
    OR D.CODORIGEMTRIB IN (1,2,3,8) AND L.M014_DM_ORIG_ICMS IN (0,4,5,7) AND A.SEQPESSOA > 999
    OR D.CODORIGEMTRIB IN (0,4,5,7) AND L.M014_DM_ORIG_ICMS IN (1,2,3,8) AND A.SEQPESSOA > 999
+*/
+WHERE NVL(L.M014_DM_ORIG_ICMS,1) != NVL(D.CODORIGEMTRIB,2)
+  AND A.SEQPESSOA > 999
+ -- AND (A.NROEMPRESA IN (1,2,3,7,11,26,31,42,51,53,501) OR A.NROEMPRESA <= 30) -- Solic Neides/Dani
+  AND A.DTAEMISSAO > SYSDATE - 50
+--
+-- Alterado em 28/06/24 por Giuliano - Ticket 419280 - Altera regra para FLV
+  AND NOT EXISTS (SELECT 1 FROM DIM_CATEGORIA@CONSINCODW DC WHERE DC.SEQFAMILIA = C.SEQFAMILIA AND DC.CATEGORIAN1 = 'HORTIFRUTI')
+--
+   OR EXISTS (SELECT 1 FROM DIM_CATEGORIA@CONSINCODW DC WHERE DC.SEQFAMILIA = C.SEQFAMILIA AND DC.CATEGORIAN1 = 'HORTIFRUTI')
+  AND A.SEQPESSOA > 999
+  AND A.DTAEMISSAO > SYSDATE - 50
 
+  AND(NVL(L.M014_DM_ORIG_ICMS,1) IN (2,3,8)   AND NVL(D.CODORIGEMTRIB,2) IN (0,4,5,7)
+   OR NVL(L.M014_DM_ORIG_ICMS,1) IN (0,4,5,7) AND NVL(D.CODORIGEMTRIB,2) IN (2,3,8))
+--
 UNION ALL
 
 -- Ticket 219089 - Solic. Simone | Adicionado por Giuliano em 20/04/2023 - Validação GNRE tipo DARE
@@ -617,7 +638,6 @@ UNION ALL
 
 -- Ticket 324275 - Solic Simone - Adicionado em 04/12/2023 por Giuliano
 -- Barra CEST NULO / CEST ou NCM divergente do cad no sistema
--- Retirado validacao do NCM Temporariamente
 
 SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 A.NUMERONF,
@@ -641,9 +661,14 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                                     INNER JOIN TMP_M014_ITEM L ON (L.M000_ID_NF = K.M000_ID_NF AND L.M014_NR_ITEM = B.SEQITEMNFXML)
 
 WHERE A.CODGERALOPER = 1
-  AND L.M014_DM_TRIB_ICMS IN (1,9,8,19,23) -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra Barra CST 10 70 60 202 e 500, respectivamente na clausula
-  -- AND A.NROEMPRESA = 501 -- Inicialmente apenas CD
+  AND L.M014_DM_TRIB_ICMS IN (1,9,8) -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra Barra CST 10 70 60 respectivamente na clausula
+                                     -- CST 202 e 500 (Simples Nacional) sera tratado no OR abaixo pois muda a regra
   AND (NVL(L.CODCEST,0) != NVL(E.CODCEST,1))-- OR NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0))
+  -- Trata SN
+  OR A.CODGERALOPER = 1
+ AND EXISTS(SELECT 1 FROM MAF_FORNECEDOR SN WHERE SN.MICROEMPRESA = 'S' AND SEQFORNECEDOR = A.SEQPESSOA)
+ AND M014_CD_CFOP NOT IN (5401,5101,5102,6102)
+ AND (NVL(L.CODCEST,0) != NVL(E.CODCEST,1))-- OR NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0))*/
 
 UNION ALL
 
@@ -700,13 +725,15 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'B' AS BLOQAUTOR,
                 76  AS CODINCONSISTENC,
-                'Cod. Origem da Mercadoria Oriunda EX deve ser 1. Altere na selecção de Itens' MENSAGEM
+                'Cod. Origem da Mercadoria Oriunda EX deve ser 1. PLU: '||B.SEQPRODUTO MENSAGEM
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
                                     INNER JOIN CONSINCO.GE_PESSOA G ON G.SEQPESSOA = A.SEQPESSOA
+                                    INNER JOIN CONSINCO.MAP_PRODUTO P ON P.SEQPRODUTO = B.SEQPRODUTO
+                                    INNER JOIN CONSINCO.MAP_FAMDIVISAO F ON F.SEQFAMILIA = P.SEQFAMILIA
 WHERE G.UF = 'EX'
   AND A.CODGERALOPER IN (43,5)
-  AND CODORIGEMTRIB != 1
+  AND F.CODORIGEMTRIB != 1
 
 UNION ALL
 
@@ -738,11 +765,140 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
 WHERE A.CODGERALOPER = 1
   --AND A.NROEMPRESA IN (501,11,8,26,1,7,9,14,22,23,25,28,31,40,46) -- Solicitadas por Neides
   AND A.SEQPESSOA NOT IN (SELECT SEQPESSOA FROM GE_PESSOA G WHERE G.NROCGCCPF = 236433150110) -- Criar De/Para Posteriormente
-  AND L.M014_DM_TRIB_ICMS = 8 -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra barra apenas CST 60
+  AND (L.M014_DM_TRIB_ICMS = 8 -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra barra apenas CST 60
+  -- Acrescentando SN - Ticket 421458 - Giuliano 22/07/2024
+   OR EXISTS(SELECT 1 FROM MAF_FORNECEDOR SN WHERE SN.MICROEMPRESA = 'S' AND SEQFORNECEDOR = A.SEQPESSOA)
+      AND M014_CD_CFOP NOT IN (5401,5101,5102,6102))
   -- Critérios que nao podem estar nulos
   AND (NVL(L.M014_VL_OP_PROP_DIST,0) = 0  -- vICMSSubstituto
    OR  NVL(L.M014_VL_BC_ST_RET,0)    = 0  -- vBCSTRet
    OR  NVL(L.M014_VL_ICMS_ST_RET,0)  = 0)  -- vICMSSTRet
  --OR  L.M014_VL_BC_FCP_RET   IS NULL  -- vBCFCPSTRet -- Removidos - Solic Neides
  --OR  L.M014_VL_FCP_RET      IS NULL) -- vFCPSTRet   -- ^
+
+UNION ALL
+
+-- Ticket 408539 | Adicionado por Giuliano em 11/06/24
+-- Solic Silene Fiscal - Barrar data de entrada divergente nas notas de remessa amarradas
+
+SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                X.NUMERONF,
+                X.NROEMPRESA,
+                0   AS SEQAUXNFITEM,
+                'B' AS BLOQAUTOR,
+                79  AS CODINCONSISTENC,
+                'A data de entrada da NF está divergente da data de remessa amarrada! Data NF CGO '||X.CODGERALOPER||': '||TO_CHAR(X.DTAENTRADA, 'DD/MM/YYYY')||
+                ' - CGO '||X2.CODGERALOPER||': '||TO_CHAR(X2.DTAENTRADA, 'DD/MM/YYYY')
+
+  FROM MLF_AUXNOTAFISCAL X INNER JOIN CONSINCO.NAGV_NF_RELAC_REMESSA R ON X.SEQAUXNOTAFISCAL  = R.SEQAUX_O
+                           INNER JOIN CONSINCO.MLF_AUXNOTAFISCAL X2    ON X2.SEQAUXNOTAFISCAL = R.SEQAUX_R
+ WHERE 1=1
+   AND X.DTAENTRADA != X2.DTAENTRADA
+   AND X.CODGERALOPER IN (116,121)
+
+
+UNION ALL
+
+-- Ticket 415219 | Adicionado por Giuliano em 25/06/2024
+-- Solic Simone Fiscal - Barrar Ean Trib nulo no XML e existente na C5
+
+SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                X.NUMERONF,
+                X.NROEMPRESA,
+                0   AS SEQAUXNFITEM,
+                'L' AS BLOQAUTOR,
+                80  AS CODINCONSISTENC,
+                'O Produto: '||B.SEQPRODUTO||' Está com a tag EAN Tributável NULA no XML!'||
+
+                -- Removido pois quando tem vários eans ultrapassa os 250 caracteres da tabela de inconsistencias
+                --LISTAGG(X2.CODACESSO, ', ')WITHIN GROUP(ORDER BY X2.SEQPRODUTO)||
+
+                ' - Solicite a troca da nota. Dúvidas entrar em contato com o Depto Fiscal.' MSG
+
+  FROM CONSINCO.MLF_AUXNOTAFISCAL X INNER JOIN CONSINCO.MLF_AUXNFITEM B ON X.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
+                                 INNER JOIN TMP_M000_NF K         ON K.M000_NR_CHAVE_ACESSO = X.NFECHAVEACESSO
+                                 INNER JOIN TMP_M014_ITEM L       ON L.M000_ID_NF = K.M000_ID_NF  AND L.M014_NR_ITEM = B.SEQITEMNFXML
+                                 INNER JOIN MAP_PRODCODIGO X2     ON X2.SEQPRODUTO = B.SEQPRODUTO
+                                 INNER JOIN MAP_PRODUTO P         ON P.SEQPRODUTO = B.SEQPRODUTO
+                                 INNER JOIN GE_PESSOA G           ON G.SEQPESSOA = X.SEQPESSOA
+                                 INNER JOIN MAP_FAMDIVISAO FD     ON FD.SEQFAMILIA = P.SEQFAMILIA
+
+WHERE 1=1
+  AND NOT EXISTS (SELECT 1 FROM MAP_PRODCODIGO X
+                   WHERE X.SEQPRODUTO = B.SEQPRODUTO
+                   AND LPAD(X.CODACESSO,14,0) = LPAD(NVL(L.M014_CD_EAN_TRIB,0),14,0)
+                   AND X.TIPCODIGO = 'E'
+                   AND X.INDUTILVENDA = 'S')
+
+  AND X.CODGERALOPER = 1
+  AND X.SEQPESSOA > 999
+  --AND A.DTAENTRADA BETWEEN :DT1 AND :DT2
+  AND FD.FINALIDADEFAMILIA = 'R'
+  AND X2.TIPCODIGO = 'E'
+  AND X2.INDUTILVENDA = 'S'
+  -- Inicialmente ira validar apenas a tag nula no XML
+  AND X2.CODACESSO IS NOT NULL AND M014_CD_EAN_TRIB IS NULL
+  --AND LPAD(X2.CODACESSO,14,0) != LPAD(NVL(L.M014_CD_EAN_TRIB,0),14,0)
+  -- Inicialmente apenas 8 e 501
+  --AND X.NROEMPRESA IN (501,8, 2,11,17,20,25,26,28,31,36,40,42,44) -- Ticket 424666 aplica em todas as empresas
+  GROUP BY X.SEQAUXNOTAFISCAL, X.NUMERONF, X.NROEMPRESA, B.SEQPRODUTO
+  
+UNION ALL
+
+-- Ticket 432832 - Adicionado por Giuliano em 29/07/2024
+-- Regra para EX - Valida se o Pis/Cofins estão corretos
+
+SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                X.NUMERONF,
+                X.NROEMPRESA,
+                0   AS SEQAUXNFITEM,
+                'B' AS BLOQAUTOR,
+                81  AS CODINCONSISTENC,
+                '(EX) Aliquota de PIS/COFINS divergentes. Entrar em contato com Depto Cadastro Tributário'
+
+  FROM MLF_AUXNOTAFISCAL X INNER JOIN MLF_AUXNFITEM XI ON X.SEQAUXNOTAFISCAL = XI.SEQAUXNOTAFISCAL
+                           INNER JOIN MAP_PRODUTO XP ON XP.SEQPRODUTO = XI.SEQPRODUTO
+                           INNER JOIN MAP_FAMDIVISAO FD ON FD.SEQFAMILIA = XP.SEQFAMILIA
+                           INNER JOIN MAP_FAMFORNEC FC ON FC.SEQFAMILIA = XP.SEQFAMILIA
+                           INNER JOIN MAP_TRIBUTACAOUF UF ON UF.NROTRIBUTACAO = FD.NROTRIBUTACAO
+                           INNER JOIN MAF_FORNECEDOR F ON F.SEQFORNECEDOR = FC.SEQFORNECEDOR
+                           INNER JOIN GE_PESSOA GE ON GE.SEQPESSOA = FC.SEQFORNECEDOR
+       WHERE 1=1
+       AND GE.UF = 'EX'
+       AND UF.UFCLIENTEFORNEC = 'EX'
+       AND (NVL(NULLIF(UF.PERPISDIF,0),1.65)    = 1.65 AND UF.SITUACAONFPIS    NOT IN (73,70)
+         OR NVL(NULLIF(UF.PERCOFINSDIF,0),7.60) = 7.60 AND UF.SITUACAONFCOFINS NOT IN (73,70))
+       AND UF.NROREGTRIBUTACAO = 8 -- Importacao Direta
+       AND UF.UFEMPRESA = 'SP'
+       AND UF.TIPTRIBUTACAO = DECODE(NVL(FC.TIPFORNECEDORFAM,F.TIPFORNECEDOR) , 'I', 'EI', 'D', 'ED')
+       AND X.CODGERALOPER IN (43,5)
+       AND X.NROEMPRESA = 503
+       
+UNION ALL
+       
+-- Ticket 432832 - Adicionado por Giuliano em 29/07/2024
+-- Regra para EX - Valida se a saída do IPI está parametrizada
+
+SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                X.NUMERONF,
+                X.NROEMPRESA,
+                0   AS SEQAUXNFITEM,
+                'B' AS BLOQAUTOR,
+                82  AS CODINCONSISTENC,
+                '(EX) Produto com entrada de IPI sem saída parametrizada. Entrar em contato com Depto Cadastro Tributário'
+
+  FROM MLF_AUXNOTAFISCAL X INNER JOIN MLF_AUXNFITEM XI ON X.SEQAUXNOTAFISCAL = XI.SEQAUXNOTAFISCAL
+                           INNER JOIN MAP_PRODUTO MP ON MP.SEQPRODUTO = XI.SEQPRODUTO
+                           INNER JOIN MAP_FAMILIA MF ON MF.SEQFAMILIA = MP.SEQFAMILIA
+                           INNER JOIN MAP_FAMFORNEC FC ON FC.SEQFAMILIA = MF.SEQFAMILIA
+                           INNER JOIN GE_PESSOA GE ON GE.SEQPESSOA = FC.SEQFORNECEDOR
+  WHERE 1=1
+    AND UF = 'EX'
+    AND NVL(MF.ALIQUOTAIPI,0) > 0
+    AND (MF.PERISENTOIPI IS NULL
+     OR MF.PEROUTROIPI IS NULL
+     OR MF.PERALIQUOTAIPI IS NULL
+     OR NVL(MF.PERBASEIPI,0) = 0)
+    AND X.NROEMPRESA = 503
+
 ;
