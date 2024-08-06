@@ -1,57 +1,52 @@
-create or replace view consinco.madv_estoque_ecm_v2 as
-select /*+optimizer_features_enable('11.2.0.4') */
-         nroempresa,
-       seqproduto,
-       decode(sign(qtdestoque),
-              -1,
-              0,
-              qtdestoque) qtdestoque,
-       qtdestoquemin,
-       dtahorultmovtoestq
-from   (select b.nroempresa,
-               b.seqproduto,
-               case
-                   when a.seqprodutobase > 0 then
-                    (select CONSINCO.festoquediasecommerce(b2.nroempresa,
-                                                  b2.estqdeposito,
-                                                  b2.estqloja,
-                                                  b2.qtdreservadavda,
-                                                  b2.qtdreservadareceb,
-                                                  b2.qtdreservadafixa,
-                                                  b2.medvdiapromoc,
-                                                  b2.medvdiaforapromoc,
-                                                  b2.medvdiageral,
-                                                  b2.estqsegurancaecommerce,
-                                                  CONSINCO.fnroestqdiasecommercecateg(e.nrodivisao,
-                                                                             a.seqfamilia))
-                     from   map_produto        a2,
-                            CONSINCO.mrl_produtoempresa b2
-                     where  a2.seqproduto = b2.seqproduto
-                     and    a2.seqproduto = a.seqprodutobase
-                     and    b2.nroempresa = b.nroempresa)
-                   else
-                    CONSINCO.festoquediasecommerce(b.nroempresa,
-                                          b.estqdeposito,
-                                          b.estqloja,
-                                          b.qtdreservadavda,
-                                          b.qtdreservadareceb,
-                                          b.qtdreservadafixa,
-                                          b.medvdiapromoc,
-                                          b.medvdiaforapromoc,
-                                          b.medvdiageral,
-                                          b.estqsegurancaecommerce,
-                                          CONSINCO.fnroestqdiasecommercecateg(e.nrodivisao,
-                                                                     a.seqfamilia))
-               end qtdestoque,
-               b.estqminimoloja qtdestoquemin,
-               b.dtahorultmovtoestq
-        from   CONSINCO.map_produto            a,
-               CONSINCO.mrl_produtoempresa     b,
-               CONSINCO.max_empresa            e
-             --  CONSINCO.mad_parametroecommerce pe -- *** status da empresa ***
-        where  a.seqproduto = b.seqproduto
-        and    a.indintegraecommerce = 'S'
-      --  and    b.nroempresa = 26
-        and    b.nroempresa = e.nroempresa)
-     --   and    pe.nroempresa = e.nroempresa)
+CREATE OR REPLACE VIEW CONSINCO.MADV_ESTOQUE_ECM_V2 AS
+
+SELECT /*+optimizer_features_enable('11.2.0.4') */
+       NROEMPRESA, SEQPRODUTO,
+       DECODE(SIGN(QTDESTOQUE), -1, 0, QTDESTOQUE) QTDESTOQUE, QTDESTOQUEMIN,
+       DTAHORULTMOVTOESTQ
+       
+  FROM (SELECT B.NROEMPRESA, B.SEQPRODUTO,
+                CASE
+                  WHEN A.SEQPRODUTOBASE > 0 THEN
+                   (SELECT CONSINCO.FESTOQUEDIASECOMMERCE(B2.NROEMPRESA,
+                                                           B2.ESTQDEPOSITO,
+                                                           B2.ESTQLOJA,
+                                                           B2.QTDRESERVADAVDA,
+                                                           B2.QTDRESERVADARECEB,
+                                                           B2.QTDRESERVADAFIXA,
+                                                           B2.MEDVDIAPROMOC,
+                                                           B2.MEDVDIAFORAPROMOC,
+                                                           B2.MEDVDIAGERAL,
+                                                           B2.ESTQSEGURANCAECOMMERCE,
+                                                           CONSINCO.FNROESTQDIASECOMMERCECATEG(E.NRODIVISAO,
+                                                                                               A.SEQFAMILIA))
+                      FROM MAP_PRODUTO A2, CONSINCO.MRL_PRODUTOEMPRESA B2
+                     WHERE A2.SEQPRODUTO = B2.SEQPRODUTO
+                       AND A2.SEQPRODUTO = A.SEQPRODUTOBASE
+                       AND B2.NROEMPRESA = B.NROEMPRESA)
+                  ELSE
+                   CONSINCO.FESTOQUEDIASECOMMERCE(B.NROEMPRESA,
+                                                  B.ESTQDEPOSITO,
+                                                  B.ESTQLOJA,
+                                                  B.QTDRESERVADAVDA,
+                                                  B.QTDRESERVADARECEB,
+                                                  B.QTDRESERVADAFIXA,
+                                                  B.MEDVDIAPROMOC,
+                                                  B.MEDVDIAFORAPROMOC,
+                                                  B.MEDVDIAGERAL,
+                                                  B.ESTQSEGURANCAECOMMERCE,
+                                                  CONSINCO.FNROESTQDIASECOMMERCECATEG(E.NRODIVISAO,
+                                                                                      A.SEQFAMILIA))
+                END QTDESTOQUE, B.ESTQMINIMOLOJA QTDESTOQUEMIN,
+                CASE WHEN EXISTS (SELECT 1 FROM CONSINCO.NAGV_ECOMM_BASERELAC R WHERE R.SEQPRODUTO = A.SEQPRODUTO) AND A.SEQPRODUTOBASE IS NOT NULL THEN
+                  THEN B2.DTAHORULTMOVTOESTQ ELSE B.DTAHORULTMOVTOESTQ END DTAHORULTMOVTOESTQ
+                    
+           FROM CONSINCO.MAP_PRODUTO A INNER JOIN CONSINCO.MRL_PRODUTOEMPRESA B ON A.SEQPRODUTO = B.SEQPRODUTO
+                                        LEFT JOIN CONSINCO.MRL_PRODUTOEMPRESA B2 ON A.SEQPRODUTOBASE = B2.SEQPRODUTO AND B2.NROEMPRESA = B.NROEMPRESA 
+                                       INNER JOIN CONSINCO.MAX_EMPRESA E ON B.NROEMPRESA = E.NROEMPRESA
+         
+          WHERE 1=1
+            AND A.INDINTEGRAECOMMERCE = 'S')
+            
+
 ;
