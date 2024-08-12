@@ -1,4 +1,5 @@
-CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EXPORTA_SPACEMAN (v_Emp NUMBER) IS
+CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_EXPORTA_SPACEMAN (v_Emp NUMBER,
+                                                            v_CategN3 VARCHAR2) IS
 
     v_file UTL_FILE.file_type;
     v_line VARCHAR2(32767);
@@ -13,14 +14,14 @@ BEGIN
     
     v_LpadLoja := LPAD(v_Emp,3,0);
     
-    FOR t IN (SELECT DISTINCT A.CATEGORIAN3 FROM DIM_CATEGORIA@CONSINCODW A INNER JOIN CONSINCO.NAGT_SPACEMAN_CATEG B ON A.CATEGORIAN3 = B.CATEGORIAN3)
+    FOR t IN (SELECT DISTINCT A.CATEGORIAN3 FROM DIM_CATEGORIA@CONSINCODW A WHERE A.CATEGORIAN3 = v_CategN3)
       
     LOOP
     
     v_Categoria := t.Categorian3;
     
     -- Abre o arquivo para escrita
-    v_file := UTL_FILE.fopen('/u02/app_acfs/arquivos/Spaceman', v_LpadLoja||'_'||v_Categoria||'_Products'||'.csv', 'w', 32767);
+    v_file := UTL_FILE.fopen('/u02/app_acfs/arquivos/spaceman', v_LpadLoja||'_'||v_Categoria||'_Products'||'.csv', 'w', 32767);
     --v_Dbcharset := 'AMERICAN_AMERICA.AL32UTF8';
     --v_Targetcharset := 'AMERICAN_AMERICA.WE8MSWIN1252';
     
@@ -30,7 +31,7 @@ BEGIN
      FROM ALL_TAB_COLUMNS A 
     WHERE A.table_name = 'NAGV_SPACEMAN_DATA';
     
-    -- Escreve o cabeçalho do CSV
+    -- Escreve o cabecalho do CSV
     UTL_FILE.put_line(v_file, v_Cabecalho);
 
     -- Executa a query e escreve os resultados
