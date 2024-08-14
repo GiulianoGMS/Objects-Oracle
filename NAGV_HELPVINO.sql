@@ -2,11 +2,14 @@ ALTER SESSION SET CURRENT_SCHEMA = CONSINCO;
 
 CREATE OR REPLACE VIEW CONSINCO.NAGV_HELPVINO AS
 
--- Criado por Giuliano em 12/08/2024
--- Solicitacao Leonardo Tadanory - Ticket 439326
-
+/*
+ Criado por Giuliano em 12/08/2024
+ Solicitacao Leonardo Tadanory - Ticket 439326
+ */
+ 
 SELECT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/
-       M.NROEMPRESA STOREEXTERNALID, C.CODACESSO GTIN, X.SEQPRODUTO EXTERNALID, DESCCOMPLETA DESCRIPTION,
+       M.NROEMPRESA STOREID, C.CODACESSO GTIN, X.SEQPRODUTO EXTERNALID, 
+       REGEXP_REPLACE(DESCCOMPLETA, '^\d+', '') DESCRIPTION,
        X.COMPLEMENTO COMPLEMENT, 
        COALESCE(NULLIF(E.PRECOVALIDNORMAL,0), NULLIF(E.PRECOGERNORMAL,0),NVL(PRECOBASENORMAL,0)) PRICE, 
        NVL(NULLIF(E.PRECOVALIDPROMOC,0),  NVL(NULLIF(E.PRECOGERPROMOC,0),0)) PROMOTIONALPRICE,-- NULL COMPLEMENTARYPRICES,
@@ -20,7 +23,7 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/
                               INNER JOIN CONSINCO.MRL_PRODUTOEMPRESA M     ON M.SEQPRODUTO     = X.SEQPRODUTO
                               INNER JOIN CONSINCO.MRL_PRODEMPSEG E         ON E.SEQPRODUTO     = X.SEQPRODUTO AND E.NROEMPRESA = M.NROEMPRESA 
                                                                                                               AND E.QTDEMBALAGEM = C.QTDEMBALAGEM 
-                                                                                                              AND NROSEGMENTO IN (2,4)
+                                                                                                              AND NROSEGMENTO IN (2,3,4,7)
                                                                                                               
                                LEFT JOIN REMARCAPROMOCOES@INFOPROCMSSQL MN ON MN.CODLOJA = M.NROEMPRESA       AND CODIGOPRODUTO = LPAD(C.CODACESSO,14,0)
                                                                                                               AND SYSDATE BETWEEN DTHRINICIO AND DTHRFIM
