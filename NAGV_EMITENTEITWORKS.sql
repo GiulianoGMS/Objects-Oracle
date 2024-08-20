@@ -3,7 +3,7 @@ SELECT DISTINCT X."CNPJCPF", X."PRODUTOEMITENTE", X."PRODUTO",
                 X."UNIDADECOMPRA", X."FATORCONVESTOQUE", X."USONFENTRADA",
                 X."DTAHORINCLUSAO", X."DTAHORALTERACAO"
   FROM (
-         
+
          SELECT LPAD(C.NROCGCCPF, 12, 0) || LPAD(C.DIGCGCCPF, 2, 0) CNPJCPF,
                  A.CODACESSO PRODUTOEMITENTE, A.SEQPRODUTO PRODUTO,
                  -- Giuliano em 06/08/24
@@ -14,10 +14,18 @@ SELECT DISTINCT X."CNPJCPF", X."PRODUTOEMITENTE", X."PRODUTO",
                           WHERE X.SEQPRODUTO = A.SEQPRODUTO
                             AND X.CGCFORNEC = A.CGCFORNEC
                             AND X.CODACESSO = A.CODACESSO
-                            AND X.TIPCODIGO = A.TIPCODIGO) AND A.QTDEMBALAGEM = 1 THEN
+                            AND X.TIPCODIGO = A.TIPCODIGO
+                            
+                     UNION
+                     SELECT 2
+                          FROM CONSINCO.NAGT_TKT_441375 X2
+                         WHERE X2.SEQPRODUTO = A.SEQPRODUTO
+                           AND X2.CGCFORNEC = A.CGCFORNEC
+                           AND X2.CODACESSO = A.CODACESSO
+                           AND X2.TIPCODIGO  = A.TIPCODIGO) AND A.QTDEMBALAGEM = 1 THEN
                     'UN'
                    ELSE
-                   
+
                     (SELECT Y.EMBALAGEM
                        FROM MAP_FAMDIVISAO X, MAP_FAMEMBALAGEM Y
                       WHERE X.SEQFAMILIA = Y.SEQFAMILIA
@@ -51,13 +59,13 @@ SELECT DISTINCT X."CNPJCPF", X."PRODUTOEMITENTE", X."PRODUTO",
                  /*(SELECT MAX(Z.DTAHORAUDITORIA) FROM CONSINCO.MAP_AUDITORIA Z
                        WHERE Z.SEQIDENTIFICA = A.SEQPRODUTO
                          AND CAMPO IN( 'CODACESSO','QTDEMBALAGEM')) DTAHORALTERACAO*/
-                 -- Alterado por Giuliano em 20/06/24 pois a tabela acima é lenta pra carambaaaa
+                 -- Alterado por Giuliano em 20/06/24 pois a tabela acima e lenta pra carambaaaa
                  GREATEST(NVL(PRO.DTAHORALTERACAO, PRO.DTAHORINCLUSAO),
                            NVL(A.DATAHORAALTERACAO, PRO.DTAHORINCLUSAO)) DTAHORALTERACAO
-         
+
          --  (select pro.dtahorinclusao from map_produto pro where pro.seqfamilia = b.seqfamilia and pro.seqproduto = a.seqproduto) dtahorinclusao,
          --      (select pro.dtahoralteracao from map_produto pro where pro.seqfamilia = b.seqfamilia and pro.seqproduto = a.seqproduto) dtahoralteracao
-         
+
            FROM MAP_PRODCODIGO A
           INNER JOIN MAP_FAMILIA B
              ON (A.SEQFAMILIA = B.SEQFAMILIA)
@@ -66,13 +74,13 @@ SELECT DISTINCT X."CNPJCPF", X."PRODUTOEMITENTE", X."PRODUTO",
                 C.STATUS = 'A')
           INNER JOIN CONSINCO.MAP_PRODUTO PRO
              ON (PRO.SEQPRODUTO = A.SEQPRODUTO)
-         
+
           WHERE A.TIPCODIGO IN ('F')
             AND C.FISICAJURIDICA = 'J' -- Ticket 164553
          -- and c.seqpessoa in (Select MAP_FAMFORNEC.SEQFORNECEDOR From MAP_FAMFORNEC Where SEQFAMILIA = b.seqfamilia)
-         
-         UNION ALL -- Alteração para atender fornecedores que possuem apenas CPF + 0 a esquerda
-         
+
+         UNION ALL -- Alterac?o para atender fornecedores que possuem apenas CPF + 0 a esquerda
+
          SELECT LPAD(C.NROCGCCPF, 9, 0) || LPAD(C.DIGCGCCPF, 2, 0) CNPJCPF,
                  A.CODACESSO PRODUTOEMITENTE, A.SEQPRODUTO PRODUTO,
                  (SELECT Y.EMBALAGEM
@@ -106,10 +114,10 @@ SELECT DISTINCT X."CNPJCPF", X."PRODUTOEMITENTE", X."PRODUTO",
                  /*(SELECT MAX(Z.DTAHORAUDITORIA) FROM CONSINCO.MAP_AUDITORIA Z
                        WHERE Z.SEQIDENTIFICA = A.SEQPRODUTO
                          AND CAMPO IN( 'CODACESSO','QTDEMBALAGEM')) DTAHORALTERACAO*/
-                 -- Alterado por Giuliano em 20/06/24 pois a tabela acima é lenta pra carambaaaa
+                 -- Alterado por Giuliano em 20/06/24 pois a tabela acima e lenta pra carambaaaa
                  GREATEST(NVL(PRO.DTAHORALTERACAO, PRO.DTAHORINCLUSAO),
                            NVL(A.DATAHORAALTERACAO, PRO.DTAHORINCLUSAO)) DTAHORALTERACAO
-         
+
            FROM MAP_PRODCODIGO A
           INNER JOIN MAP_FAMILIA B
              ON (A.SEQFAMILIA = B.SEQFAMILIA)
@@ -119,14 +127,15 @@ SELECT DISTINCT X."CNPJCPF", X."PRODUTOEMITENTE", X."PRODUTO",
             AND LENGTH(A.CGCFORNEC) = 4
           INNER JOIN CONSINCO.MAP_PRODUTO PRO
              ON (PRO.SEQPRODUTO = A.SEQPRODUTO)
-         
+
           WHERE A.TIPCODIGO IN ('F')
             AND C.SEQPESSOA IN
                 (SELECT F.SEQFORNECEDOR
                    FROM CONSINCO.MAP_FAMFORNEC F
                   WHERE F.SEQFAMILIA = A.SEQFAMILIA)
             AND C.FISICAJURIDICA = 'F'
-         
+
          ) X
 
- ORDER BY 2;
+ ORDER BY 2
+;
