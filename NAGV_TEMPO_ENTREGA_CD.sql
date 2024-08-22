@@ -1,15 +1,15 @@
 CREATE OR REPLACE VIEW CONSINCO.NAGV_TEMPO_ENTREGA_CD AS
 SELECT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/
-       TO_CHAR(X.DTAHORLANCTO, 'MM') MES,
-       TO_CHAR(X.DTAHORLANCTO, 'YYYY') ANO,
+       TO_CHAR(X.DTARECEBIMENTO, 'MM') MES,
+       TO_CHAR(X.DTARECEBIMENTO, 'YYYY') ANO,
        --===============================================--
        -- Utiliza a Function para deduzir os domingos entre a diferenca de dias, em todas as medias
        -- Regra explicada dentro da Function NAGF_DEDUZ_DOMINGO_DTA
        --===============================================--
        -- Media Emissao Ped x Entrega na Loja
-       -- Cross Docking pega DtaInclusao (?)
-       ROUND(AVG((X.DTAHORLANCTO - DECODE(K2.INDSELINVERSA,'S', P.DTAINCLUSAO, Z.DTAEMISSAO)) -
-       CONSINCO.NAGF_DEDUZ_DOMINGO_DTA(X.DTAHORLANCTO, DECODE(K2.INDSELINVERSA,'S', P.DTAINCLUSAO, Z.DTAEMISSAO))
+       -- Cross Docking pega DtaInclusao (certo?)
+       ROUND(AVG((X.DTARECEBIMENTO - DECODE(K2.INDSELINVERSA,'S', P.DTAINCLUSAO, Z.DTAEMISSAO)) -
+       CONSINCO.NAGF_DEDUZ_DOMINGO_DTA(X.DTARECEBIMENTO, DECODE(K2.INDSELINVERSA,'S', P.DTAINCLUSAO, Z.DTAEMISSAO))
        )) TP_MED_PED_REC,
        --===============================================--
        -- Media Emissao Ped x Faturamento
@@ -18,12 +18,12 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/
        )) TP_MED_PED_FAT,
        --===============================================--
        -- Media Faturamento Venda Balcao x Entrega na Loja
-       ROUND(AVG((X.DTAHORLANCTO - P.DTAGERACAONF) -
-       CONSINCO.NAGF_DEDUZ_DOMINGO_DTA(X.DTAHORLANCTO, P.DTAGERACAONF)
+       ROUND(AVG((X.DTARECEBIMENTO - P.DTAGERACAONF) -
+       CONSINCO.NAGF_DEDUZ_DOMINGO_DTA(X.DTARECEBIMENTO, P.DTAGERACAONF)
        )) TP_MED_FAT_REC,
        --===============================================--
        ROUND((SUM((PI.QTDATENDIDA / PI.QTDEMBALAGEM) /
-       EXTRACT(DAY FROM LAST_DAY(DTAHORLANCTO))) / 1000)) QTD_MIL_FCD,
+       EXTRACT(DAY FROM LAST_DAY(X.DTARECEBIMENTO))) / 1000)) QTD_MIL_FCD, ---DTARECEBIMENTO
        --===============================================--
        NVL(DECODE(K2.INDSELINVERSA,'S','Cross Docking', DECODE(C.TIPOLOTE,'T','Divisao Lote Manual','A','Abastacimento Automatico')),'Pedido Manual') TIPO
 
@@ -40,13 +40,13 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/
    AND EXISTS (SELECT 1 FROM MAX_CODGERALOPER C WHERE C.TIPUSO = 'R' AND C.CODGERALOPER = X.CODGERALOPER)
 
    AND 1=1
-   --AND X.DTAHORLANCTO BETWEEN DATE '2023-12-01' AND DATE '2023-12-31'
+   --AND X.DTARECEBIMENTO BETWEEN DATE '2023-12-01' AND DATE '2023-12-31'
    AND X.STATUSNF = 'V'
    AND (C.TIPOLOTE IN ('T','A') OR K2.INDSELINVERSA = 'S')
 
-GROUP BY TO_CHAR(X.DTAHORLANCTO, 'MM'),
-         TO_CHAR(X.DTAHORLANCTO, 'YYYY'),
-         EXTRACT(DAY FROM LAST_DAY(DTAHORLANCTO)),
+GROUP BY TO_CHAR(X.DTARECEBIMENTO, 'MM'),
+         TO_CHAR(X.DTARECEBIMENTO, 'YYYY'),
+         EXTRACT(DAY FROM LAST_DAY(DTARECEBIMENTO)),
          NVL(DECODE(K2.INDSELINVERSA,'S','Cross Docking', DECODE(C.TIPOLOTE,'T','Divisao Lote Manual','A','Abastacimento Automatico')),'Pedido Manual')
 
 ORDER BY 2, 1
