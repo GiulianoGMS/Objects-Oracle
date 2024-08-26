@@ -27,7 +27,7 @@ SELECT A.SEQPRODUTO,
        -- Giuliano - 26/08/24
        -- Divide sempre por 2 pois a etiqueta é dupla
        -- CEIL arredonda pra cima pois se for solicitado 11, irá impimir 6 etiquetas (resultando em 12 duplas)
-       CEIL(A.QTDESOLICITADA/2) QTDESOLICITADA,
+       CEIL((A.QTDESOLICITADA - A.QTDEETIQEMITIDA)/2) QTDESOLICITADA,
        A.DTAINICIO,
        A.DTAFIM,
        NVL(A.INDEMIETIQUETA,'N') AS INDEMIETIQUETA,
