@@ -37,8 +37,8 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
       
       -- Imagens
       
-      '^FO25,185' ||(SELECT LT_IMG FROM NAGT_LT_IMG3) /* Esquerda  */                 || CHR(13) || CHR(10) ||
-      '^FO440,185'||(SELECT LT_IMG FROM NAGT_LT_IMG3) -- Direita
+      '^FO25,185' ||(SELECT LT_IMG FROM NAGT_LT_IMG3 X WHERE X.TIPO = 3) /* Esquerda  */                 || CHR(13) || CHR(10) ||
+      '^FO440,185'||(SELECT LT_IMG FROM NAGT_LT_IMG3 X WHERE X.TIPO = 3) -- Direita
 
 
 --FIM DA ETIQUETA
