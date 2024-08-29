@@ -25,10 +25,11 @@ SELECT A.SEQPRODUTO,
        A.CODACESSOESPECIAL,
        A.VLRPRECOPROMOC,
        -- Alt. Giuliano - 26/08/24
-       -- Divide sempre por 2 pois a etiqueta é dupla
-       -- CEIL arredonda pra cima pois se for solicitado 11, irá impimir 6 etiquetas (resultando em 12 duplas)
+       -- Divide sempre por 2 pois a etiqueta ? dupla
+       -- CEIL arredonda pra cima pois se for solicitado 11, ir? impimir 6 etiquetas (resultando em 12 duplas)
        -- Traz apenas a quantidade nao emitida
-       CEIL((A.QTDESOLICITADA - A.QTDEETIQEMITIDA)/2) QTDESOLICITADA,
+       CASE WHEN NVL(A.QTDEETIQEMITIDA,0) = 0 THEN A.QTDESOLICITADA ELSE 
+         CEIL((NVL(A.QTDEETIQEMITIDA,0) - A.QTDEETIQEMITIDA)/2) END QTDESOLICITADA,
        A.DTAINICIO,
        A.DTAFIM,
        NVL(A.INDEMIETIQUETA,'N') AS INDEMIETIQUETA,
@@ -37,7 +38,9 @@ SELECT A.SEQPRODUTO,
 FROM MRL_PROMOCESPECIALHIST A
 WHERE A.STATUS = 'A'
 
- -- Alterado por Giuliano -- Controle de emissão
+ -- Alterado por Giuliano -- Controle de emiss?o
  -- Retornar apenas se a quantidade impressa for menor que a solicitada
- 
-  AND A.QTDEETIQEMITIDA < A.QTDESOLICITADA
+
+  AND NVL(A.QTDEETIQEMITIDA,0) < A.QTDESOLICITADA
+;
+
