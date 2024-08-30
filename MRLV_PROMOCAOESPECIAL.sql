@@ -28,7 +28,7 @@ SELECT A.SEQPRODUTO,
        -- Divide sempre por 2 pois a etiqueta ? dupla
        -- CEIL arredonda pra cima pois se for solicitado 11, ir? impimir 6 etiquetas (resultando em 12 duplas)
        -- Traz apenas a quantidade nao emitida
-       CASE WHEN NVL(A.QTDEETIQEMITIDA,0) = 0 THEN A.QTDESOLICITADA ELSE 
+       CASE WHEN NVL(A.QTDEETIQEMITIDA,0) = 0 THEN CEIL(A.QTDESOLICITADA/2) ELSE
          CEIL((QTDESOLICITADA - NVL(A.QTDEETIQEMITIDA,0))/2) END QTDESOLICITADA,
        A.DTAINICIO,
        A.DTAFIM,
@@ -41,5 +41,5 @@ WHERE A.STATUS = 'A'
  -- Alterado por Giuliano -- Controle de emiss?o
  -- Retornar apenas se a quantidade impressa for menor que a solicitada
 
-  AND NVL(A.QTDEETIQEMITIDA,0) < A.QTDESOLICITADA
+  AND NVL(A.QTDEETIQEMITIDA,0) * 2 <= A.QTDESOLICITADA
 ;
