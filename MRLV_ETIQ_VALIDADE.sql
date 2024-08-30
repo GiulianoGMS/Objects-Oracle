@@ -12,13 +12,13 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
 
 
        '^XA' || '^PRA^FS' || '^LH00,00^FS'|| '^BY2^FS' || '^PQ' || NVL(A.QTDETIQUETA, 1) || '^FS'
-       || 
-      '^FO410,0^GB4,400,4^FS'                                                         || CHR(13) || CHR(10) ||
+       
+                                                      || CHR(13) || CHR(10) ||
       '^FO180,65^BY1.8^BY2^BY2,2.0,2.0^BEN,100,Y,N^FD'||B.CODACESSOESPECIAL||'^FS' || CHR(13) || CHR(10) || -- EAN
       '^FO35,30^A0N,18,18^FD'||SUBSTR(A.DESCCOMPLETA,0,37) ||' '||CASE WHEN J.QTDEMBALAGEM > 1 THEN J.EMBALAGEM ELSE NULL END||'^FS' || CHR(13) || CHR(10) || -- DESC
-      '^FO123,255^A0N,14,14^FDIMP '||TO_CHAR(SYSDATE, 'DD/MM/YY HH24:MI')||'- VALIDADE: '||TO_CHAR(B.DTAFIM, 'DD/MM/YYYY')||'^FS'|| CHR(13) || CHR(10) ||
+      '^FO123,255^A0N,14,14^FDIMP '||TO_CHAR(SYSDATE, 'DD/MM/YY HH24:MI')||'- VALIDADE: '||TO_CHAR(B.DTAFIM, 'DD/MM/YY')||'^FS'|| CHR(13) || CHR(10) ||
       '^FO35,125^A0N,20,20^FD^FS'                                                     || CHR(13) || CHR(10) ||
-      '^FO18,110^A0N,55,55^FD'||LPAD(TRUNC(B.VLRPRECOPROMOC), 4, ' ' ) || ',' || LPAD((B.VLRPRECOPROMOC - TRUNC(B.VLRPRECOPROMOC)) * 100, 2, 0)||'^FS' || CHR(13) || CHR(10) || -- PROMOC
+      '^FO8,110^A0N,55,55^FD'||LPAD(TRUNC(B.VLRPRECOPROMOC), 4, ' ' ) || ',' || LPAD((B.VLRPRECOPROMOC - TRUNC(B.VLRPRECOPROMOC)) * 100, 2, 0)||'^FS' || CHR(13) || CHR(10) || -- PROMOC
       '^FO115,200^A0N,18,18^FD*PRODUTO PROXIMO DA VALIDADE^FS'                        || CHR(13) || CHR(10) ||
       '^FO115,228^A0N,18,18^FD*SEM TROCA^FS'                                          || CHR(13) || CHR(10) ||
       '^FO45,75^A0N,15,15^FDPOR^FS'                                                   || CHR(13) || CHR(10) ||
@@ -26,9 +26,9 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
       '^FO35,65^GB130,100,80^FR^FS '                                                  || CHR(13) || CHR(10) ||
       '^FO595,65^BY1.8^BY2^BY2,2.0,2.0^BEN,100,Y,N^FD'||B.CODACESSOESPECIAL||'^FS' || CHR(13) || CHR(10) || -- EAN
       '^FO450,30^A0N,18,18^FD'||SUBSTR(A.DESCCOMPLETA,0,37) ||' '||CASE WHEN J.QTDEMBALAGEM > 1 THEN J.EMBALAGEM ELSE NULL END||'^FS' || CHR(13) || CHR(10) || -- DESC
-      '^FO538,255^A0N,14,14^FDIMP: '||TO_CHAR(SYSDATE, 'DD/MM/YY HH24:MI')||'- VALIDADE: '||TO_CHAR(B.DTAFIM, 'DD/MM/YYYY')||'^FS'|| CHR(13) || CHR(10) ||
+      '^FO538,255^A0N,14,14^FDIMP: '||TO_CHAR(SYSDATE, 'DD/MM/YY HH24:MI')||'- VALIDADE: '||TO_CHAR(B.DTAFIM, 'DD/MM/YY')||'^FS'|| CHR(13) || CHR(10) ||
       '^FO450,125^A0N,20,20^FD^FS'                                                    || CHR(13) || CHR(10) ||
-      '^FO429,110^A0N,55,55^FD'||LPAD(TRUNC(B.VLRPRECOPROMOC), 4, ' ' ) || ',' || LPAD((B.VLRPRECOPROMOC - TRUNC(B.VLRPRECOPROMOC)) * 100, 2, 0)||'^FS' || CHR(13) || CHR(10) || -- PROMOC
+      '^FO424,110^A0N,55,55^FD'||LPAD(TRUNC(B.VLRPRECOPROMOC), 4, ' ' ) || ',' || LPAD((B.VLRPRECOPROMOC - TRUNC(B.VLRPRECOPROMOC)) * 100, 2, 0)||'^FS' || CHR(13) || CHR(10) || -- PROMOC
       '^FO530,200^A0N,18,18^FD*PRODUTO PROXIMO DA VALIDADE^FS'                        || CHR(13) || CHR(10) ||
       '^FO530,228^A0N,18,18^FD*SEM TROCA^FS'                                          || CHR(13) || CHR(10) ||  
       '^FO460,75^A0N,15,15^FDPOR^FS'                                                  || CHR(13) || CHR(10) ||
