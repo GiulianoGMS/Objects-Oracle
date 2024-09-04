@@ -12,17 +12,25 @@ SELECT DISTINCT X."CNPJCPF", X."PRODUTOEMITENTE", X."PRODUTO",
                     (SELECT 1
                            FROM CONSINCO.NAGT_TKT436061 X
                           WHERE X.SEQPRODUTO = A.SEQPRODUTO
-                            AND X.CGCFORNEC = A.CGCFORNEC
-                            AND X.CODACESSO = A.CODACESSO
-                            AND X.TIPCODIGO = A.TIPCODIGO
-                            
+                            AND X.CGCFORNEC  = A.CGCFORNEC
+                            AND X.CODACESSO  = A.CODACESSO
+                            AND X.TIPCODIGO  = A.TIPCODIGO
                      UNION
                      SELECT 2
                           FROM CONSINCO.NAGT_TKT_441375 X2
                          WHERE X2.SEQPRODUTO = A.SEQPRODUTO
-                           AND X2.CGCFORNEC = A.CGCFORNEC
-                           AND X2.CODACESSO = A.CODACESSO
-                           AND X2.TIPCODIGO  = A.TIPCODIGO) AND A.QTDEMBALAGEM = 1 THEN
+                           AND X2.CGCFORNEC  = A.CGCFORNEC
+                           AND X2.CODACESSO  = A.CODACESSO
+                           AND X2.TIPCODIGO  = A.TIPCODIGO
+                     UNION
+                     SELECT 3
+                          FROM CONSINCO.NAGT_TKT431411BKP X3
+                         WHERE X3.SEQPRODUTO = A.SEQPRODUTO
+                           AND X3.CGCFORNEC  = A.CGCFORNEC
+                           AND X3.CODACESSO  = A.CODACESSO
+                           AND X3.TIPCODIGO  = A.TIPCODIGO
+                           
+                           ) AND A.QTDEMBALAGEM = 1 THEN
                     'UN'
                    ELSE
 
@@ -134,8 +142,8 @@ SELECT DISTINCT X."CNPJCPF", X."PRODUTOEMITENTE", X."PRODUTO",
                    FROM CONSINCO.MAP_FAMFORNEC F
                   WHERE F.SEQFAMILIA = A.SEQFAMILIA)
             AND C.FISICAJURIDICA = 'F'
-
-         ) X
+           
+         ) X -- WHERE UNIDADECOMPRA IS NOT NULL
 
  ORDER BY 2
 ;
