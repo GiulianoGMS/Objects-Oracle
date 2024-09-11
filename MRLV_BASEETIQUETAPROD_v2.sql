@@ -1,15 +1,15 @@
-CREATE OR REPLACE VIEW CONSINCO.MRLV_BASEETIQUETAPROD_v2 AS
+CREATE OR REPLACE VIEW CONSINCO.MRLV_BASEETIQUETAPROD_V2 AS
 SELECT DISTINCT "SEQPRODUTO","NROEMPRESA","NROSEGMENTO","DESCCOMPLETA","DESCREDUZIDA","SEQFAMILIA","LOCENTRADA","LOCSAIDA","NRORUA","NROPREDIO",
       "NROVAO","NROSALA","LOCALTURA","LOCLARGURA","LOCPROFUNDIDADE","EMBALAGEM","FAMILIA","PESAVEL","PMTDECIMAL","PMTMULTIPLICACAO","STATUSVENDA",
       "QTDEMBALAGEM","PRECOBASENORMAL","PRECOGERNORMAL","PRECOGERPROMOC","PRECOVALIDNORMAL","PRECOVALIDPROMOC","INDEMIETIQUETA","QTDETIQUETA","NROGONDOLA",
       "ESTQLOJA","ESTQDEPOSITO","ESTQTROCA","ESTQALMOXARIFADO","ESTQOUTRO","QTDRESERVADAVDA","QTDRESERVADARECEB","QTDRESERVADAFIXA","DTAGERACAOPRECO","DTAVALIDACAOPRECO",
-      "DTABASEEXPORTACAO","MULTEQPEMB","MULTEQPEMBALAGEM","NRODEPARTAMENTO","INDETIQUETARF","DTAGERACAOPRECOPROG","ETIQUETAPADRAO","QTDETIQUETARF" 
-      
+      "DTABASEEXPORTACAO","MULTEQPEMB","MULTEQPEMBALAGEM","NRODEPARTAMENTO","INDETIQUETARF","DTAGERACAOPRECOPROG","ETIQUETAPADRAO","QTDETIQUETARF"
+
  FROM (
 
 -- Select normal da aplicacao
 
-select  DISTINCT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/ a.seqproduto,
+select  /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/ a.seqproduto,
        a.nroempresa,
        a.nrosegmento,
        b.desccompleta,
@@ -207,9 +207,10 @@ FROM MRL_PRODEMPSEG A INNER JOIN MAP_PRODUTO B ON A.SEQPRODUTO = B.SEQPRODUTO
                       INNER JOIN MAX_EMPRESA EMP      ON EMP.NROEMPRESA = A.NROEMPRESA
                       INNER JOIN MAD_FAMSEGMENTO F    ON F.SEQFAMILIA = B.SEQFAMILIA AND F.NROSEGMENTO = A.NROSEGMENTO
 
--- Começa o tratamento para retorno dos produtos dentro dos encartes (Ativaveis)
+-- Começa o tratamento para retorno dos produtos de ofertas Meu Nagumo -- Ativaveis e Exclusivas
 
 WHERE EXISTS
+                -- Ativaveis
        (SELECT 1
           FROM CONSINCO.MRL_ENCARTE AA
          INNER JOIN CONSINCO.MRL_ENCARTEPRODUTO BB
@@ -217,36 +218,37 @@ WHERE EXISTS
          WHERE BB.PRECOPROMOCIONAL > 0
                AND BB.QTDEMBALAGEM = 1
                AND DESCRICAO LIKE 'MEU NAGUMO%'
-               AND TRUNC(SYSDATE) BETWEEN DTAINICIO AND DTAFIM
+               AND (TRUNC(SYSDATE) = DTAINICIO  -- Comecando hoje
+                OR  TRUNC(SYSDATE) -1 = DTAFIM) -- Ou terminando ontem
                AND BB.SEQPRODUTO = A.SEQPRODUTO
-        
-        UNION -- Meu Nagumo Exclusivas
-        
+
+        UNION  -- Meu Nagumo Exclusivas
+
         SELECT 2
           FROM CONSINCO.NAGT_REMARCAPROMOCOES RP
-         WHERE SYSDATE BETWEEN RP.DTHRINICIO AND RP.DTHRFIM
+         WHERE 1=1
                AND RP.TIPODESCONTO = 4
                AND RP.PROMOCAOLIVRE = 0
                AND RP.CODLOJA = A.NROEMPRESA
-               AND RP.CODIGOPRODUTO = LPAD(CC.CODACESSO, 14, 0))
-      
+               AND RP.CODIGOPRODUTO = LPAD(CC.CODACESSO, 14, 0)
+               AND (TRUNC (SYSDATE) = TRUNC (RP.DTHRINICIO)  -- Comecando hoje
+                OR  TRUNC (SYSDATE) - 1 = TRUNC(RP.DTHRFIM)) -- Ou terminando ontem
+        )
+        
        AND D.QTDEMBALAGEM = DECODE(NVL(FC5MAXPARAMETRO('EMISSAO_ETIQUETA',
                                                        A.NROEMPRESA,
                                                        'EMITE_ETIQ_PRECO_DIF'),
-                                       'N'),
-                                   'N',
-                                   F.PADRAOEMBVENDA,
-                                   'M',
+                                   'N'), 'N', F.PADRAOEMBVENDA, 'M',
                                    FRETQTDEMBBASEETIQPROD(B.SEQPRODUTO,
                                                           E.NROEMPRESA,
                                                           F.NROSEGMENTO) /*fMaiorEmbVendaAtiva(b.seqproduto, e.nroempresa, f.nrosegmento) - COMENTADO NO RC 66994*/,
                                    D.QTDEMBALAGEM)
        AND A.NROSEGMENTO = EMP.NROSEGMENTOPRINC
-      
+
       -- Corta ja emitidos (De acordo com data de alteracao)
-      
+
        AND NOT EXISTS
-       
+
        (SELECT 1
           FROM CONSINCO.NAGT_CONTROLEIMPRESSAO XX
          WHERE XX.SEQPRODUTO = A.SEQPRODUTO
