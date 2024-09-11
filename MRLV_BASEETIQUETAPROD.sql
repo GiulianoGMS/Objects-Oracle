@@ -3,7 +3,7 @@ SELECT DISTINCT "SEQPRODUTO","NROEMPRESA","NROSEGMENTO","DESCCOMPLETA","DESCREDU
 
 -- Select normal da aplicacao
 
-select  /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/ a.seqproduto,
+select  /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/ a.seqproduto,
        a.nroempresa,
        a.nrosegmento,
        b.desccompleta,
@@ -139,7 +139,7 @@ group  by
 
 UNION ALL
 
-select /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/  a.seqproduto,
+select /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/  a.seqproduto,
        a.nroempresa,
        a.nrosegmento,
        b.desccompleta,
@@ -203,7 +203,7 @@ FROM MRL_PRODEMPSEG A INNER JOIN MAP_PRODUTO B ON A.SEQPRODUTO = B.SEQPRODUTO
 -- Começa o tratamento para retorno dos produtos dentro dos encartes (Meu Nagumo)
 -- Busca Similares
 
-WHERE EXISTS     (SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/ 1 FROM MRL_ENCARTE X INNER JOIN MRL_ENCARTEPRODUTO XI      ON XI.SEQENCARTE = X.SEQENCARTE
+WHERE EXISTS     (SELECT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/ 1 FROM MRL_ENCARTE X INNER JOIN MRL_ENCARTEPRODUTO XI      ON XI.SEQENCARTE = X.SEQENCARTE
                                               INNER JOIN CONSINCO.MRL_ENCARTEEMP XE ON XE.SEQENCARTE = X.SEQENCARTE
                                               INNER JOIN CONSINCO.MRL_ENCARTEPRODUTOPRECO PP ON PP.SEQENCARTE = X.SEQENCARTE AND PP.SEQPRODUTO = XI.SEQPRODUTO
                                               INNER JOIN MAP_PRODSIMILAR S          ON S.SEQPRODUTO  = XI.SEQPRODUTO
@@ -215,13 +215,13 @@ WHERE EXISTS     (SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/ 1 FROM MRL_E
                              AND NVL(PP.PRECOCARTAO,0) > 0          -- Apenas os que possuem preco meu nagumo
                              AND (NVL(XI.DTAVIGENCIAFIM,DTAFIM)        = TRUNC(SYSDATE) - 1 -- Retornando as saidas do dia anterior
                              -- Retirado Solic Raquel pois esta antecipando
-                              OR  NVL(XI.DTAVIGENCIAINI,X.DTAINICIO)   = TRUNC(SYSDATE))    -- (ou) Retorna os que iniciarem hoje
+                              OR /*NVL(*/XI.DTAVIGENCIAINI/*,X.DTAINICIO)*/   = TRUNC(SYSDATE))    -- (ou) Retorna os que iniciarem hoje
                              AND XE.NROEMPRESA = A.NROEMPRESA       -- Join da empresa
                              AND SF.SEQPRODUTO = A.SEQPRODUTO       -- Join do produto similar
 
 -- Busca Familiares
 
-    UNION         SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/ 2 FROM MRL_ENCARTE X INNER JOIN MRL_ENCARTEPRODUTO XI      ON XI.SEQENCARTE = X.SEQENCARTE
+    UNION         SELECT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/ 2 FROM MRL_ENCARTE X INNER JOIN MRL_ENCARTEPRODUTO XI      ON XI.SEQENCARTE = X.SEQENCARTE
                                               INNER JOIN CONSINCO.MRL_ENCARTEEMP XE ON XE.SEQENCARTE = X.SEQENCARTE
                                               INNER JOIN CONSINCO.MRL_ENCARTEPRODUTOPRECO PP ON PP.SEQENCARTE = X.SEQENCARTE AND PP.SEQPRODUTO = XI.SEQPRODUTO
                                               INNER JOIN MAP_PRODUTO P              ON P.SEQPRODUTO  = XI.SEQPRODUTO
@@ -233,7 +233,7 @@ WHERE EXISTS     (SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/ 1 FROM MRL_E
                              AND NVL(PP.PRECOCARTAO,0) > 0          -- Apenas os que possuem preco meu nagumo
                              AND (NVL(XI.DTAVIGENCIAFIM,DTAFIM)        = TRUNC(SYSDATE) - 1 -- Retornando as saidas do dia anterior
                              -- Retirado Solic Raquel pois esta antecipando
-                              OR NVL(XI.DTAVIGENCIAINI,X.DTAINICIO)   = TRUNC(SYSDATE))    -- (ou) Retorna os que iniciarem hoje
+                              OR /*NVL(*/XI.DTAVIGENCIAINI/*,X.DTAINICIO)*/   = TRUNC(SYSDATE))    -- (ou) Retorna os que iniciarem hoje
                              AND XE.NROEMPRESA = A.NROEMPRESA       -- Join da empresa
                              AND PF.SEQPRODUTO = A.SEQPRODUTO)      -- Join do produto familiar
 
@@ -248,7 +248,7 @@ AND A.NROSEGMENTO = EMP.NROSEGMENTOPRINC
 
 -- Corta ja emitidos (De acordo com data de alteracao)
 
-AND NOT EXISTS (SELECT 1 FROM CONSINCO.NAGT_CONTROLEIMPRESSAO XX WHERE XX.SEQPRODUTO = A.SEQPRODUTO                                                            
+AND NOT EXISTS (SELECT 1 FROM CONSINCO.NAGT_CONTROLEIMPRESSAO XX WHERE XX.SEQPRODUTO = A.SEQPRODUTO
                                                                    AND XX.NROEMPRESA = A.NROEMPRESA
                                                                    AND TRUNC(XX.DTAIMPRESSAO) = TRUNC(SYSDATE))
 
