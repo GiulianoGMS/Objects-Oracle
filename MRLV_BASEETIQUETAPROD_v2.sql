@@ -1,5 +1,6 @@
-CREATE OR REPLACE VIEW CONSINCO.MRLV_BASEETIQUETAPROD_V2 AS
-SELECT DISTINCT "SEQPRODUTO","NROEMPRESA","NROSEGMENTO","DESCCOMPLETA","DESCREDUZIDA","SEQFAMILIA","LOCENTRADA","LOCSAIDA","NRORUA","NROPREDIO",
+CREATE OR REPLACE VIEW CONSINCO.MRLV_BASEETIQUETAPROD_v2 AS
+SELECT/*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/
+       DISTINCT "SEQPRODUTO","NROEMPRESA","NROSEGMENTO","DESCCOMPLETA","DESCREDUZIDA","SEQFAMILIA","LOCENTRADA","LOCSAIDA","NRORUA","NROPREDIO",
       "NROVAO","NROSALA","LOCALTURA","LOCLARGURA","LOCPROFUNDIDADE","EMBALAGEM","FAMILIA","PESAVEL","PMTDECIMAL","PMTMULTIPLICACAO","STATUSVENDA",
       "QTDEMBALAGEM","PRECOBASENORMAL","PRECOGERNORMAL","PRECOGERPROMOC","PRECOVALIDNORMAL","PRECOVALIDPROMOC","INDEMIETIQUETA","QTDETIQUETA","NROGONDOLA",
       "ESTQLOJA","ESTQDEPOSITO","ESTQTROCA","ESTQALMOXARIFADO","ESTQOUTRO","QTDRESERVADAVDA","QTDRESERVADARECEB","QTDRESERVADAFIXA","DTAGERACAOPRECO","DTAVALIDACAOPRECO",
@@ -9,7 +10,7 @@ SELECT DISTINCT "SEQPRODUTO","NROEMPRESA","NROSEGMENTO","DESCCOMPLETA","DESCREDU
 
 -- Select normal da aplicacao
 
-select  /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/ a.seqproduto,
+select  a.seqproduto,
        a.nroempresa,
        a.nrosegmento,
        b.desccompleta,
@@ -143,7 +144,7 @@ group  by
        e.etiquetapadrao,
        a.qtdetiqueta
 
-UNION
+UNION -- Comeca Select das Exclusivas MN
 
 SELECT DISTINCT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/  A.SEQPRODUTO,
        A.NROEMPRESA,
@@ -203,39 +204,21 @@ FROM MRL_PRODEMPSEG A INNER JOIN MAP_PRODUTO B ON A.SEQPRODUTO = B.SEQPRODUTO
                       INNER JOIN MAP_FAMEMBALAGEM D   ON D.SEQFAMILIA = B.SEQFAMILIA AND D.QTDEMBALAGEM = A.QTDEMBALAGEM
                       INNER JOIN MRL_PRODUTOEMPRESA E ON E.SEQPRODUTO = A.SEQPRODUTO AND E.NROEMPRESA = A.NROEMPRESA
                       INNER JOIN MRL_PRODLOCAL G      ON G.SEQPRODUTO = A.SEQPRODUTO AND G.SEQLOCAL = E.LOCSAIDA AND G.NROEMPRESA = A.NROEMPRESA
-                       LEFT JOIN MAP_PRODCODIGO CC    ON CC.SEQPRODUTO = A.SEQPRODUTO AND CC.QTDEMBALAGEM = A.QTDEMBALAGEM AND CC.TIPCODIGO = 'E'
                       INNER JOIN MAX_EMPRESA EMP      ON EMP.NROEMPRESA = A.NROEMPRESA
                       INNER JOIN MAD_FAMSEGMENTO F    ON F.SEQFAMILIA = B.SEQFAMILIA AND F.NROSEGMENTO = A.NROSEGMENTO
+                       -- Join nas Exclusivas
+                      INNER JOIN (SELECT SEQPRODUTO, CODLOJA NROEMPRESA
+                                    FROM CONSINCO.NAGT_REMARCAPROMOCOES RP INNER JOIN MAP_PRODCODIGO CC ON RP.CODIGOPRODUTO = LPAD(CC.CODACESSO,14,0) 
+                                                                             AND CC.TIPCODIGO = 'E' 
+                                                                             AND CC.QTDEMBALAGEM = 1
+                                   WHERE 1=1
+                                     AND RP.TIPODESCONTO = 4
+                                     AND RP.PROMOCAOLIVRE = 0
+                                      AND (TRUNC (SYSDATE) = TRUNC (RP.DTHRINICIO)  -- Comecando hoje
+                                       OR  TRUNC (SYSDATE) - 1 = TRUNC(RP.DTHRFIM)) -- Ou terminando ontem)
+                                   )  RPM ON RPM.NROEMPRESA = A.NROEMPRESA AND RPM.SEQPRODUTO = A.SEQPRODUTO
 
--- Começa o tratamento para retorno dos produtos de ofertas Meu Nagumo -- Ativaveis e Exclusivas
-
-WHERE EXISTS
-                -- Ativaveis
-       (SELECT 1
-          FROM CONSINCO.MRL_ENCARTE AA
-         INNER JOIN CONSINCO.MRL_ENCARTEPRODUTO BB
-            ON AA.SEQENCARTE = BB.SEQENCARTE
-         WHERE BB.PRECOPROMOCIONAL > 0
-               AND BB.QTDEMBALAGEM = 1
-               AND DESCRICAO LIKE 'MEU NAGUMO%'
-               AND (TRUNC(SYSDATE) = DTAINICIO  -- Comecando hoje
-                OR  TRUNC(SYSDATE) -1 = DTAFIM) -- Ou terminando ontem
-               AND BB.SEQPRODUTO = A.SEQPRODUTO
-
-        UNION  -- Meu Nagumo Exclusivas
-
-        SELECT 2
-          FROM CONSINCO.NAGT_REMARCAPROMOCOES RP
-         WHERE 1=1
-               AND RP.TIPODESCONTO = 4
-               AND RP.PROMOCAOLIVRE = 0
-               AND RP.CODLOJA = A.NROEMPRESA
-               AND RP.CODIGOPRODUTO = LPAD(CC.CODACESSO, 14, 0)
-               AND (TRUNC (SYSDATE) = TRUNC (RP.DTHRINICIO)  -- Comecando hoje
-                OR  TRUNC (SYSDATE) - 1 = TRUNC(RP.DTHRFIM)) -- Ou terminando ontem
-        )
-        
-       AND D.QTDEMBALAGEM = DECODE(NVL(FC5MAXPARAMETRO('EMISSAO_ETIQUETA',
+WHERE D.QTDEMBALAGEM = DECODE(NVL(FC5MAXPARAMETRO('EMISSAO_ETIQUETA',
                                                        A.NROEMPRESA,
                                                        'EMITE_ETIQ_PRECO_DIF'),
                                    'N'), 'N', F.PADRAOEMBVENDA, 'M',
@@ -294,5 +277,138 @@ WHERE EXISTS
           A.INDETIQUETARF,
           E.ETIQUETAPADRAO,
           A.QTDETIQUETA
+          
+UNION -- Comeca Select das Ativaveis
+
+SELECT DISTINCT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/  A.SEQPRODUTO,
+       A.NROEMPRESA,
+       A.NROSEGMENTO,
+       B.DESCCOMPLETA,
+       B.DESCREDUZIDA,
+       B.SEQFAMILIA,
+       E.LOCENTRADA,
+       E.LOCSAIDA,
+       G.NRORUA,
+       G.NROPREDIO,
+       G.NROVAO,
+       G.NROSALA,
+       G.LOCALTURA,
+       G.LOCLARGURA,
+       G.LOCPROFUNDIDADE,
+       D.EMBALAGEM || ' ' || D.QTDEMBALAGEM EMBALAGEM,
+       C.FAMILIA,
+       C.PESAVEL,
+       C.PMTDECIMAL,
+       C.PMTMULTIPLICACAO,
+       A.STATUSVENDA,
+       D.QTDEMBALAGEM,
+       MAX(ROUND(A.PRECOBASENORMAL  / A.QTDEMBALAGEM * D.QTDEMBALAGEM, 2)) ,
+       MAX(ROUND(A.PRECOGERNORMAL   / A.QTDEMBALAGEM * D.QTDEMBALAGEM, 2)) ,
+       MAX(ROUND(A.PRECOGERPROMOC   / A.QTDEMBALAGEM * D.QTDEMBALAGEM, 2)) ,
+       MAX(ROUND(A.PRECOVALIDNORMAL / A.QTDEMBALAGEM * D.QTDEMBALAGEM, 2)) ,
+       MAX(ROUND(A.PRECOVALIDPROMOC / A.QTDEMBALAGEM * D.QTDEMBALAGEM, 2)) ,
+       'N' INDEMIETIQUETA,
+       /*CASE
+        WHEN TO_CHAR(SYSDATE, 'HH24:MI') <= '09:00' THEN 1
+        ELSE 0 -- SE A HORA ATUAL NÃO FOR MAIOR QUE 09:00, RETORNA 0 - SÓ IRÁ EMITIR PELA MANHA*/
+          1
+        QTDETIQUETA,
+       E.NROGONDOLA,
+       E.ESTQLOJA,
+       E.ESTQDEPOSITO,
+       E.ESTQTROCA,
+       E.ESTQALMOXARIFADO,
+       E.ESTQOUTRO,
+       E.QTDRESERVADAVDA,
+       E.QTDRESERVADARECEB,
+       E.QTDRESERVADAFIXA,
+       SYSDATE DTAGERACAOPRECO,
+       SYSDATE DTAVALIDACAOPRECO,
+       MAX(A.DTABASEEXPORTACAO) DTABASEEXPORTACAO,
+       D.MULTEQPEMB,
+       D.MULTEQPEMBALAGEM,
+       E.NRODEPARTAMENTO,
+       A.INDETIQUETARF,
+       MAX(A.DTAGERACAOPRECOPROG) DTAGERACAOPRECOPROG,
+       E.ETIQUETAPADRAO,
+       NVL(A.QTDETIQUETA, E.QTDETIQUETA) QTDETIQUETARF
+
+FROM MRL_PRODEMPSEG A INNER JOIN MAP_PRODUTO B ON A.SEQPRODUTO = B.SEQPRODUTO
+                      INNER JOIN MAP_FAMILIA C ON C.SEQFAMILIA = B.SEQFAMILIA
+                      INNER JOIN MAP_FAMEMBALAGEM D   ON D.SEQFAMILIA = B.SEQFAMILIA AND D.QTDEMBALAGEM = A.QTDEMBALAGEM
+                      INNER JOIN MRL_PRODUTOEMPRESA E ON E.SEQPRODUTO = A.SEQPRODUTO AND E.NROEMPRESA = A.NROEMPRESA
+                      INNER JOIN MRL_PRODLOCAL G      ON G.SEQPRODUTO = A.SEQPRODUTO AND G.SEQLOCAL = E.LOCSAIDA AND G.NROEMPRESA = A.NROEMPRESA
+                      INNER JOIN MAX_EMPRESA EMP      ON EMP.NROEMPRESA = A.NROEMPRESA
+                      INNER JOIN MAD_FAMSEGMENTO F    ON F.SEQFAMILIA = B.SEQFAMILIA AND F.NROSEGMENTO = A.NROSEGMENTO
+                      -- Join nas Ativaveis
+                      INNER JOIN (SELECT SEQPRODUTO
+                                    FROM CONSINCO.MRL_ENCARTE AA INNER JOIN CONSINCO.MRL_ENCARTEPRODUTO BB ON AA.SEQENCARTE = BB.SEQENCARTE
+                                   WHERE BB.PRECOPROMOCIONAL > 0
+                                     AND BB.QTDEMBALAGEM = 1
+                                     AND DESCRICAO LIKE 'MEU NAGUMO%'
+                                     AND (TRUNC(SYSDATE) = DTAINICIO  -- Comecando hoje
+                                      OR  TRUNC(SYSDATE) -1 = DTAFIM) -- Ou terminando ontem) -- Ou terminando ontem)
+                                  ) AT ON AT.SEQPRODUTO = A.SEQPRODUTO
+
+WHERE D.QTDEMBALAGEM = DECODE(NVL(FC5MAXPARAMETRO('EMISSAO_ETIQUETA',
+                                                       A.NROEMPRESA,
+                                                       'EMITE_ETIQ_PRECO_DIF'),
+                                   'N'), 'N', F.PADRAOEMBVENDA, 'M',
+                                   FRETQTDEMBBASEETIQPROD(B.SEQPRODUTO,
+                                                          E.NROEMPRESA,
+                                                          F.NROSEGMENTO) /*fMaiorEmbVendaAtiva(b.seqproduto, e.nroempresa, f.nrosegmento) - COMENTADO NO RC 66994*/,
+                                   D.QTDEMBALAGEM)
+       AND A.NROSEGMENTO = EMP.NROSEGMENTOPRINC
+
+      -- Corta ja emitidos (De acordo com data de alteracao)
+
+       AND NOT EXISTS
+
+       (SELECT 1
+          FROM CONSINCO.NAGT_CONTROLEIMPRESSAO XX
+         WHERE XX.SEQPRODUTO = A.SEQPRODUTO
+               AND XX.NROEMPRESA = A.NROEMPRESA
+               AND TRUNC(XX.DTAIMPRESSAO) = TRUNC(SYSDATE))
+
+ GROUP BY A.SEQPRODUTO,
+          A.NROEMPRESA,
+          A.NROSEGMENTO,
+          B.DESCCOMPLETA,
+          B.DESCREDUZIDA,
+          B.SEQFAMILIA,
+          E.LOCENTRADA,
+          E.LOCSAIDA,
+          G.NRORUA,
+          G.NROPREDIO,
+          G.NROVAO,
+          G.NROSALA,
+          G.LOCALTURA,
+          G.LOCLARGURA,
+          G.LOCPROFUNDIDADE,
+          D.EMBALAGEM || ' ' || D.QTDEMBALAGEM,
+          C.FAMILIA,
+          C.PESAVEL,
+          C.PMTDECIMAL,
+          C.PMTMULTIPLICACAO,
+          A.STATUSVENDA,
+          D.QTDEMBALAGEM,
+          A.INDEMIETIQUETA,
+          E.QTDETIQUETA,
+          E.NROGONDOLA,
+          E.ESTQLOJA,
+          E.ESTQDEPOSITO,
+          E.ESTQTROCA,
+          E.ESTQALMOXARIFADO,
+          E.ESTQOUTRO,
+          E.QTDRESERVADAVDA,
+          E.QTDRESERVADARECEB,
+          E.QTDRESERVADAFIXA,
+          D.MULTEQPEMB,
+          D.MULTEQPEMBALAGEM,
+          E.NRODEPARTAMENTO,
+          A.INDETIQUETARF,
+          E.ETIQUETAPADRAO,
+          A.QTDETIQUETA
+          
 )
 ;
