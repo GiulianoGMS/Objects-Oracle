@@ -43,7 +43,8 @@ select substr(a.linha, 0,   1)                             tipo,
 -- Alterada
 
 create or replace view mrlv_impcoral_12 as
-select   /*Altera */
+select   /*Alterada em 12/09/2024 por Giuliano - Solic Alan
+         Trata Cod Cesta de 12 digitos */
 
          substr(a.linha, 0,   1)                             tipo,
          to_number(substr(a.linha, 2,   6))                  ncupom,
