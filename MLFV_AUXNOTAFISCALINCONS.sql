@@ -3,9 +3,9 @@ SELECT distinct (PP.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
                 PP.NUMERONF,
                 PP.NROEMPRESA,
                 0 AS SEQAUXNFITEM, -- Seq Item
-                'L' AS BLOQAUTOR, -- Indica se ¿ de bloqueio(B) ou permite Libera¿¿o (L)
-                51 AS CODINCONSISTENC, -- C¿digo de inconsist¿ncia. Nro Sequencial iniciando em 50
-                'Nota com produtos que cobram ST por fora sem guia lançada ou valor divergente' AS MENSAGEM -- Mensagem da inconsist¿ncia
+                'L' AS BLOQAUTOR, -- Indica se e de bloqueio(B) ou permite Liberacao (L)
+                51 AS CODINCONSISTENC, -- Codigo de inconsistencia Nro Sequencial iniciando em 50
+                'Nota com produtos que cobram ST por fora sem guia lancada ou valor divergente' AS MENSAGEM -- Mensagem da inconsistencia
   FROM MLF_AUXNOTAFISCAL PP,
        MLF_GNRE Z,
        (SELECT X.SEQAUXNOTAFISCAL, SUM(X.VLRICMSST) VLRICMSST
@@ -19,14 +19,14 @@ SELECT distinct (PP.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
 
    union all
 
-----cr¿tica solicitada por Neides.
+----critica solicitada por Neides.
    SELECT distinct (a.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
                 a.NUMERONF,
                 a.NROEMPRESA,
                 0 AS SEQAUXNFITEM, -- Seq Item
-                'B' AS BLOQAUTOR, -- Indica se ¿ de bloqueio(B) ou permite Libera¿¿o (L)
-                52 AS CODINCONSISTENC, -- C¿digo de inconsist¿ncia. Nro Sequencial iniciando em 50
-                'Nota Fiscal com o CGO incorreto' AS MENSAGEM -- Mensagem da inconsist¿ncia
+                'B' AS BLOQAUTOR, -- Indica se e de bloqueio(B) ou permite Liberacao (L)
+                52 AS CODINCONSISTENC, -- Codigo de inconsistencia Nro Sequencial iniciando em 50
+                'Nota Fiscal com o CGO incorreto' AS MENSAGEM -- Mensagem da inconsistencia
 from MLF_AUXNOTAFISCAL a,ge_pessoa b, max_empresa c,
 (select substr((lpad(a.nrocgccpf,13,0)),0,9)as raiz,b.seqpessoaemp,a.fantasia, b.nroempresa
 from ge_pessoa a, max_empresa b
@@ -44,9 +44,9 @@ union all
                 a.NUMERONF,
                 a.NROEMPRESA,
                 0 AS SEQAUXNFITEM, -- Seq Item
-                'B' AS BLOQAUTOR, -- Indica se ¿ de bloqueio(B) ou permite Libera¿¿o (L)
-                53 AS CODINCONSISTENC, -- C¿digo de inconsist¿ncia. Nro Sequencial iniciando em 50
-                'Nota Fiscal com o CGO incorreto' AS MENSAGEM -- Mensagem da inconsist¿ncia
+                'B' AS BLOQAUTOR, -- Indica se e de bloqueio(B) ou permite Liberacao (L)
+                53 AS CODINCONSISTENC, -- Codigo de inconsistencia Nro Sequencial iniciando em 50
+                'Nota Fiscal com o CGO incorreto' AS MENSAGEM -- Mensagem da inconsistencia
 from MLF_AUXNOTAFISCAL a,ge_pessoa b, max_empresa c,
 (select substr((lpad(a.nrocgccpf,13,0)),0,9)as raiz,b.seqpessoaemp,a.fantasia, b.nroempresa
 from ge_pessoa a, max_empresa b
@@ -56,44 +56,44 @@ and   a.seqpessoa = b.seqpessoa
 and   a.nroempresa = d.nroempresa
 and   a.codgeraloper = e.codgeraloper
 and substr((lpad(b.nrocgccpf,13,0)),0,9) = d.raiz
-and a.seqpessoa <> a.nroempresa --- Tratativa para quando empresa mata a operação para ela mesma 30/09/2022
+and a.seqpessoa <> a.nroempresa --- Tratativa para quando empresa mata a operaCAO para ela mesma 30/09/2022
 and e.cfopestado in (1202)
 
 union all
 
-/* Alteracao na logica das duas críticas abaixo em solicitação de Neides - 22/11/2023 - Alterado por Giuliano
+/* Alteracao na logica das duas criticas abaixo em solicitaCAO de Neides - 22/11/2023 - Alterado por Giuliano
 
-----Critica : Para Fornecedores de SP a data de emiss¿o n¿o pode ser mais do que 15 dias da data do recebimento
+----Critica : Para Fornecedores de SP a data de emissao nao pode ser mais do que 15 dias da data do recebimento
 SELECT distinct (a.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
                 a.NUMERONF,
                 a.NROEMPRESA,
                 0 AS SEQAUXNFITEM, -- Seq Item
-                'L' AS BLOQAUTOR, -- Indica se ¿ de bloqueio(B) ou permite Libera¿¿o (L)
-                54 AS CODINCONSISTENC, -- C¿digo de inconsist¿ncia. Nro Sequencial iniciando em 50
-                'Data de Recebimento Acima de 18 Dias da Emissão Para Fornecedores de SP Data Limite : '|| to_char(a.dtaemissao + 16, 'DD/MM/YY') AS MENSAGEM -- Mensagem da inconsist¿ncia
+                'L' AS BLOQAUTOR, -- Indica se e de bloqueio(B) ou permite Liberacao (L)
+                54 AS CODINCONSISTENC, -- Codigo de inconsistencia Nro Sequencial iniciando em 50
+                'Data de Recebimento Acima de 18 Dias da emissao Para Fornecedores de SP Data Limite : '|| to_char(a.dtaemissao + 16, 'DD/MM/YY') AS MENSAGEM -- Mensagem da inconsistencia
 from MLF_AUXNOTAFISCAL a, ge_pessoa b , max_empresa c
 where a.nroempresa = c.nroempresa
 and   a.seqpessoa = b.seqpessoa
 and   b.uf = 'SP'
-and a.dtaemissao <= (a.dtarecebimento - 18)   --- alteração em 13/12/2022 neides - Ticket 153066
-and A.DTAEMISSAO + 180 > A.DTARECEBIMENTO -- Inconsistencia será validada pela regra COD 63
+and a.dtaemissao <= (a.dtarecebimento - 18)   --- alteraCAO em 13/12/2022 neides - Ticket 153066
+and A.DTAEMISSAO + 180 > A.DTARECEBIMENTO -- Inconsistencia sera validada pela regra COD 63
 
 union all
 
-----Critica : Para Todos os Fornecedores exceto SP a data de emiss¿o n¿o pode ser mais do que 20 dias da data do recebimento
+----Critica : Para Todos os Fornecedores exceto SP a data de emissao nao pode ser mais do que 20 dias da data do recebimento
  SELECT distinct (a.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
                 a.NUMERONF,
                 a.NROEMPRESA,
                 0 AS SEQAUXNFITEM, -- Seq Item
-                'L' AS BLOQAUTOR, -- Indica se ¿ de bloqueio(B) ou permite Libera¿¿o (L)
-                55 AS CODINCONSISTENC, -- C¿digo de inconsist¿ncia. Nro Sequencial iniciando em 50
-                'Data de Recebimento Acima de 32 Dias da Emissão Data Limite : '|| to_char(a.dtaemissao + 30, 'DD/MM/YY') AS MENSAGEM -- Mensagem da inconsist¿ncia
+                'L' AS BLOQAUTOR, -- Indica se e de bloqueio(B) ou permite Liberacao (L)
+                55 AS CODINCONSISTENC, -- Codigo de inconsistencia Nro Sequencial iniciando em 50
+                'Data de Recebimento Acima de 32 Dias da emissao Data Limite : '|| to_char(a.dtaemissao + 30, 'DD/MM/YY') AS MENSAGEM -- Mensagem da inconsistencia
 from MLF_AUXNOTAFISCAL a, ge_pessoa b , max_empresa c
 where a.nroempresa = c.nroempresa
 and   a.seqpessoa = b.seqpessoa
 and   b.uf != 'SP'
-and a.dtaemissao <= (a.dtarecebimento - 32)  --- alteração em 13/12/2022 neides - Ticket 153066
-and A.DTAEMISSAO + 180 > A.DTARECEBIMENTO -- Inconsistencia será validada pela regra COD 63
+and a.dtaemissao <= (a.dtarecebimento - 32)  --- alteraCAO em 13/12/2022 neides - Ticket 153066
+and A.DTAEMISSAO + 180 > A.DTARECEBIMENTO -- Inconsistencia sera validada pela regra COD 63
 */
 
 -- Novas:
@@ -106,7 +106,7 @@ and A.DTAEMISSAO + 180 > A.DTARECEBIMENTO -- Inconsistencia será validada pela 
                 0 AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 54 AS CODINCONSISTENC,
-                'Data de Recebimento Acima de 18 Dias da Emissão Data Limite : '|| TO_CHAR(A.DTAEMISSAO + 16, 'DD/MM/YY') AS MENSAGEM
+                'Data de Recebimento Acima de 18 Dias da emissao Data Limite : '|| TO_CHAR(A.DTAEMISSAO + 16, 'DD/MM/YY') AS MENSAGEM
 FROM MLF_AUXNOTAFISCAL A, GE_PESSOA B , MAX_EMPRESA C
 WHERE A.NROEMPRESA = C.NROEMPRESA
 AND   A.SEQPESSOA = B.SEQPESSOA
@@ -123,7 +123,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0 AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 55 AS CODINCONSISTENC,
-                'Data de Recebimento Acima de 32 Dias da Emissão Data Limite : '|| TO_CHAR(A.DTAEMISSAO + 30, 'DD/MM/YY') AS MENSAGEM
+                'Data de Recebimento Acima de 32 Dias da emissao Data Limite : '|| TO_CHAR(A.DTAEMISSAO + 30, 'DD/MM/YY') AS MENSAGEM
 FROM MLF_AUXNOTAFISCAL A, GE_PESSOA B , MAX_EMPRESA C
 WHERE A.NROEMPRESA = C.NROEMPRESA
 AND   A.SEQPESSOA = B.SEQPESSOA
@@ -133,14 +133,14 @@ AND A.DTAEMISSAO + 180 > A.DTARECEBIMENTO
 
 union all
 
----CRITICA Nota com produtos que cobram ST por fora sem guia gnre lan¿ada Edvaldo
+---CRITICA Nota com produtos que cobram ST por fora sem guia gnre lancada Edvaldo
 SELECT distinct (PP.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
 PP.NUMERONF,
 PP.NROEMPRESA,
 0 AS SEQAUXNFITEM, -- Seq Item
-'B' AS BLOQAUTOR, -- Indica se ¿ de bloqueio(B) ou permite Libera¿¿o (L)
-56 AS CODINCONSISTENC, -- C¿digo de inconsist¿ncia. Nro Sequencial iniciando em 50
-'Nota com produtos que cobram ST por fora sem guia lançada ou valor divergente (V2-COD 56)' AS MENSAGEM -- Mensagem da inconsist¿ncia
+'B' AS BLOQAUTOR, -- Indica se e de bloqueio(B) ou permite Liberacao (L)
+56 AS CODINCONSISTENC, -- Codigo de inconsistencia Nro Sequencial iniciando em 50
+'Nota com produtos que cobram ST por fora sem guia lancada ou valor divergente (V2-COD 56)' AS MENSAGEM -- Mensagem da inconsistencia
 FROM CONSINCO.MLF_AUXNOTAFISCAL PP
 WHERE PP.SEQAUXNOTAFISCAL IN
 (SELECT C.SEQAUXNOTAFISCAL
@@ -152,17 +152,17 @@ AND PP.SEQAUXNOTAFISCAL NOT IN
 
 union all
 
--- Critica para bloquear recebimento de notas que não esteja vinculadas a notas de remessa. Ticket 11783532
+-- Critica para bloquear recebimento de notas que nao esteja vinculadas a notas de remessa. Ticket 11783532
    SELECT distinct (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
                 A.NUMERONF,
                 A.NROEMPRESA,
                 0 AS SEQAUXNFITEM, -- Seq Item
-                'B' AS BLOQAUTOR, -- Indica se ¿ de bloqueio(B) ou permite Libera¿¿o (L)
-                57 AS CODINCONSISTENC, -- C¿digo de inconsist¿ncia. Nro Sequencial iniciando em 50
-                'Nota Fiscal de remessa não está vinculada a essa NF' AS MENSAGEM -- Mensagem da inconsistência
+                'B' AS BLOQAUTOR, -- Indica se e de bloqueio(B) ou permite Liberacao (L)
+                57 AS CODINCONSISTENC, -- Codigo de inconsistencia Nro Sequencial iniciando em 50
+                'Nota Fiscal de remessa nao esta vinculada a essa NF' AS MENSAGEM -- Mensagem da inconsistencia
   FROM consinco.MLF_AUXNOTAFISCAL A
  WHERE A.CODGERALOPER IN (121,116)
-  --- Trecho abaixo adicionado devido a mudança de estrutura da nova versão 22.01 - Cipolla / Paloma 28/06/2022
+  --- Trecho abaixo adicionado devido a mudanca de estrutura da nova versao 22.01 - Cipolla / Paloma 28/06/2022
    AND not EXISTS (select 1
   from CONSINCO.MLF_NFCOMPRAREMESSARELAC
  where (SEQIDENTIFICAORIGEM = a.seqauxnotafiscal OR SEQIDENTIFICARELACIONADO = a.seqauxnotafiscal)
@@ -171,15 +171,15 @@ union all
 
 /*   union all -- Retirado critica pois foi alterado parametro dinamico, ticket 12339992
 
-   -- Critica para bloquear notas do RJ onde o Vlr da Nota está diferente do Vlr XML com oirgem do CD
+   -- Critica para bloquear notas do RJ onde o Vlr da Nota esta diferente do Vlr XML com oirgem do CD
 --- Ticket 11835472
 SELECT distinct (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
                 A.NUMERONF,
                 A.NROEMPRESA,
                 0 AS SEQAUXNFITEM, -- Seq Item
-                'B' AS BLOQAUTOR, -- Indica se ¿ de bloqueio(B) ou permite Libera¿¿o (L)
-                58 AS CODINCONSISTENC, -- C¿digo de inconsist¿ncia. Nro Sequencial iniciando em 50
-                'Valor Total da Nota Fiscal' || ' - R$ '||A.VLRTOTALNF|| ' está divergente do valor total do XML - R$ '||B.m000_vl_nf AS MENSAGEM -- Mensagem da inconsist¿ncia
+                'B' AS BLOQAUTOR, -- Indica se e de bloqueio(B) ou permite Liberacao (L)
+                58 AS CODINCONSISTENC, -- Codigo de inconsistencia Nro Sequencial iniciando em 50
+                'Valor Total da Nota Fiscal' || ' - R$ '||A.VLRTOTALNF|| ' esta divergente do valor total do XML - R$ '||B.m000_vl_nf AS MENSAGEM -- Mensagem da inconsistencia
   FROM consinco.MLF_AUXNOTAFISCAL A INNER JOIN consinco.tmp_m000_nf b ON (a.nfechaveacesso = b.m000_nr_chave_acesso )
  WHERE b.m000_vl_nf != a.vlrtotalnf ---- Onde valores sejam diferentes
  AND a.nroempresa = 36 --- Apenas loja do RJ
@@ -187,23 +187,23 @@ SELECT distinct (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
 
  union all
 
-/* Crítica abaixo será tratada pelas novas 74 e 75
+/* Critica abaixo sera tratada pelas novas 74 e 75
 
- -- Critica solicitada pelo Juan para não permitir entrada de produtos de uso e consumo que não sejam no CGO 02 08/09/2021 Cipolla
- --- Solicitação do Juan 06/09/2021
+ -- Critica solicitada pelo Juan para nao permitir entrada de produtos de uso e consumo que nao sejam no CGO 02 08/09/2021 Cipolla
+ --- SolicitaCAO do Juan 06/09/2021
  SELECT distinct (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
                 A.NUMERONF,
                 A.NROEMPRESA,
                 b.seqauxnfitem AS SEQAUXNFITEM, -- Seq Item
-                'L' AS BLOQAUTOR, -- Indica se ¿ de bloqueio(B) ou permite Libera¿¿o (L)
-                58 AS CODINCONSISTENC, -- C¿digo de inconsist¿ncia. Nro Sequencial iniciando em 50
-                'Item ' || b.seqproduto || ' está cadastrado com a Finalidade "Material de Uso e Consumo", portanto, só poderá ser lançado no CGO 02, 22, 59 ou 61' as  MENSAGEM -- Mensagem da inconsist¿ncia
+                'L' AS BLOQAUTOR, -- Indica se e de bloqueio(B) ou permite Liberacao (L)
+                58 AS CODINCONSISTENC, -- Codigo de inconsistencia Nro Sequencial iniciando em 50
+                'Item ' || b.seqproduto || ' esta cadastrado com a Finalidade "Material de Uso e Consumo", portanto, so podera ser lancado no CGO 02, 22, 59 ou 61' as  MENSAGEM -- Mensagem da inconsistencia
   FROM consinco.MLF_AUXNOTAFISCAL A INNER JOIN consinco.Mlf_Auxnfitem b ON (a.seqauxnotafiscal = b.seqauxnotafiscal )
                                                                            inner join consinco.map_produto c on (c.seqproduto = b.seqproduto)
                                                                            inner join consinco.map_famdivisao e on (e.seqfamilia = c.seqfamilia)
-  where e.finalidadefamilia = 'U'                                                                               --- Incluido CGOS 69,135,202 em 19/01/2022 por Cipolla - Solicitação Juan
-  and   a.codgeraloper not in (2,22,59,61,128,65,652,950,141,69,135,202,126,14,127,27,139) --- Solicitação Juan 128, 65 e 652 em 10/12/2021 - Alterado por Cipolla- Incluido CGO 950 em 14/12 solciitação Juan - Incuido CGO 141 Solicitação Juan em 05/01/2022
-                                                                                                                                         ---- CGO 126,14 incluido em 15/09/2022 solicitação Neides cvia Teamns
+  where e.finalidadefamilia = 'U'                                                                               --- Incluido CGOS 69,135,202 em 19/01/2022 por Cipolla - SolicitaCAO Juan
+  and   a.codgeraloper not in (2,22,59,61,128,65,652,950,141,69,135,202,126,14,127,27,139) --- SolicitaCAO Juan 128, 65 e 652 em 10/12/2021 - Alterado por Cipolla- Incluido CGO 950 em 14/12 solciitaCAO Juan - Incuido CGO 141 SolicitaCAO Juan em 05/01/2022
+                                                                                                                                         ---- CGO 126,14 incluido em 15/09/2022 solicitaCAO Neides cvia Teamns
                                                                                                                                          ---- CGO 127 - 16/11/2022 Giuliano - Ticket 138456 / ticket 200078 16/03/2023 CGO 27
                                                                                                                                          ---- CGO 139 incluido em 31/08/2023 por Giuliano | Ticket 281742 - Solic Rafael/Silene
   and a.nroempresa < 500
@@ -212,7 +212,7 @@ SELECT distinct (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
 union all
 */
    --- Critica solicitada pela Daniele do Fiscal - Ticket 97671 - Criado por Cipolla em 14/11/2022
-	 --- Essa view vai tratar apenas as consistencias de Pis e Cofins quando CGO for de entrada comum, bonificações estão sendo tratadas na view abaixo..
+	 --- Essa view vai tratar apenas as consistencias de Pis e Cofins quando CGO for de entrada comum, bonificacoes estao sendo tratadas na view abaixo..
  SELECT  /*+optimizer_features_enable('11.2.0.4') */
                 distinct (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 a.numeronf,
@@ -220,7 +220,7 @@ union all
                 b.seqauxnfitem AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 59 AS CODINCONSISTENC,
-                'O Item ' || b.seqproduto || ' está com PIS/COFINS divergente, entrar em contato com o departamento fiscal - Tipo de Fornecedor: '||decode(f.TIPO,'M','Simples Nacional','I','Industria','D','Distribuidor') as  MENSAGEM
+                'O Item ' || b.seqproduto || ' esta com PIS/COFINS divergente, entrar em contato com o departamento fiscal - Tipo de Fornecedor: '||decode(f.TIPO,'M','Simples Nacional','I','Industria','D','Distribuidor') as  MENSAGEM
   FROM consinco.MLF_AUXNOTAFISCAL A INNER JOIN consinco.Mlf_Auxnfitem b ON (a.seqauxnotafiscal = b.seqauxnotafiscal )
                                                                            inner join consinco.map_produto c on (c.seqproduto = b.seqproduto)
                                                                            inner join consinco.map_familia e on (e.seqfamilia = c.seqfamilia)
@@ -231,16 +231,17 @@ union all
   and  exists (select 1 from max_codgeraloper z where z.codgeraloper = a.codgeraloper and z.tipuso = 'R') --- Apenas CGo de Recebimento
   and not exists (select 1 from ge_empresa ge where ge.seqpessoa = a.seqpessoa) --- Retirar empresas do Grupo Nagumo
   -- 136 Adicionado por Giuliano - Solic Danielle - Ticket 368314 - 11/03/24
-  and a.codgeraloper not  in (126,816,101,128,208,239,117,14,127,65, 116, 139, 652, 143,900,107,206,939,279,136) --- Dani solicitou que Bonificalções tem tratamento diferente, será acrescido na critica abaixo. Retirado CGO 279 DANI em 28/02/2024
+  -- 17  Adicionado por Giuliano - Solic Danielle - Ticket 444174 - 22/08/24
+  and a.codgeraloper not  in (126,816,101,128,208,239,117,14,127,65, 116, 139, 652, 143,900,107,206,939,279,136,17) --- Dani solicitou que Bonificalcoes tem tratamento diferente, sera acrescido na critica abaixo. Retirado CGO 279 DANI em 28/02/2024
   -- COFINS
   and (not exists (select 1 From NAGT_ENTRADAPISCOFINS r where (l.m014_dm_st_trib_cf = r.cst_saidafornecedor OR l.M014_Dm_St_Trib_Pis = r.cst_saidafornecedor )
-  and r.cst_entranagumo =  e.situacaonfpis and f.TIPO = r.fornecedor and r.tipo = 'N' --- De x Para tipo fornecedor com CST Saída x Entrada
+  and r.cst_entranagumo =  e.situacaonfpis and f.TIPO = r.fornecedor and r.tipo = 'N' --- De x Para tipo fornecedor com CST Saida x Entrada
                                                          -- Adicionado por Giuliano em 04/01/2024 - Solic Danielle - Ticket 339477
-                                                         -- Começa a tratar permissao por UF - UF_PERM adicionada na tabela de/para NAGT_ENTRADAPISCOFINS
+                                                         -- Comeca a tratar permissao por UF - UF_PERM adicionada na tabela de/para NAGT_ENTRADAPISCOFINS
                                                           AND (UF_PERM IS NULL OR
                                                                UF_PERM LIKE '%'||(SELECT UF FROM GE_PESSOA GEP WHERE GEP.SEQPESSOA = A.SEQPESSOA)||'%'))
   -- PIS
-    OR not exists (select 1 From NAGT_ENTRADAPISCOFINS r where l.M014_Dm_St_Trib_Pis = r.cst_saidafornecedor and r.cst_entranagumo =  e.situacaonfpis and r.fornecedor = F.TIPO and r.tipo = 'N' --- De x Para tipo fornecedor com CST Saída x Entrada
+    OR not exists (select 1 From NAGT_ENTRADAPISCOFINS r where l.M014_Dm_St_Trib_Pis = r.cst_saidafornecedor and r.cst_entranagumo =  e.situacaonfpis and r.fornecedor = F.TIPO and r.tipo = 'N' --- De x Para tipo fornecedor com CST Saida x Entrada
                                                           AND (UF_PERM IS NULL OR
                                                                UF_PERM LIKE '%'||(SELECT UF FROM GE_PESSOA GEP WHERE GEP.SEQPESSOA = A.SEQPESSOA)||'%')))
   -- Alterado por Giuliano em 06/10/2023 - Solic Danielle/Neides - Ticket 300200
@@ -256,7 +257,7 @@ union all
 	union all
 
 		--- Critica solicitada pela Daniele do Fiscal - Ticket 97671 - Criado por Cipolla em 14/11/2022
-	 --- Essa view vai tratar apenas as consistencias de Pis e Cofins quando CGO for de bonificação.
+	 --- Essa view vai tratar apenas as consistencias de Pis e Cofins quando CGO for de bonificaCAO.
  SELECT  /*+optimizer_features_enable('11.2.0.4') */
                 distinct (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 a.numeronf,
@@ -264,25 +265,25 @@ union all
                 b.seqauxnfitem AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 60 AS CODINCONSISTENC,
-                'O Item ' || b.seqproduto || ' está com PIS/COFINS divergente, entrar em contato com o departamento fiscal - Tipo de Fornecedor: '||decode(f.TIPO,'M','Simples Nacional','I','Industria','D','Distribuidor') as  MENSAGEM
+                'O Item ' || b.seqproduto || ' esta com PIS/COFINS divergente, entrar em contato com o departamento fiscal - Tipo de Fornecedor: '||decode(f.TIPO,'M','Simples Nacional','I','Industria','D','Distribuidor') as  MENSAGEM
   FROM consinco.MLF_AUXNOTAFISCAL A INNER JOIN consinco.Mlf_Auxnfitem b ON (a.seqauxnotafiscal = b.seqauxnotafiscal )
                                                                            inner join consinco.map_produto c on (c.seqproduto = b.seqproduto)
                                                                            inner join consinco.map_familia e on (e.seqfamilia = c.seqfamilia)
                                                                            inner join NAGV_FORNTIPO f on (f.seqfornecedor = a.seqpessoa) --- view tipo fornecedor
                                                                            inner join TMP_M000_NF k on (k.m000_nr_chave_acesso = a.nfechaveacesso)
-                                                                           inner join TMP_M014_ITEM l on (l.m000_id_nf = k.m000_id_nf and l.m014_nr_item = b.seqitemnfxml  )  --- alteração Cipolla de seqauxnfitem Para seqitemnfxml
+                                                                           inner join TMP_M014_ITEM l on (l.m000_id_nf = k.m000_id_nf and l.m014_nr_item = b.seqitemnfxml  )  --- alteraCAO Cipolla de seqauxnfitem Para seqitemnfxml
   where 1=1
   and not exists (select 1 from ge_empresa ge where ge.seqpessoa = a.seqpessoa) --- Retirar empresas do Grupo Nagumo
-  and a.codgeraloper in (126,816,101,128,208,239,117,14,127,65, 116, 139, 652, 143,900,107) --- Bonificações Ticket 194151 Dani em 02/03/2023 Cipolla CGO 900
+  and a.codgeraloper in (126,816,101,128,208,239,117,14,127,65, 116, 139, 652, 143,900,107) --- Bonificacoes Ticket 194151 Dani em 02/03/2023 Cipolla CGO 900
    -- COFINS
   and (not exists (select 1 From NAGT_ENTRADAPISCOFINS r where (l.m014_dm_st_trib_cf = r.cst_saidafornecedor OR l.M014_Dm_St_Trib_Pis = r.cst_saidafornecedor )
-  and r.cst_entranagumo =  e.situacaonfpis and r.fornecedor = F.GERAL and r.tipo = 'B' --- De x Para tipo fornecedor com CST Saída x Entrada
+  and r.cst_entranagumo =  e.situacaonfpis and r.fornecedor = F.GERAL and r.tipo = 'B' --- De x Para tipo fornecedor com CST Saida x Entrada
                                                          -- Adicionado por Giuliano em 04/01/2024 - Solic Danielle - Ticket 339477
-                                                         -- Começa a tratar permissao por UF - UF_PERM adicionada na tabela de/para NAGT_ENTRADAPISCOFINS
+                                                         -- Comeca a tratar permissao por UF - UF_PERM adicionada na tabela de/para NAGT_ENTRADAPISCOFINS
                                                           AND (UF_PERM IS NULL OR
                                                                UF_PERM LIKE '%'||(SELECT UF FROM GE_PESSOA GEP WHERE GEP.SEQPESSOA = A.SEQPESSOA)||'%'))
   -- PIS
-    OR not exists (select 1 From NAGT_ENTRADAPISCOFINS r where l.M014_Dm_St_Trib_Pis = r.cst_saidafornecedor and r.cst_entranagumo =  e.situacaonfpis and r.fornecedor = F.GERAL and r.tipo = 'B' --- De x Para tipo fornecedor com CST Saída x Entrada
+    OR not exists (select 1 From NAGT_ENTRADAPISCOFINS r where l.M014_Dm_St_Trib_Pis = r.cst_saidafornecedor and r.cst_entranagumo =  e.situacaonfpis and r.fornecedor = F.GERAL and r.tipo = 'B' --- De x Para tipo fornecedor com CST Saida x Entrada
                                                           AND (UF_PERM IS NULL OR
                                                                UF_PERM LIKE '%'||(SELECT UF FROM GE_PESSOA GEP WHERE GEP.SEQPESSOA = A.SEQPESSOA)||'%')))
   -- Alterado por Giuliano em 06/10/2023 - Solic Danielle/Neides - Ticket 300200
@@ -297,8 +298,8 @@ union all
 
 UNION ALL
 
- -- Giuliano | 23/12/2022 | Solicitação Neides - Ticket 99791
- -- Não permite entrada com frete tipo FOB
+ -- Giuliano | 23/12/2022 | SolicitaCAO Neides - Ticket 99791
+ -- nao permite entrada com frete tipo FOB
 SELECT DISTINCT(X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 X.NUMERONF,
                 X.NROEMPRESA,
@@ -309,8 +310,9 @@ SELECT DISTINCT(X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
 
   FROM MLF_AUXNOTAFISCAL X
  WHERE X.TIPFRETETRANSP = 'F'
+   AND X.CODGERALOPER != 126
 
-UNION ALL -- Trava lançamentos com vencimento menor que a data do pedido - Giuliano - Solicitação Ronie
+UNION ALL -- Trava lancamentos com vencimento menor que a data do pedido - Giuliano - SolicitaCAO Ronie
 
 SELECT DISTINCT(X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 X.NUMERONF,
@@ -320,7 +322,7 @@ SELECT DISTINCT(X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 62  AS CODINCONSISTENC,
                 'Prazo de Vencimento Informado MENOR que o Prazo do Pedido' /*- Pedido: '||MP.NROPEDIDOSUPRIM||
                 ' - Prazo: '||MP.PZOPAGAMENTO||TO_CHAR((MP.DTAEMISSAO + MP.PZOPAGAMENTO), 'DD/MM/YYYY')*/
-                -- Irá constar erro caso tenha mais que um pedido divergente
+                -- Ira constar erro caso tenha mais que um pedido divergente
                 AS MENSAGEM
 
   FROM MLF_AUXNOTAFISCAL X INNER JOIN MLF_AUXNFVENCIMENTO MA ON MA.SEQAUXNOTAFISCAL = X.SEQAUXNOTAFISCAL
@@ -334,14 +336,14 @@ SELECT DISTINCT(X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                   DECODE(MF.TIPODTABASEVENCTO, 'E', X.DTAEMISSAO, 'R', X.DTARECEBIMENTO, 'S', X.DTASAIDA) +
                   CASE WHEN MP.PZOPAGAMENTO LIKE '%/%' THEN REGEXP_SUBSTR(REPLACE(MP.PZOPAGAMENTO, '/',' '), '(\S*)(\s)',1)
                        ELSE MP.PZOPAGAMENTO END,
-                  -- Function para tratar outras formas de pagamento de acordo com o cadastro (Fora a Dezena, Quinzena, Semana ou Mês)
+                  -- Function para tratar outras formas de pagamento de acordo com o cadastro (Fora a Dezena, Quinzena, Semana ou Mes)
                   FMAD_CALCDTAVENCTO((DECODE(MF.TIPODTABASEVENCTO, 'E', X.DTAEMISSAO, 'R', X.DTARECEBIMENTO, 'S', X.DTASAIDA)), MF.INDPZOPAGAMENTO,
                   CASE WHEN MP.PZOPAGAMENTO LIKE '%/%' THEN REGEXP_SUBSTR(REPLACE(MP.PZOPAGAMENTO, '/',' '), '(\S*)(\s)',1)
-                       ELSE MP.PZOPAGAMENTO END, NULL)) -1 -- 1 Dia de Margem Aceitável
+                       ELSE MP.PZOPAGAMENTO END, NULL)) -1 -- 1 Dia de Margem Aceitavel
 
    AND MP.PZOPAGAMENTO IS NOT NULL
    AND X.NUMERONF != 0
-	 AND X.SEQPESSOA NOT IN (120186, 117952, 116561,1907856) --- Não Criticar Fornecedores Unilever e Colgate Chamado 321883 - Solicitação Thaise e Miriam + 1907856 EX
+	 AND X.SEQPESSOA NOT IN (120186, 117952, 116561,1907856) --- nao Criticar Fornecedores Unilever e Colgate Chamado 321883 - SolicitaCAO Thaise e Miriam + 1907856 EX
    AND MP.TIPPEDIDOSUPRIM NOT IN ('X','T')
 
 UNION ALL -- Trava para barrar entrada com CGO 200/900 e CST <> 000,020,040 - 01/02/2023 - Giuliano - Solic Danielle - Ticket 175967
@@ -352,7 +354,7 @@ SELECT DISTINCT(A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 62  AS CODINCONSISTENC,
-                'Produto ST não permite entrada para este fornecedor'
+                'Produto ST nao permite entrada para este fornecedor'
 
                 FROM consinco.MLF_AUXNOTAFISCAL A INNER JOIN consinco.Mlf_Auxnfitem b    ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
                                                   INNER JOIN CONSINCO.MAP_PRODUTO    P   ON P.SEQPRODUTO = B.SEQPRODUTO
@@ -369,9 +371,9 @@ SELECT distinct (a.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL, -- Seq da nota
                 a.NUMERONF,
                 a.NROEMPRESA,
                 0 AS SEQAUXNFITEM, -- Seq Item
-                'L' AS BLOQAUTOR, -- Indica se ¿ de bloqueio(B) ou permite Libera¿¿o (L)
-                63 AS CODINCONSISTENC, -- C¿digo de inconsist¿ncia. Nro Sequencial iniciando em 50
-                'NF excedeu o prazo de 180 dias e não pode ser recebida - Data Limite : '|| to_char(a.DTAEMISSAO + 180, 'DD/MM/YY') AS MENSAGEM -- Mensagem da inconsist¿ncia
+                'L' AS BLOQAUTOR, -- Indica se e de bloqueio(B) ou permite Liberacao (L)
+                63 AS CODINCONSISTENC, -- Codigo de inconsistencia Nro Sequencial iniciando em 50
+                'NF excedeu o prazo de 180 dias e nao pode ser recebida - Data Limite : '|| to_char(a.DTAEMISSAO + 180, 'DD/MM/YY') AS MENSAGEM -- Mensagem da inconsistencia
 from MLF_AUXNOTAFISCAL a, ge_pessoa b , max_empresa c
 where a.nroempresa = c.nroempresa
 and   a.seqpessoa = b.seqpessoa
@@ -381,7 +383,7 @@ and a.dtaemissao + 180 < a.dtarecebimento
 UNION ALL
 
 -- Ticket 206722 - Adicionado por Giuliano - Solic Danielle 20/03
--- Regra: Trava 4 dígitos do NCM diferentes entre XML e C5
+-- Regra: Trava 4 digitos do NCM diferentes entre XML e C5
 
 SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 A.NUMERONF,
@@ -389,7 +391,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 64  AS CODINCONSISTENC,
-                'Produto '||B.SEQPRODUTO||' com NCM incorreto, abrir chamado para o Depto. Fiscal Cad. Trib. para correção - XML: '||M014_CD_NCM||' - C5: '||E.CODNBMSH MENSAGEM
+                'Produto '||B.SEQPRODUTO||' com NCM incorreto, abrir chamado para o Depto. Fiscal Cad. Trib. para correcao - XML: '||M014_CD_NCM||' - C5: '||E.CODNBMSH MENSAGEM
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
                                     INNER JOIN CONSINCO.MAP_PRODUTO C ON B.SEQPRODUTO = C.SEQPRODUTO
@@ -415,7 +417,7 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
                 0   AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 65  AS CODINCONSISTENC,
-                'Produto: '||B.SEQPRODUTO||' com Cod. Origem incorreto, abrir chamado para o Depto. Fiscal Cad. Trib. para correção - XML: '||L.M014_DM_ORIG_ICMS||' - C5: '||D.CODORIGEMTRIB  MENSAGEM
+                'Prod: '||B.SEQPRODUTO||' - '||C.DESCREDUZIDA||' - Cod. Origem incorreto, abrir chamado para Depto. Fiscal Cad. Trib. para correcao - XML: '||L.M014_DM_ORIG_ICMS||' - Cad: '||D.CODORIGEMTRIB  MENSAGEM
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
                                     INNER JOIN CONSINCO.MAP_PRODUTO C ON B.SEQPRODUTO = C.SEQPRODUTO
@@ -452,7 +454,7 @@ WHERE NVL(L.M014_DM_ORIG_ICMS,1) != NVL(D.CODORIGEMTRIB,2)
 --
 UNION ALL
 
--- Ticket 219089 - Solic. Simone | Adicionado por Giuliano em 20/04/2023 - Validação GNRE tipo DARE
+-- Ticket 219089 - Solic. Simone | Adicionado por Giuliano em 20/04/2023 - ValidaCAO GNRE tipo DARE
 
 SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 A.NUMERONF,
@@ -460,9 +462,9 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 65  AS CODINCONSISTENC,
-                CASE WHEN CODOBRIGREC != '005' AND CODRECEITA NOT IN ('063-2','100-4') THEN 'O Código da obrigação a recolher e o Código da Receita estão incorretos'
-                  WHEN CODOBRIGREC != '005' THEN 'O Código da obrigação a recolher está incorreto'
-                  WHEN CODRECEITA NOT IN ('063-2','100-4') THEN 'O Código da Receita está incorreto' ELSE NULL END
+                CASE WHEN CODOBRIGREC != '005' AND CODRECEITA NOT IN ('063-2','100-4') THEN 'O Codigo da obrigaCAO a recolher e o Codigo da Receita estao incorretos'
+                  WHEN CODOBRIGREC != '005' THEN 'O Codigo da obrigaCAO a recolher esta incorreto'
+                  WHEN CODRECEITA NOT IN ('063-2','100-4') THEN 'O Codigo da Receita esta incorreto' ELSE NULL END
                 ||' na Guia de Recolhimento - Verificar com o Depto. Fiscal' MENSAGEM
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_GNRE B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
@@ -472,7 +474,7 @@ WHERE TIPOGUIA = 'R' AND (CODOBRIGREC != '005' OR CODRECEITA NOT IN ('063-2','10
 UNION ALL
 
 -- Ticket 244728 - Solic Rafael Recebimento | Adicionado por Giuliano em 15/06/2023
--- Trava geração de recebimento de notas que forem deletadas e importadas novamente (CD x Lojas | Lojas x CD)
+-- Trava geraCAO de recebimento de notas que forem deletadas e importadas novamente (CD x Lojas | Lojas x CD)
 /*
 SELECT DISTINCT(X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 X.NUMERONF,
@@ -480,11 +482,11 @@ SELECT DISTINCT(X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 66  AS CODINCONSISTENC,
-                'NF não pode ser importada novamente. Entre em contato com Fiscal Apoio de sua região' AS MENSAGEM
+                'NF nao pode ser importada novamente. Entre em contato com Fiscal Apoio de sua regiao' AS MENSAGEM
 
   FROM MLF_AUXNOTAFISCAL X
  WHERE 1=1
-   AND NVL(X.APPORIGEM,0) != 9 -- Ao excluír a nota da tela de recebimento, o 'APPORIGEM' é definido como NULO
+   AND NVL(X.APPORIGEM,0) != 9 -- Ao excluir a nota da tela de recebimento, o 'APPORIGEM' e definido como NULO
    AND USULANCTO != 'CONSINCO'
    AND NUMERONF  != 0
    AND X.STATUSNF != 'C'
@@ -499,13 +501,13 @@ SELECT DISTINCT(X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'B' AS BLOQAUTOR,
                 67  AS CODINCONSISTENC,
-                /*'Comprador não possúi limite disponível. Valor Itens sem Pedidos: R$ '||
+                /*'Comprador nao possui limite disponivel. Valor Itens sem Pedidos: R$ '||
                 TO_CHAR(
                  SUM(Y.VLRITEM) --+ SUM(Y.VLRIPI) + SUM(Y.VLRICMS) + SUM(Y.VLRDESPTRIBUTITEM) + SUM(Y.VLRPIS) + SUM(Y.VLRCOFINS)
                - SUM(Y.VLRDESCITEM) - SUM(NVL(Y.VLRDESCFINANCEIRO,0)),
-               'FM999G999G999D90', 'NLS_NUMERIC_CHARACTERS='',.''')||' Valor Disponível: R$ '||
+               'FM999G999G999D90', 'NLS_NUMERIC_CHARACTERS='',.''')||' Valor Disponivel: R$ '||
                 TO_CHAR(VLRDISPONIVEL,'FM999G999G999D90', 'NLS_NUMERIC_CHARACTERS='',.''')||' Entre em contato com o Departamento Comercial.' */
-                'Não existe saldo disponível para o comprador para recebimento sem pedido. Entre em contato com o Departamento Comercial'
+                'nao existe saldo disponivel para o comprador para recebimento sem pedido. Entre em contato com o Departamento Comercial'
                 AS MENSAGEM
 
   FROM MLF_AUXNOTAFISCAL X INNER JOIN MLF_AUXNFITEM Y ON Y.SEQAUXNOTAFISCAL = X.SEQAUXNOTAFISCAL
@@ -534,7 +536,7 @@ SELECT  /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4') */
           B.SEQAUXNFITEM AS SEQAUXNFITEM,
           'B' AS BLOQAUTOR,
           68 AS CODINCONSISTENC,
-          'Produto: '||B.SEQPRODUTO||' Com CFOP: '||M014_CD_CFOP||' apenas pode ser lançado com CGO de Bonificação. Entre em contato com seu apoio' MENSAGEM
+          'Produto: '||B.SEQPRODUTO||' Com CFOP: '||M014_CD_CFOP||' apenas pode ser lancado com CGO de BonificaCAO. Entre em contato com seu apoio' MENSAGEM
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON (A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL )
                                     INNER JOIN CONSINCO.MAP_PRODUTO C ON (C.SEQPRODUTO = B.SEQPRODUTO)
                                     INNER JOIN CONSINCO.MAP_FAMILIA E ON (E.SEQFAMILIA = C.SEQFAMILIA)
@@ -547,8 +549,8 @@ SELECT  /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4') */
 UNION ALL
 
 -- Ticket 308911 - Solic Neides - Adicionado em 31/10/2023 por Giuliano
--- Barra XML sem emissão/ocorrencia de transporte (Cod. 9)
---- Adicionado CGO 214, saldo transferencia de saldo devedor, não tem transporte. Cipolla 20/02/2024
+-- Barra XML sem emissao/ocorrencia de transporte (Cod. 9)
+--- Adicionado CGO 214, saldo transferencia de saldo devedor, nao tem transporte. Cipolla 20/02/2024
 
 SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 A.NUMERONF,
@@ -578,7 +580,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 70  AS CODINCONSISTENC,
-                'Indicador de operação da nota fiscal ( consumidor final ) divergente da finalidade do CGO - Solicitar a troca da nota' MENSAGEM
+                'Indicador de operaCAO da nota fiscal ( consumidor final ) divergente da finalidade do CGO - Solicitar a troca da nota' MENSAGEM
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
                                     INNER JOIN CONSINCO.MAP_PRODUTO C ON B.SEQPRODUTO = C.SEQPRODUTO
@@ -600,7 +602,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 71  AS CODINCONSISTENC,
-                'Nota fiscal bonificada com produto monofásico, por favor entrar em contato com o Departamento Fiscal.'  MENSAGEM
+                'Nota fiscal bonificada com produto monofasico, por favor entrar em contato com o Departamento Fiscal.'  MENSAGEM
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
                                     INNER JOIN CONSINCO.MAP_PRODUTO C ON B.SEQPRODUTO = C.SEQPRODUTO
@@ -623,7 +625,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'B' AS BLOQAUTOR,
                 72  AS CODINCONSISTENC,
-                'Produto: '||B.SEQPRODUTO||' s/Cod.Origem - Abrir chamado para o Depto Cad.Trib.para correção XML: '||L.M014_DM_ORIG_ICMS||' -  C5 sem informação' MENSAGEM
+                'Produto: '||B.SEQPRODUTO||' s/Cod.Origem - Abrir chamado para o Depto Cad.Trib.para correCAO XML: '||L.M014_DM_ORIG_ICMS||' -  C5 sem informaCAO' MENSAGEM
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
                                     INNER JOIN CONSINCO.MAP_PRODUTO C ON B.SEQPRODUTO = C.SEQPRODUTO
@@ -646,11 +648,11 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 'L' AS BLOQAUTOR,
                 73  AS CODINCONSISTENC,
                 CASE WHEN L.CODCEST IS NULL                                                                    THEN 'Cod. CEST do produto '||
-                  B.SEQPRODUTO||' no XML está NULO - Abrir chamado para do Departamento Fiscal - CEST XML: '||NVL(TO_CHAR(L.CODCEST), 'NULO')||' - C5: '||E.CODCEST
-                    -- WHEN NVL(L.CODCEST,0) != NVL(E.CODCEST,0) AND NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0)   THEN 'Codigo CEST e NCM do produto '||B.SEQPRODUTO||' no  XML estão divergentes do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributário'
+                  B.SEQPRODUTO||' no XML esta NULO - Abrir chamado para do Departamento Fiscal - CEST XML: '||NVL(TO_CHAR(L.CODCEST), 'NULO')||' - C5: '||E.CODCEST
+                    -- WHEN NVL(L.CODCEST,0) != NVL(E.CODCEST,0) AND NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0)   THEN 'Codigo CEST e NCM do produto '||B.SEQPRODUTO||' no  XML estao divergentes do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributario'
                      WHEN NVL(L.CODCEST,0) != NVL(E.CODCEST,0) /*AND NVL(L.M014_CD_NCM,0)  = NVL(CODNBMSH,0) */THEN 'Cod. CEST do produto '||
-                  B.SEQPRODUTO||' está divergente do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributário - CEST XML: '||L.CODCEST||' - C5: '||E.CODCEST
-                    -- WHEN NVL(L.CODCEST,0)  = NVL(E.CODCEST,0) AND NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0)   THEN 'Codigo NCM do produto '||B.SEQPRODUTO||' está divergente do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributário'
+                  B.SEQPRODUTO||' esta divergente do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributario - CEST XML: '||L.CODCEST||' - C5: '||E.CODCEST
+                    -- WHEN NVL(L.CODCEST,0)  = NVL(E.CODCEST,0) AND NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0)   THEN 'Codigo NCM do produto '||B.SEQPRODUTO||' esta divergente do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributario'
                        END AS MENSAGEM
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
@@ -661,13 +663,14 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                                     INNER JOIN TMP_M014_ITEM L ON (L.M000_ID_NF = K.M000_ID_NF AND L.M014_NR_ITEM = B.SEQITEMNFXML)
 
 WHERE A.CODGERALOPER = 1
-  AND L.M014_DM_TRIB_ICMS IN (1,9,8) -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra Barra CST 10 70 60 respectivamente na clausula
+    -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra Barra CST 10 70 60 respectivamente na clausula
+  AND (L.M014_DM_TRIB_ICMS IN (1,9,8) OR NVL(B.VLRICMSST,0) > 0) -- VLRICMSST > 0 - Giuliano 10/09/24 - Solic Danielle
                                      -- CST 202 e 500 (Simples Nacional) sera tratado no OR abaixo pois muda a regra
   AND (NVL(L.CODCEST,0) != NVL(E.CODCEST,1))-- OR NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0))
   -- Trata SN
   OR A.CODGERALOPER = 1
  AND EXISTS(SELECT 1 FROM MAF_FORNECEDOR SN WHERE SN.MICROEMPRESA = 'S' AND SEQFORNECEDOR = A.SEQPESSOA)
- AND M014_CD_CFOP NOT IN (5401,5101,5102,6102)
+ AND M014_CD_CFOP NOT IN (5401,5101,5102,6102,6401)
  AND (NVL(L.CODCEST,0) != NVL(E.CODCEST,1))-- OR NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0))*/
 
 UNION ALL
@@ -681,7 +684,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 B.SEQAUXNFITEM AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 74 AS CODINCONSISTENC,
-                'Item ' || B.SEQPRODUTO || ' está cadastrado com a Finalidade "Material de Uso e Consumo", portanto, só poderá ser lançado no CGO 02 (Fornec)' AS  MENSAGEM
+                'Item ' || B.SEQPRODUTO || ' esta cadastrado com a Finalidade "Material de Uso e Consumo", portanto, so podera ser lancado no CGO 02 (Fornec)' AS  MENSAGEM
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON (A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL )
                                     INNER JOIN CONSINCO.MAP_PRODUTO C ON (C.SEQPRODUTO = B.SEQPRODUTO)
                                     INNER JOIN CONSINCO.MAP_FAMDIVISAO E ON (E.SEQFAMILIA = C.SEQFAMILIA)
@@ -700,9 +703,9 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 'L' AS BLOQAUTOR,
                 75 AS CODINCONSISTENC,
                 CASE WHEN A.CODGERALOPER = 59 AND (SELECT NAGF_BUSCACGCEMP(A.SEQPESSOA) FROM DUAL)  = (SELECT NAGF_BUSCACGCEMP(A.NROEMPRESA) FROM DUAL)
-                  THEN 'Item ' || B.SEQPRODUTO || ' está cadastrado com a Finalidade "Material de Uso e Consumo", portanto, só poderá ser lançado no CGO 61 (Mesma Razão)'
+                  THEN 'Item ' || B.SEQPRODUTO || ' esta cadastrado com a Finalidade "Material de Uso e Consumo", portanto, so podera ser lancado no CGO 61 (Mesma Razao)'
                      WHEN A.CODGERALOPER = 61 AND (SELECT NAGF_BUSCACGCEMP(A.SEQPESSOA) FROM DUAL) != (SELECT NAGF_BUSCACGCEMP(A.NROEMPRESA) FROM DUAL)
-                  THEN 'Item ' || B.SEQPRODUTO || ' está cadastrado com a Finalidade "Material de Uso e Consumo", portanto, só poderá ser lançado no CGO 59 (Razão Diferente)' END
+                  THEN 'Item ' || B.SEQPRODUTO || ' esta cadastrado com a Finalidade "Material de Uso e Consumo", portanto, so podera ser lancado no CGO 59 (Razao Diferente)' END
                  MENSAGEM
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON (A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL )
                                     INNER JOIN CONSINCO.MAP_PRODUTO C ON (C.SEQPRODUTO = B.SEQPRODUTO)
@@ -733,7 +736,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                                     INNER JOIN CONSINCO.MAP_FAMDIVISAO F ON F.SEQFAMILIA = P.SEQFAMILIA
 WHERE G.UF = 'EX'
   AND A.CODGERALOPER IN (43,5)
-  AND F.CODORIGEMTRIB != 1 -- Olhar a tributacao da familia pois é o considerado na emissao
+  AND F.CODORIGEMTRIB != 1
 
 UNION ALL
 
@@ -744,10 +747,10 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 A.NUMERONF,
                 A.NROEMPRESA,
                 0   AS SEQAUXNFITEM,
-                'L' AS BLOQAUTOR, -- SOLICITAÇÃO SILENE 19/02/2024 TEAMSN
+                'L' AS BLOQAUTOR, -- SOLICITACAO SILENE 19/02/2024 TEAMSN
                 77  AS CODINCONSISTENC,
                 'O(s) Campo(s): '||
-                CASE WHEN NVL(L.M014_VL_OP_PROP_DIST,0) = 0 THEN 'vICMSSubstituto' ELSE NULL END||
+                --CASE WHEN NVL(L.M014_VL_OP_PROP_DIST,0) = 0 THEN 'vICMSSubstituto' ELSE NULL END||
                 CASE WHEN NVL(L.M014_VL_BC_ST_RET,0)    = 0 THEN ' vBCSTRet'       ELSE NULL END||
                 CASE WHEN NVL(L.M014_VL_ICMS_ST_RET,0)  = 0 THEN ' vICMSSTRet'     ELSE NULL END||
                 --CASE WHEN M014_VL_BC_FCP_RET   IS NULL THEN ' vBCFCPSTRet'    ELSE NULL END||
@@ -763,16 +766,17 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                                     INNER JOIN TMP_M014_ITEM L ON (L.M000_ID_NF = K.M000_ID_NF AND L.M014_NR_ITEM = B.SEQITEMNFXML)
 
 WHERE A.CODGERALOPER = 1
-  --AND A.NROEMPRESA IN (501,11,8,26,1,7,9,14,22,23,25,28,31,40,46) -- Solicitadas por Neides
+  -- AND A.NROEMPRESA IN (501,11,8,26,1,7,9,14,22,23,25,28,31,40,46) -- Solicitadas por Neides
   AND A.SEQPESSOA NOT IN (SELECT SEQPESSOA FROM GE_PESSOA G WHERE G.NROCGCCPF = 236433150110) -- Criar De/Para Posteriormente
-  AND (L.M014_DM_TRIB_ICMS = 8 -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra barra apenas CST 60
+  -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra Barra CST 60
+  AND (L.M014_DM_TRIB_ICMS IN (8)
   -- Acrescentando SN - Ticket 421458 - Giuliano 22/07/2024
    OR EXISTS(SELECT 1 FROM MAF_FORNECEDOR SN WHERE SN.MICROEMPRESA = 'S' AND SEQFORNECEDOR = A.SEQPESSOA)
-      AND M014_CD_CFOP NOT IN (5401,5101,5102,6102))
-  -- Critérios que nao podem estar nulos
-  AND (NVL(L.M014_VL_OP_PROP_DIST,0) = 0  -- vICMSSubstituto
-   OR  NVL(L.M014_VL_BC_ST_RET,0)    = 0  -- vBCSTRet
-   OR  NVL(L.M014_VL_ICMS_ST_RET,0)  = 0)  -- vICMSSTRet
+      AND M014_CD_CFOP IN (5405)) -- Apenas 5405 Solic Neides 10/09/24 Teams
+  -- Criterios que nao podem estar nulos
+  AND (NVL(L.M014_VL_OP_PROP_DIST,0) = 0 AND A.NROEMPRESA IN (36,53)  -- vICMSSubstituto -- Retirado tkt 440544
+   OR (NVL(L.M014_VL_BC_ST_RET,0)    = 0  -- vBCSTRet
+   OR  NVL(L.M014_VL_ICMS_ST_RET,0)  = 0))  -- vICMSSTRet
  --OR  L.M014_VL_BC_FCP_RET   IS NULL  -- vBCFCPSTRet -- Removidos - Solic Neides
  --OR  L.M014_VL_FCP_RET      IS NULL) -- vFCPSTRet   -- ^
 
@@ -787,7 +791,7 @@ SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'B' AS BLOQAUTOR,
                 79  AS CODINCONSISTENC,
-                'A data de entrada da NF está divergente da data de remessa amarrada! Data NF CGO '||X.CODGERALOPER||': '||TO_CHAR(X.DTAENTRADA, 'DD/MM/YYYY')||
+                'A data de entrada da NF esta divergente da data de remessa amarrada! Data NF CGO '||X.CODGERALOPER||': '||TO_CHAR(X.DTAENTRADA, 'DD/MM/YYYY')||
                 ' - CGO '||X2.CODGERALOPER||': '||TO_CHAR(X2.DTAENTRADA, 'DD/MM/YYYY')
 
   FROM MLF_AUXNOTAFISCAL X INNER JOIN CONSINCO.NAGV_NF_RELAC_REMESSA R ON X.SEQAUXNOTAFISCAL  = R.SEQAUX_O
@@ -808,12 +812,12 @@ SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'L' AS BLOQAUTOR,
                 80  AS CODINCONSISTENC,
-                'O Produto: '||B.SEQPRODUTO||' Está com a tag EAN Tributável NULA no XML!'||
+                'O Produto: '||B.SEQPRODUTO||' Esta com a tag EAN Tributavel NULA no XML!'||
 
-                -- Removido pois quando tem vários eans ultrapassa os 250 caracteres da tabela de inconsistencias
+                -- Removido pois quando tem varios eans ultrapassa os 250 caracteres da tabela de inconsistencias
                 --LISTAGG(X2.CODACESSO, ', ')WITHIN GROUP(ORDER BY X2.SEQPRODUTO)||
 
-                ' - Solicite a troca da nota. Dúvidas entrar em contato com o Depto Fiscal.' MSG
+                ' - Solicite a troca da nota. Duvidas entrar em contato com o Depto Fiscal.' MSG
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL X INNER JOIN CONSINCO.MLF_AUXNFITEM B ON X.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
                                  INNER JOIN TMP_M000_NF K         ON K.M000_NR_CHAVE_ACESSO = X.NFECHAVEACESSO
@@ -842,11 +846,11 @@ WHERE 1=1
   -- Inicialmente apenas 8 e 501
   --AND X.NROEMPRESA IN (501,8, 2,11,17,20,25,26,28,31,36,40,42,44) -- Ticket 424666 aplica em todas as empresas
   GROUP BY X.SEQAUXNOTAFISCAL, X.NUMERONF, X.NROEMPRESA, B.SEQPRODUTO
-  
+
 UNION ALL
 
 -- Ticket 432832 - Adicionado por Giuliano em 29/07/2024
--- Regra para EX - Valida se o Pis/Cofins estão corretos
+-- Regra para EX - Valida se o Pis/Cofins estao corretos
 
 SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 X.NUMERONF,
@@ -854,7 +858,7 @@ SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'B' AS BLOQAUTOR,
                 81  AS CODINCONSISTENC,
-                '(EX) Aliquota de PIS/COFINS divergentes. Entrar em contato com Depto Cadastro Tributário'
+                '(EX) Aliquota de PIS/COFINS divergentes. Entrar em contato com Depto Cadastro Tributario'
 
   FROM MLF_AUXNOTAFISCAL X INNER JOIN MLF_AUXNFITEM XI ON X.SEQAUXNOTAFISCAL = XI.SEQAUXNOTAFISCAL
                            INNER JOIN MAP_PRODUTO XP ON XP.SEQPRODUTO = XI.SEQPRODUTO
@@ -872,12 +876,12 @@ SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
        AND UF.UFEMPRESA = 'SP'
        AND UF.TIPTRIBUTACAO = DECODE(NVL(FC.TIPFORNECEDORFAM,F.TIPFORNECEDOR) , 'I', 'EI', 'D', 'ED')
        AND X.CODGERALOPER IN (43,5)
-       AND X.NROEMPRESA = 503
-       
+       AND X.NROEMPRESA IN (502,503)
+
 UNION ALL
-       
+
 -- Ticket 432832 - Adicionado por Giuliano em 29/07/2024
--- Regra para EX - Valida se a saída do IPI está parametrizada
+-- Regra para EX - Valida se a saida do IPI esta parametrizada
 
 SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 X.NUMERONF,
@@ -885,7 +889,7 @@ SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 0   AS SEQAUXNFITEM,
                 'B' AS BLOQAUTOR,
                 82  AS CODINCONSISTENC,
-                '(EX) Produto com entrada de IPI sem saída parametrizada. Entrar em contato com Depto Cadastro Comercial'
+                '(EX) Produto com entrada de IPI sem saida parametrizada. Entrar em contato com Depto Cadastro Comercial'
 
   FROM MLF_AUXNOTAFISCAL X INNER JOIN MLF_AUXNFITEM XI ON X.SEQAUXNOTAFISCAL = XI.SEQAUXNOTAFISCAL
                            INNER JOIN MAP_PRODUTO MP ON MP.SEQPRODUTO = XI.SEQPRODUTO
@@ -899,6 +903,5 @@ SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
      OR MF.PEROUTROIPI IS NULL
      OR MF.PERALIQUOTAIPI IS NULL
      OR NVL(MF.PERBASEIPI,0) = 0)
-    AND X.NROEMPRESA = 503
-
+    AND X.NROEMPRESA IN (502,503)
 ;
