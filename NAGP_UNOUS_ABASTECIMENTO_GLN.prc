@@ -9,6 +9,8 @@ BEGIN
   --- Criado por Cipolla em 16/09/2024 para enviar os dados que vêm da Unous para sugestão de Abastecimento automático para as lojas.
   --- Essa proc será executada ao termino da inserção dos dados da API, a rotina do Leonardo vai chamar a proc no final do insert na tabela de origem NAGT_UNOUS_ABASTECIMENTO
   
+  -- Comeca o Loop de Empresa conforme disponivel na sugestao e ainda nao utilizada
+  
   FOR emp IN (SELECT DISTINCT T.NRO_EMPRESA_ORIGEM EMP_ABASTEC 
                 FROM NAGT_UNOUS_ABASTECIMENTO T
                WHERE NVL(T.PROCESSADO, 'N') = 'N'
@@ -58,26 +60,32 @@ BEGIN
          NVL(FPADRAOEMBCOMPRAPROD(H.SEQPRODUTO, 1), 1),
          'N');
     
+    COMMIT;
       --- qtdembalagem - chama a proc FPADRAOEMBCOMPRAPROD para retornar a embalagem padrão de compra, senão existir retorno 1
     
       UPDATE NAGT_UNOUS_ABASTECIMENTO Z
          SET Z.PROCESSADO = 'S',
              Z.DATA_INTEGRACAOERP = SYSDATE
        WHERE Z.ROWID = H.ID;
-      
+           
+       
+       
     END;
   
   END LOOP;
   
-  NAGP_MAC_PROCLOTEMODELOABASTEC(emp.EMP_ABASTEC);
+  -- Cai denovo no loop de Empresa e comeca o faturamento apos insercao na oficial da C5
   
-  COMMIT;
-  
+    NAGP_MAC_PROCLOTEMODELOABASTEC(emp.EMP_ABASTEC);
+    
+  COMMIT; -- Commita apenas se o faturamento tiver sucesso, caso contrario envia e-mail e PROCESSADO se mantem 'N'
   END LOOP;
+  
+  
   
   EXCEPTION
       WHEN OTHERS THEN
-      
+           
         --- Se apresentar erro na rotina, dispara e-mail
       
         SP_ENVIA_EMAIL(OBJ_PARAM      => OBJ_PARAM_SMTP,
@@ -86,4 +94,6 @@ BEGIN
                        PSMENSAGEM     => 'Erro ao gerar rotina de retorno da Unous para Consinco (Abastecimento).',
                        PSINDUSAHTML   => 'N');
                          
+                       
+                       
 END NAGP_UNOUS_ABASTECIMENTO_GLN;
