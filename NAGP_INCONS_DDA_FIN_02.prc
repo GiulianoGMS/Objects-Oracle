@@ -352,7 +352,7 @@ LOOP
     IF vContinua IS NOT NULL THEN
     
     CONSINCO.SP_ENVIA_EMAIL(CONSINCO.C5_TP_PARAM_SMTP(1),
-    'lista.contasapagar@nagumo.com.br;giuliano.gomes@nagumo.com.br',--;simone.eguti@nagumo.com.br;marcel.cipolla@nagumo.com.br',
+    'email@email.com.br;email@email.com.br',
     'Inconsistencias DDA - Loja: '||TO_CHAR(LPAD(vEmp,3,0))|| ' - '||TO_CHAR(SYSDATE, 'DD/MM/YYYY'),
     vtexto,
     'S');
