@@ -89,7 +89,7 @@ BEGIN
         --- Se apresentar erro na rotina, dispara e-mail
       
         SP_ENVIA_EMAIL(OBJ_PARAM      => OBJ_PARAM_SMTP,
-                       PSDESTINATARIO => 'marcel.cipolla@nagumo.com.br;giuliano.gomes@nagumo.com.br',
+                       PSDESTINATARIO => 'email@email.com.br;email@email.com.br',
                        PSASSUNTO      => 'Erro ao gerar rotina de retorno da Unous para Consinco (Abastecimento).',
                        PSMENSAGEM     => 'Erro ao gerar rotina de retorno da Unous para Consinco (Abastecimento).',
                        PSINDUSAHTML   => 'N');
