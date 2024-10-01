@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE SP_CARGA_PRECO_NAGUMO_V2(PNNROJOB     IN   NUMBER,
+CREATE OR REPLACE PROCEDURE SP_CARGA_PRECO_V2(PNNROJOB     IN   NUMBER,
                                                      PNMODEMPRESA IN   NUMBER   ) IS
   VSSOFT           VARCHAR2(50);
   VSHORA           VARCHAR2(2);
@@ -48,7 +48,7 @@ BEGIN
               EXECUTE IMMEDIATE VSSQL;*/
 
               SP_ENVIA_EMAIL(OBJ_PARAM      => OBJ_PARAM_SMTP,
-                             PSDESTINATARIO => 'giuliano.gomes@nagumo.com.br',
+                             PSDESTINATARIO => 'email@email@nagumo.com.br',
                              PSASSUNTO      => 'Erro ao gerar a carga de PDV da empresa ' || TO_CHAR(I.NROEMPRESA),
                              PSMENSAGEM     => 'Erro ao gerar a carga de PDV da empresa ' || TO_CHAR(I.NROEMPRESA)
                                                ||'ERRO: '||SQLERRM,
@@ -76,7 +76,7 @@ BEGIN
             WHEN OTHERS THEN
 
               SP_ENVIA_EMAIL(OBJ_PARAM      => OBJ_PARAM_SMTP,
-                             PSDESTINATARIO => 'giuliano.gomes@nagumo.com.br',
+                             PSDESTINATARIO => 'email@email.com.br',
                              PSASSUNTO      => 'Erro ao gerar a carga TOTAL da balança da empresa: ' || TO_CHAR(I.NROEMPRESA),
                              PSMENSAGEM     => 'Erro ao gerar a carga TOTAL da balança da empresa: ' || TO_CHAR(I.NROEMPRESA)
                                                ||'ERRO: '||SQLERRM,
@@ -92,7 +92,7 @@ BEGIN
             WHEN OTHERS THEN
 
               SP_ENVIA_EMAIL(OBJ_PARAM      => OBJ_PARAM_SMTP,
-                             PSDESTINATARIO => 'giuliano.gomes@nagumo.com.br',
+                             PSDESTINATARIO => 'email@email.com.br',
                              PSASSUNTO      => 'Erro ao gerar a carga PARCIAL da balança da empresa: ' || TO_CHAR(I.NROEMPRESA),
                              PSMENSAGEM     => 'Erro ao gerar a carga PARCIAL da balança da empresa: ' || TO_CHAR(I.NROEMPRESA)
                                                ||'ERRO: '||SQLERRM,
@@ -110,4 +110,4 @@ BEGIN
                  values ('||PNNROJOB||',    trunc(sysdate), ''Final: ' || TO_CHAR(SYSDATE,'dd-mm-yyyy HH24:mi:ss')||''')';
   END IF;
   COMMIT;
-END SP_CARGA_PRECO_NAGUMO_V2;
+END SP_CARGA_PRECO_V2;
