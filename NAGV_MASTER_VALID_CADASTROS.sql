@@ -15,7 +15,8 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/
        CASE WHEN INC8 IS NOT NULL THEN ' | '||INC8 ELSE NULL END||
        CASE WHEN INC9 IS NOT NULL THEN ' | '||INC9 ELSE NULL END||
        CASE WHEN INC10 IS NOT NULL THEN ' | '||INC10 ELSE NULL END||
-       CASE WHEN INC11 IS NOT NULL THEN ' | '||INC11 ELSE NULL END
+       CASE WHEN INC11 IS NOT NULL THEN ' | '||INC11 ELSE NULL END||
+       CASE WHEN INC12 IS NOT NULL THEN ' | '||INC12 ELSE NULL END
        INCONSISTENCIAS
   FROM (
 
@@ -114,8 +115,8 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/
        -- Valida se o IPI está correto nos produtos EX
        CASE WHEN EXISTS (
          SELECT 1 FROM MAP_FAMILIA MF INNER JOIN MAP_FAMFORNEC FC ON FC.SEQFAMILIA = MF.SEQFAMILIA
-                              INNER JOIN GE_PESSOA GE ON GE.SEQPESSOA = FC.SEQFORNECEDOR
-          WHERE 1=1 
+                                      INNER JOIN GE_PESSOA GE ON GE.SEQPESSOA = FC.SEQFORNECEDOR
+          WHERE 1=1
             AND UF = 'EX'
             AND NVL(MF.ALIQUOTAIPI,0) > 0
             AND (MF.PERISENTOIPI IS NULL
@@ -123,9 +124,15 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/
              OR MF.PERALIQUOTAIPI IS NULL
              OR NVL(MF.PERBASEIPI,0) = 0)
             AND MF.SEQFAMILIA = MP.SEQFAMILIA)
-        THEN '(EX) Produto com entrada de IPI sem saída parametrizada' END INC11
-       
+        THEN '(EX) Produto com entrada de IPI sem saída parametrizada' END INC11,
+        -- Valida se o forne na familia é Industria para produtos importados (SeqFornec 502 e 503)
+        CASE WHEN EXISTS (
+          SELECT 1 FROM MAP_FAMFORNEC FC 
+           WHERE FC.SEQFORNECEDOR IN (502,503) 
+             AND NVL(FC.TIPFORNECEDORFAM, 'X') != 'I'
+             AND FC.SEQFAMILIA = MP.SEQFAMILIA)
+        THEN 'Familia do Prod. sem parametrização de Industria (Fornec 502/503)' END INC12
 
-  FROM MAP_PRODUTO MP) vMaster WHERE COALESCE(INC1, INC2, INC3, INC4, INC5, INC6, 
-                                              INC7, INC8, INC9, INC10,INC11) IS NOT NULL
+  FROM MAP_PRODUTO MP) vMaster WHERE COALESCE(INC1, INC2, INC3, INC4, INC5, INC6,
+                                              INC7, INC8, INC9, INC10,INC11, INC12) IS NOT NULL
 ;
