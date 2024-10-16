@@ -127,12 +127,13 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('19.1.0')*/
         THEN '(EX) Produto com entrada de IPI sem saída parametrizada' END INC11,
         -- Valida se o forne na familia é Industria para produtos importados (SeqFornec 502 e 503)
         CASE WHEN EXISTS (
-          SELECT * FROM MAP_FAMFORNEC FC 
-           WHERE FC.SEQFORNECEDOR IN (502,503) 
+          SELECT * FROM MAP_FAMFORNEC FC INNER JOIN MAP_FAMDIVISAO FD ON FD.SEQFAMILIA = FC.SEQFAMILIA
+           WHERE FC.SEQFORNECEDOR IN (502,503)
              AND NVL(FC.TIPFORNECEDORFAM, 'X') != 'I'
              AND EXISTS (SELECT 1 FROM MAP_FAMFORNEC EX INNER JOIN GE_PESSOA G ON G.SEQPESSOA = EX.SEQFORNECEDOR
                                  WHERE EX.SEQFAMILIA = FC.SEQFAMILIA
                                    AND UF = 'EX')
+             AND NVL(FD.FINALIDADEFAMILIA,'X') != 'U'
              AND FC.SEQFAMILIA = MP.SEQFAMILIA)
         THEN 'Familia do Prod. EX sem parametrização de Industria (Fornec 502/503)' END INC12
 
