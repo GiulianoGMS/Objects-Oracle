@@ -1,0 +1,20 @@
+CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCASEQPROMO (pNroempresa  NUMBER,
+                                                             pSeqproduto  NUMBER,
+                                                             pPrecoPromoc NUMBER)
+  RETURN VARCHAR2 IS
+  vsPromoc VARCHAR2(400);
+
+BEGIN  
+
+SELECT MAX(ZZ.SEQPROMOCAO||' - '||ZZ.PROMOCAO)
+  INTO vsPromoc
+  FROM CONSINCO.MRL_PROMOCAOITEM XX INNER JOIN MRL_PROMOCAO ZZ ON XX.SEQPROMOCAO = ZZ.SEQPROMOCAO
+
+ WHERE XX.SEQPRODUTO = pSeqproduto
+   AND XX.NROEMPRESA = pNroempresa
+   AND TRUNC(SYSDATE) BETWEEN XX.DTAINICIOPROM AND XX.DTAFIMPROM
+   AND PRECOPROMOCIONAL = pPrecoPromoc;
+
+   RETURN vsPromoc;
+   
+   END;
