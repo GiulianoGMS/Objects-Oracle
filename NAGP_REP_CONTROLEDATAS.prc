@@ -1,0 +1,81 @@
+CREATE OR REPLACE PROCEDURE NAGP_REP_CONTROLEDATAS AS
+
+-- Criado por GIuliano em 07/11/24
+-- Replica os dados do banco SATELITSKY | Controle de Datas antigo para o novo na Consinco
+
+ BEGIN
+      
+MERGE INTO MRL_PROMOCESPECIALHIST tgt
+
+USING NAGV_BASE_MRL_PROMOCESPECIAL2 src
+
+   ON 
+  (    tgt.SEQPRODUTO        = src.SEQPRODUTO
+  AND  tgt.NROEMPRESA        = src.NROEMPRESA
+  and  tgt.CODACESSOESPECIAL = src.CODACESSOESPECIAL
+  AND  tgt.VLRPRECOPROMOC    = src.VLRPRECOPROMOC
+  AND  tgt.QTDESOLICITADA    = src.QTDESOLICITADA 
+--AND  tgt.DTAINICIO         = src.DTAINICIO
+  AND  tgt.DTAFIM            = src.DTAFIM
+  )
+
+WHEN NOT MATCHED THEN
+
+  INSERT (
+          SEQPROMOCESPECIAL,
+          SEQPRODUTO,
+          QTDEMBALAGEM,
+          NROEMPRESA,
+          CODACESSOESPECIAL,
+          VLRPRECOPROMOC,
+          QTDESOLICITADA,
+          QTDEETIQEMITIDA,
+          DTAINICIO,
+          DTAFIM,
+          STATUS,
+          MOTIVOACAOPROMOC,
+          DTAHORALTERACAO,
+          USUALTERACAO,
+          DTAHORAPROVACAO,
+          USUAPROVACAO,
+          MOTIVOREPROVA,
+          INDLIBERACAO,
+          USULIBERACAO,
+          DTAHORALIBERACAO,
+          INDEMIETIQUETA,
+          SEQPROMOCESPECIALORIGEM,
+          INDREPLICAFAMILIA,
+          INDREPLICAASSOCIADO,
+          INDREPLICARELACIONADO
+  )
+  VALUES (
+          src.SEQPROMOCESPECIAL,
+          src.SEQPRODUTO,
+          src.QTDEMBALAGEM,
+          src.NROEMPRESA,
+          src.CODACESSOESPECIAL,
+          src.VLRPRECOPROMOC,
+          src.QTDESOLICITADA,
+          src.QTDEETIQEMITIDA,
+          src.DTAINICIO,
+          src.DTAFIM,
+          src.STATUS,
+          src.MOTIVOACAOPROMOC,
+          src.DTAHORALTERACAO,
+          src.USUALTERACAO,
+          src.DTAHORAPROVACAO,
+          src.USUAPROVACAO,
+          src.MOTIVOREPROVA,
+          src.INDLIBERACAO,
+          src.USULIBERACAO,
+          src.DTAHORALIBERACAO,
+          src.INDEMIETIQUETA,
+          src.SEQPROMOCESPECIALORIGEM,
+          src.INDREPLICAFAMILIA,
+          src.INDREPLICAASSOCIADO,
+          src.INDREPLICARELACIONADO
+  );
+  
+  COMMIT;
+  
+ END;
