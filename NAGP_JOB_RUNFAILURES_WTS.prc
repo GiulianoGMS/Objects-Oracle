@@ -2,13 +2,15 @@ CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_JOB_RUNFAILURES_WTS AS
 
 -- Criado por Giuliano em 10/11/2024
 -- Chamado pelo job NAGJ_JOB_RUN_FAILURES quando ocorre erro na execucao de alguma rotina
--- Envia msg pelo whatsapp pela API CallMeBot
+-- Whats: Envia msg pelo whatsapp pela API CallMeBot
 
 BEGIN
   DECLARE
-    VNLIXO VARCHAR2(5000);
-    VTEXT  VARCHAR2(4000);
-    VURL   VARCHAR2(4000);
+    VNLIXO  VARCHAR2(5000);
+    --VNLIXOT VARCHAR2(5000);
+    VTEXT   VARCHAR2(4000);
+    VURL    VARCHAR2(4000);
+    --VURLT   VARCHAR2(4000);
   BEGIN
     FOR msg IN (
       
@@ -33,10 +35,12 @@ BEGIN
                  'Instance_ID:%20' || msg.INSTANCE;
 
         -- Construir a URL
-        VURL := 'http://api.callmebot.com/whatsapp.php?phone=5511986260031&text=' || VTEXT || '&apikey=7143296';
+        VURL := 'http://api.callmebot.com/whatsapp.php?phone=5511986260031&text=' || VTEXT || '&apikey=7143296'; -- Whatsapp 
+        --VURLT:= 'https://api.callmebot.com/telegram/group.php?apikey=7602042692:AAH9cXuDu6_r4q5_Tp2IvNxRcGkxz_1pMeQ&text=' || VTEXT; -- Telegram
 
         -- Enviar a mensagem
-        SELECT UTL_HTTP.REQUEST(VURL) INTO VNLIXO FROM DUAL;
+        SELECT UTL_HTTP.REQUEST(VURL)  INTO VNLIXO  FROM DUAL;
+        --SELECT UTL_HTTP.REQUEST(VURLT) INTO VNLIXOT FROM DUAL;
 
         DBMS_OUTPUT.PUT_LINE('Mensagem enviada com sucesso para o Job: ' || msg.JOB_NAME);
 
