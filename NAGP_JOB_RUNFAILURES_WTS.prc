@@ -28,11 +28,11 @@ BEGIN
     LOOP
       BEGIN
         -- Montar o texto da mensagem
-        VTEXT := '*Aviso:%20Houve%20falha%20de%20execução%20na(s)%20rotina(s)%20abaixo:*%0A%0A' ||
-                 'Log_Date:%20'    || msg.DATA || '%0A' ||
-                 'Job_Name:%20'    || msg.JOB_NAME || '%0A' ||
-                 'Error:%20'       || msg.ERROR || '%0A' ||
-                 'Instance_ID:%20' || msg.INSTANCE;
+       VTEXT := '*Report:%20Houve%20falha%20de%20execução%20na(s)%20rotina(s)%20abaixo:*%0A%0A' ||
+                 '*Log_Date:*%20'    || msg.DATA || '%0A' ||
+                 '*Job_Name:*%20'    || msg.JOB_NAME || '%0A' ||
+                 '*Error:*%20'       || msg.ERROR || '%0A' ||
+                 '*Instance_ID:*%20' || msg.INSTANCE;
 
         -- Construir a URL
         VURL := 'http://api.callmebot.com/whatsapp.php?phone=#########&text=' || VTEXT || '&apikey=#####'; -- Whatsapp 
