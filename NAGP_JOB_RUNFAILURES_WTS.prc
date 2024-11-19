@@ -28,7 +28,7 @@ BEGIN
     LOOP
       BEGIN
         -- Montar o texto da mensagem
-       VTEXT := '*Report:%20Houve%20falha%20de%20execução%20na(s)%20rotina(s)%20abaixo:*%0A%0A' ||
+       VTEXT :=  '%F0%9F%9A%A8%20*Report:%20Houve%20falha%20de%20execução%20na(s)%20rotina(s)%20abaixo:*%0A%0A' ||
                  '*Log_Date:*%20'    || msg.DATA || '%0A' ||
                  '*Job_Name:*%20'    || msg.JOB_NAME || '%0A' ||
                  '*Error:*%20'       || msg.ERROR || '%0A' ||
