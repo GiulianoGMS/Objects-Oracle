@@ -20,7 +20,7 @@ BEGIN
     LOOP
       BEGIN
         -- Montar o texto da mensagem
-        VTEXT := '*Aviso:%20Existem%20objetos%20invalidos%20no%20banco:*%0A%0A' ||
+        VTEXT := '%F0%9F%9A%A8%20*Report:%20Existem%20objetos%20invalidos%20no%20banco:*%0A%0A' ||
                  '*Owner:*%20'         || msg.OWNER         || '%0A' ||
                  '*Object Name:*%20'   || msg.OBJECT_NAME   || '%0A' ||
                  '*Object Type:*%20'   || msg.OBJECT_TYPE   || '%0A' ||
