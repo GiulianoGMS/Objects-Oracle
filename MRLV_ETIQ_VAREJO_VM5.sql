@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW CONSINCO.MRLV_ETIQ_VAREJO_VM5 AS
+CREATE OR REPLACE VIEW CONSINCO.MRLV_ETIQ_NAGUMO_VAREJO_VM5 AS
 SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
         -- Novo modelo criado por Giuliano | 26/01/2024
 
@@ -33,7 +33,7 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
         '^FO580,73^A0N,58,58^FD'||LPAD(TRUNC(J.PRECOVALIDPROMOC), 4, ' ' ) || ',' || LPAD((J.PRECOVALIDPROMOC - TRUNC(J.PRECOVALIDPROMOC)) * 100, 2, 0)||'^FS' || CHR(13) || CHR(10) || -- PROMOC
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,128^A0N,15,15^FDNesta Embalagem '||
-                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'L' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
+                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LITRO' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
                                 DECODE(SIGN(J.PRECOGERPROMOC),+1,
                                 TRANSLATE(TO_CHAR(ROUND((J.PRECOGERPROMOC/(J.MULTEQPEMB*1000))*1000 ,2),'FM9990.00'), '.', ','),
                                 TRANSLATE(TO_CHAR(ROUND((J.PRECOGERNORMAL/(J.MULTEQPEMB*1000))*1000 ,2),'FM9990.00'), '.', ','))  END )||'^FS' || CHR(13) || CHR(10) ||
@@ -52,7 +52,7 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
                                    TRUNC(RPM.PRECOPPROMOCIONAL)) * 100, 2, 0)||'^FR^FS'|| CHR(13) || CHR(10) ||
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,221^A0N,15,15^FDNesta Embalagem '||
-                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'L' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
+                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LITRO' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
                                 DECODE(SIGN(RPM.PRECOPPROMOCIONAL),+1,
                                 TRANSLATE(TO_CHAR(ROUND((RPM.PRECOPPROMOCIONAL/(J.MULTEQPEMB*1000))*1000 ,2),'FM9990.00'), '.', ','),
                                 TRANSLATE(TO_CHAR(ROUND((RPM.PRECOPPROMOCIONAL/(J.MULTEQPEMB*1000))*1000 ,2),'FM9990.00'), '.', ',')) END)||'^FS'|| CHR(13) || CHR(10) ||
@@ -80,7 +80,7 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
         '^FO475,80^A0N,150,110^FD'||LPAD(TRUNC(J.PRECOVALIDPROMOC), 4, ' ' ) || ',' || LPAD((J.PRECOVALIDPROMOC - TRUNC(J.PRECOVALIDPROMOC)) * 100, 2, 0)||'^FS' END)|| CHR(13) || CHR(10) || -- PROMOC
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,215^A0N,15,15^FDNesta Embalagem '||
-                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'L' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
+                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LITRO' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
                                 DECODE(SIGN(J.PRECOGERPROMOC),+1,
                                 TRANSLATE(TO_CHAR(ROUND((J.PRECOGERPROMOC/(J.MULTEQPEMB*1000))*1000 ,2),'FM9990.00'), '.', ','),
                                 TRANSLATE(TO_CHAR(ROUND((J.PRECOGERNORMAL/(J.MULTEQPEMB*1000))*1000 ,2),'FM9990.00'), '.', ','))END )||'^FS' || CHR(13) || CHR(10) ||
@@ -116,7 +116,7 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
         '^FO475,80^A0N,150,110^FD'||LPAD(TRUNC(AT.PRECOPROMOCIONAL), 4, ' ' ) || ',' || LPAD((AT.PRECOPROMOCIONAL - TRUNC(AT.PRECOPROMOCIONAL)) * 100, 2, '0')|| '^FS' END)|| CHR(13) || CHR(10) || -- PROMOC
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,215^A0N,15,15^FDNesta Embalagem '||
-                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'L' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
+                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LITRO' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
                                 DECODE(SIGN(J.PRECOGERPROMOC),+1,
                                 TRANSLATE(TO_CHAR(ROUND((AT.PRECOPROMOCIONAL/(J.MULTEQPEMB*1000))*1000 ,2),'FM9990.00'), '.', ','),
                                 TRANSLATE(TO_CHAR(ROUND((AT.PRECOPROMOCIONAL/(J.MULTEQPEMB*1000))*1000 ,2),'FM9990.00'), '.', ','))END)||'^FS' || CHR(13) || CHR(10) ||
@@ -158,7 +158,7 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
         '^FO475,80^A0N,150,110^FD'||LPAD(TRUNC(RPM.PRECOPPROMOCIONAL), 4, ' ' ) || ',' || LPAD((RPM.PRECOPPROMOCIONAL - TRUNC(RPM.PRECOPPROMOCIONAL)) * 100, 2, '0')|| '^FS' END)|| CHR(13) || CHR(10) || -- PROMOC
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,215^A0N,15,15^FDNesta Embalagem '||
-                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'L' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
+                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LITRO' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
                                 DECODE(SIGN(J.PRECOGERPROMOC),+1,
                                 TRANSLATE(TO_CHAR(ROUND((RPM.PRECOPPROMOCIONAL/(J.MULTEQPEMB*1000))*1000 ,2),'FM9990.00'), '.', ','),
                                 TRANSLATE(TO_CHAR(ROUND((RPM.PRECOPPROMOCIONAL/(J.MULTEQPEMB*1000))*1000 ,2),'FM9990.00'), '.', ','))END)||'^FS' || CHR(13) || CHR(10) ||
@@ -194,7 +194,7 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
 ||    (CASE WHEN
        J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL
        THEN
-CHR(13) || CHR(10) || '^FO550,255^A0N,20,19^FD' ||/* '*PRECO PAGO POR ' || J.MULTEQPEMBALAGEM ||' R$   '*/'Nesta Embalagem ' || CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'L'
+CHR(13) || CHR(10) || '^FO550,255^A0N,20,19^FD' ||/* '*PRECO PAGO POR ' || J.MULTEQPEMBALAGEM ||' R$   '*/'Nesta Embalagem ' || CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LITRO'
                                                                                                                                                                                                                                                                     WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g'
                                                                                                                                                                                                                                                                      ELSE J.MULTEQPEMBALAGEM END ||' R$ '
       || DECODE(SIGN(J.PRECOGERPROMOC/*J.PRECOGERNORMAL*/),+1,
@@ -224,7 +224,7 @@ END)||'^FR^FS'
 ||    (CASE WHEN
        J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL
        THEN
-CHR(13) || CHR(10) || '^FO550,255^A0N,20,19^FD' || /*'*PRECO PAGO POR ' || J.MULTEQPEMBALAGEM ||' R$   '*/ 'Nesta Embalagem ' || CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'L'
+CHR(13) || CHR(10) || '^FO550,255^A0N,20,19^FD' || /*'*PRECO PAGO POR ' || J.MULTEQPEMBALAGEM ||' R$   '*/ 'Nesta Embalagem ' || CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LITRO'
                                                                                                                                                                                                                                                                     WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g'
                                                                                                                                                                                                                                                                      ELSE J.MULTEQPEMBALAGEM END ||' R$ '
       || DECODE(SIGN(J.PRECOGERPROMOC/*J.PRECOGERNORMAL*/),+1,
