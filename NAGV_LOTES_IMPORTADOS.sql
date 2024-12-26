@@ -1,5 +1,7 @@
 CREATE OR REPLACE VIEW CONSINCO.NAGV_LOTES_IMPORTADOS AS
 
+-- XLS em https://github.com/GiulianoGMS/Excel-Files/blob/main/Rel_Aux_ImportacaoDireta.xlsx
+       
 SELECT A.SEQPEDIDOIMPORT NRO_PED,
        A.SEQPRODUTO PLU,
        C.CODACESSO REF,
