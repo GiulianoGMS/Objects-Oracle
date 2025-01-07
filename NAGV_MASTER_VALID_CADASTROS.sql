@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW CONSINCO.NAGV_MASTER_VALID_CADASTROS AS
+CREATE OR REPLACE VIEW NAGV_MASTER_VALID_CADASTROS AS
 SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
        SEQPRODUTO PLU, SEQFAMILIA COD_FAMILIA, DESCCOMPLETA DESC_PRODUTO,
        'Inconsistência(s): '||INC1||
@@ -13,7 +13,9 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
        CASE WHEN INC10 IS NOT NULL THEN ' | '||INC10 ELSE NULL END||
        CASE WHEN INC11 IS NOT NULL THEN ' | '||INC11 ELSE NULL END||
        CASE WHEN INC12 IS NOT NULL THEN ' | '||INC12 ELSE NULL END||
-       CASE WHEN INC13 IS NOT NULL THEN ' | '||INC13 ELSE NULL END
+       CASE WHEN INC13 IS NOT NULL THEN ' | '||INC13 ELSE NULL END||
+       CASE WHEN INC14 IS NOT NULL THEN ' | '||INC14 ELSE NULL END||
+       CASE WHEN INC15 IS NOT NULL THEN ' | '||INC15 ELSE NULL END
        INCONSISTENCIAS
   FROM (
 
@@ -52,8 +54,8 @@ SELECT SEQPRODUTO, SEQFAMILIA, DESCCOMPLETA,
        CASE WHEN EXISTS (
          SELECT 1 FROM CONSINCO.MAP_FAMDIVISAO A LEFT JOIN CONSINCO.MAP_TRIBUTACAO B ON A.NROTRIBUTACAO = B.NROTRIBUTACAO
           WHERE A.SEQFAMILIA = MP.SEQFAMILIA
-            AND ((UPPER(TRIBUTACAO) LIKE '%IMP%' OR UPPER(TRIBUTACAO) LIKE 'IM%')    AND CODORIGEMTRIB NOT IN (1,2,3,6,8) AND UPPER(TRIBUTACAO) NOT LIKE '%LIMP%'
-             OR  UPPER(TRIBUTACAO) LIKE '%IMP.LIMP%'                                 AND CODORIGEMTRIB NOT IN (1,2,3,6,8)))
+            AND ((UPPER(TRIBUTACAO) LIKE '%IMP%' OR UPPER(TRIBUTACAO) LIKE 'IM%')    AND CODORIGEMTRIB NOT IN (1,2,3,6,8,7) AND UPPER(TRIBUTACAO) NOT LIKE '%LIMP%'
+             OR  UPPER(TRIBUTACAO) LIKE '%IMP.LIMP%'                                 AND CODORIGEMTRIB NOT IN (1,2,3,6,8,7)))
        THEN 'IMP/IM.D com origem NAC'                END INC5,
        -- Tributação/Origem NAC x IMP
        CASE WHEN EXISTS (
@@ -148,8 +150,55 @@ SELECT SEQPRODUTO, SEQFAMILIA, DESCCOMPLETA,
              ||(SELECT FF.CODNBMSH||' Aliq. C5: '||FF.ALIQUOTAIPI||' - Regra: '||LISTAGG(XX.ALIQUOTAIPI, ' ou ') WITHIN GROUP (ORDER BY SEQFAMILIA)
                   FROM MAP_FAMILIA FF INNER JOIN (SELECT DISTINCT CODNBMSH, ALIQUOTAIPI FROM NAGT_DEPARA_TICKET464111) XX ON XX.CODNBMSH = FF.CODNBMSH
                  WHERE FF.SEQFAMILIA = MP.SEQFAMILIA
-                 GROUP BY FF.ALIQUOTAIPI, FF.CODNBMSH) END                                   INC13
+                 GROUP BY FF.ALIQUOTAIPI, FF.CODNBMSH) END                                   INC13,
+        CASE WHEN EXISTS(
+          SELECT 1 FROM MAP_FAMILIA MF INNER JOIN MAP_FAMDIVISAO FD ON FD.SEQFAMILIA = MF.SEQFAMILIA
+                                       INNER JOIN MAP_TRIBUTACAOUF X ON X.NROTRIBUTACAO = FD.NROTRIBUTACAO
+                                       INNER JOIN MAP_TRIBUTACAO M ON M.NROTRIBUTACAO = X.NROTRIBUTACAO
+                                       INNER JOIN (SELECT *
+                                        FROM MAP_TRIBUTACAOUF XC
+                                       WHERE 1=1
+                                         AND XC.TIPTRIBUTACAO = 'SC'
+                                         AND XC.SITUACAONF != '060') XC ON XC.UFEMPRESA = X.UFEMPRESA
+                                                                       AND XC.UFEMPRESA = XC.UFCLIENTEFORNEC
+                                                                       AND XC.NROREGTRIBUTACAO = X.NROREGTRIBUTACAO
+                                                                       AND XC.NROTRIBUTACAO = X.NROTRIBUTACAO
+                    WHERE 1=1
+                      AND X.TIPTRIBUTACAO = 'EI'
+                      AND X.UFEMPRESA IN ('SP','RJ')
+                      AND X.NROREGTRIBUTACAO = 0
+                      AND X.UFEMPRESA = X.UFCLIENTEFORNEC
+                      AND NVL(X.PERACRESCST,0)   > 0 
+                      AND NVL(X.PERALIQUOTAST,0) > 0 
+                      AND NVL(X.PERTRIBUTST,0)   > 0
+                      
+                   AND MF.SEQFAMILIA = MP.SEQFAMILIA)
+         THEN 'Prod com Parametros ST e CST Diferente de 060 na tributação' END               INC14,
+          CASE WHEN EXISTS(
+          SELECT 1 FROM MAP_FAMILIA MF INNER JOIN MAP_FAMDIVISAO FD ON FD.SEQFAMILIA = MF.SEQFAMILIA
+                                       INNER JOIN MAP_TRIBUTACAOUF X ON X.NROTRIBUTACAO = FD.NROTRIBUTACAO
+                                       INNER JOIN MAP_TRIBUTACAO M ON M.NROTRIBUTACAO = X.NROTRIBUTACAO
+                                       INNER JOIN (SELECT *
+                                        FROM MAP_TRIBUTACAOUF XC
+                                       WHERE 1=1
+                                         AND XC.TIPTRIBUTACAO = 'SC'
+                                         AND XC.SITUACAONF NOT IN ('000','020','040','041','051')) XC ON XC.UFEMPRESA = X.UFEMPRESA
+                                                                       AND XC.UFEMPRESA = XC.UFCLIENTEFORNEC
+                                                                       AND XC.NROREGTRIBUTACAO = X.NROREGTRIBUTACAO
+                                                                       AND XC.NROTRIBUTACAO = X.NROTRIBUTACAO
+                    WHERE 1=1
+                      AND X.TIPTRIBUTACAO = 'EI'
+                      AND X.UFEMPRESA IN ('SP','RJ')
+                      AND X.NROREGTRIBUTACAO = 0
+                      AND X.UFEMPRESA = X.UFCLIENTEFORNEC
+                      AND NVL(X.PERACRESCST,0)   = 0 
+                      AND NVL(X.PERALIQUOTAST,0) = 0 
+                      AND NVL(X.PERTRIBUTST,0)   = 0
+                      
+                   AND MF.SEQFAMILIA = MP.SEQFAMILIA)
+         THEN 'Prod sem Parametros ST e CST diferente de 000,020,040,041,051 na tributação' END               INC15
+                                    
 
   FROM MAP_PRODUTO MP) vMaster WHERE COALESCE(INC1, INC2, INC3, INC4, INC5, INC6,
-                                              INC7, INC8, INC9, INC10,INC11, INC12, INC13) IS NOT NULL
+                                              INC7, INC8, INC9, INC10,INC11, INC12, INC13, INC14, INC15) IS NOT NULL
 ;
