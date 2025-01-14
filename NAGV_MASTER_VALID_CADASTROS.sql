@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW NAGV_MASTER_VALID_CADASTROS AS
+CREATE OR REPLACE VIEW CONSINCO.NAGV_MASTER_VALID_CADASTROS AS
 SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
        SEQPRODUTO PLU, SEQFAMILIA COD_FAMILIA, DESCCOMPLETA DESC_PRODUTO,
        'Inconsistência(s): '||INC1||
@@ -15,7 +15,8 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
        CASE WHEN INC12 IS NOT NULL THEN ' | '||INC12 ELSE NULL END||
        CASE WHEN INC13 IS NOT NULL THEN ' | '||INC13 ELSE NULL END||
        CASE WHEN INC14 IS NOT NULL THEN ' | '||INC14 ELSE NULL END||
-       CASE WHEN INC15 IS NOT NULL THEN ' | '||INC15 ELSE NULL END
+       CASE WHEN INC15 IS NOT NULL THEN ' | '||INC15 ELSE NULL END||
+       CASE WHEN INC16 IS NOT NULL THEN ' | '||INC16 ELSE NULL END
        INCONSISTENCIAS
   FROM (
 
@@ -159,7 +160,7 @@ SELECT SEQPRODUTO, SEQFAMILIA, DESCCOMPLETA,
                                         FROM MAP_TRIBUTACAOUF XC
                                        WHERE 1=1
                                          AND XC.TIPTRIBUTACAO = 'SC'
-                                         AND XC.SITUACAONF != '060') XC ON XC.UFEMPRESA = X.UFEMPRESA
+                                         AND XC.SITUACAONF NOT IN ('060', '090')) XC ON XC.UFEMPRESA = X.UFEMPRESA
                                                                        AND XC.UFEMPRESA = XC.UFCLIENTEFORNEC
                                                                        AND XC.NROREGTRIBUTACAO = X.NROREGTRIBUTACAO
                                                                        AND XC.NROTRIBUTACAO = X.NROTRIBUTACAO
@@ -168,21 +169,21 @@ SELECT SEQPRODUTO, SEQFAMILIA, DESCCOMPLETA,
                       AND X.UFEMPRESA IN ('SP','RJ')
                       AND X.NROREGTRIBUTACAO = 0
                       AND X.UFEMPRESA = X.UFCLIENTEFORNEC
-                      AND NVL(X.PERACRESCST,0)   > 0 
-                      AND NVL(X.PERALIQUOTAST,0) > 0 
+                      AND NVL(X.PERACRESCST,0)   > 0
+                      AND NVL(X.PERALIQUOTAST,0) > 0
                       AND NVL(X.PERTRIBUTST,0)   > 0
-                      
+
                    AND MF.SEQFAMILIA = MP.SEQFAMILIA)
-         THEN 'Prod com Parametros ST e CST Diferente de 060 na tributação' END               INC14,
-          CASE WHEN EXISTS(
-          SELECT 1 FROM MAP_FAMILIA MF INNER JOIN MAP_FAMDIVISAO FD ON FD.SEQFAMILIA = MF.SEQFAMILIA
+         THEN 'Prod com Parametros ST e CST Diferente de 060, 090 na tributação' END               INC14,
+         CASE WHEN EXISTS(
+         SELECT 1 FROM MAP_FAMILIA MF INNER JOIN MAP_FAMDIVISAO FD ON FD.SEQFAMILIA = MF.SEQFAMILIA
                                        INNER JOIN MAP_TRIBUTACAOUF X ON X.NROTRIBUTACAO = FD.NROTRIBUTACAO
                                        INNER JOIN MAP_TRIBUTACAO M ON M.NROTRIBUTACAO = X.NROTRIBUTACAO
                                        INNER JOIN (SELECT *
                                         FROM MAP_TRIBUTACAOUF XC
                                        WHERE 1=1
                                          AND XC.TIPTRIBUTACAO = 'SC'
-                                         AND XC.SITUACAONF NOT IN ('000','020','040','041','051')) XC ON XC.UFEMPRESA = X.UFEMPRESA
+                                         AND XC.SITUACAONF NOT IN ('000','020','040','041','051','090')) XC ON XC.UFEMPRESA = X.UFEMPRESA
                                                                        AND XC.UFEMPRESA = XC.UFCLIENTEFORNEC
                                                                        AND XC.NROREGTRIBUTACAO = X.NROREGTRIBUTACAO
                                                                        AND XC.NROTRIBUTACAO = X.NROTRIBUTACAO
@@ -191,14 +192,22 @@ SELECT SEQPRODUTO, SEQFAMILIA, DESCCOMPLETA,
                       AND X.UFEMPRESA IN ('SP','RJ')
                       AND X.NROREGTRIBUTACAO = 0
                       AND X.UFEMPRESA = X.UFCLIENTEFORNEC
-                      AND NVL(X.PERACRESCST,0)   = 0 
-                      AND NVL(X.PERALIQUOTAST,0) = 0 
+                      AND NVL(X.PERACRESCST,0)   = 0
+                      AND NVL(X.PERALIQUOTAST,0) = 0
                       AND NVL(X.PERTRIBUTST,0)   = 0
-                      
-                   AND MF.SEQFAMILIA = MP.SEQFAMILIA)
-         THEN 'Prod sem Parametros ST e CST diferente de 000,020,040,041,051 na tributação' END               INC15
-                                    
 
-  FROM MAP_PRODUTO MP) vMaster WHERE COALESCE(INC1, INC2, INC3, INC4, INC5, INC6,
-                                              INC7, INC8, INC9, INC10,INC11, INC12, INC13, INC14, INC15) IS NOT NULL
+                   AND MF.SEQFAMILIA = MP.SEQFAMILIA)
+         THEN 'Prod sem Parametros ST e CST diferente de 000,020,040,041,051,090 na tributação' END        INC15,
+         CASE WHEN EXISTS(
+         SELECT 1
+           FROM MAP_FAMILIA MF
+          WHERE (NVL(MF.PERBASEPIS, 0) > 0 OR NVL(MF.PERBASECOFINS, 0) > 0)
+            AND MF.SEQFAMILIA = MP.SEQFAMILIA)
+         THEN 'Familia com Redução de PIS/COFINS!'                                     END INC16
+
+  FROM MAP_PRODUTO MP) vMaster WHERE COALESCE(INC1,  INC2,  INC3,  INC4,  INC5,  INC6,
+                                              INC7,  INC8,  INC9,  INC10, INC11, INC12, 
+                                              INC13, INC14, INC15, INC16) IS NOT NULL
+                                              
+                                              
 ;
