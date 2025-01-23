@@ -19,7 +19,7 @@ PROCEDURE NAGP_INC_FAM_03     (pnSeqInconsist     in map_incons_familia.seqincon
         SELECT DISTINCT
                A.SEQFAMILIA,
                PNSEQINCONSIST,
-              'CST de PIS/COFINS incorretos ou inexistentes, verifique!',
+              'CST de PIS/COFINS incorretos, verifique!',
                SYSDATE,
                A.DTAHORALTERACAO,
                PSUSUALTERACAO,
