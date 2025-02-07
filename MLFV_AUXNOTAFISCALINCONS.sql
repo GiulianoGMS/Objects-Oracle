@@ -428,18 +428,15 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
                                     --INNER JOIN DIM_CATEGORIA@CONSINCODW DC ON DC.SEQFAMILIA = E.SEQFAMILIA
 
 -- Alterado em 25/06/24 por Giuliano - Ticket 417539 - Barrar todas divergencias
-/*
-WHERE L.M014_DM_ORIG_ICMS IN (1,2,3,8) AND D.CODORIGEMTRIB IN (0,4,5,7) AND A.SEQPESSOA > 999
-   OR L.M014_DM_ORIG_ICMS IN (0,4,5,7) AND D.CODORIGEMTRIB IN (1,2,3,8) AND A.SEQPESSOA > 999
 
-   -- INVERSO
-
-   OR D.CODORIGEMTRIB IN (1,2,3,8) AND L.M014_DM_ORIG_ICMS IN (0,4,5,7) AND A.SEQPESSOA > 999
-   OR D.CODORIGEMTRIB IN (0,4,5,7) AND L.M014_DM_ORIG_ICMS IN (1,2,3,8) AND A.SEQPESSOA > 999
-*/
-WHERE NVL(L.M014_DM_ORIG_ICMS,1) != NVL(D.CODORIGEMTRIB,2)
+WHERE A.CODGERALOPER != 652 -- Ticket 528038 31/01/2025
+  AND NVL(L.M014_DM_ORIG_ICMS,1) != NVL(D.CODORIGEMTRIB,2)
   AND A.SEQPESSOA > 999
- -- AND (A.NROEMPRESA IN (1,2,3,7,11,26,31,42,51,53,501) OR A.NROEMPRESA <= 30) -- Solic Neides/Dani
+-- Ticket 512625 - 5 x 0 = X x X = Passa
+-- Minha logica: Se o DECODE do XML retornar X e o DECODE da C5 Também, não vai barrar
+  AND DECODE(NVL(L.M014_DM_ORIG_ICMS,1), 5, 'X', 0, 'X', 1)
+  !=  DECODE(NVL(D.CODORIGEMTRIB,2)    , 5, 'X', 0, 'X', 2)
+--
   AND A.DTAEMISSAO > SYSDATE - 50
 --
 -- Alterado em 28/06/24 por Giuliano - Ticket 419280 - Altera regra para FLV
@@ -449,8 +446,8 @@ WHERE NVL(L.M014_DM_ORIG_ICMS,1) != NVL(D.CODORIGEMTRIB,2)
   AND A.SEQPESSOA > 999
   AND A.DTAEMISSAO > SYSDATE - 50
 
-  AND(NVL(L.M014_DM_ORIG_ICMS,1) IN (2,3,8)   AND NVL(D.CODORIGEMTRIB,2) IN (0,4,5,7)
-   OR NVL(L.M014_DM_ORIG_ICMS,1) IN (0,4,5,7) AND NVL(D.CODORIGEMTRIB,2) IN (2,3,8))
+  AND(NVL(L.M014_DM_ORIG_ICMS,1) IN (1,2,3,6,8)   AND NVL(D.CODORIGEMTRIB,2) IN (0,4,5,7)
+   OR NVL(L.M014_DM_ORIG_ICMS,1) IN (0,4,5,7) AND NVL(D.CODORIGEMTRIB,2) IN (1,2,3,6,8))
 --
 UNION ALL
 
@@ -469,7 +466,12 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_GNRE B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
 
-WHERE TIPOGUIA = 'R' AND (CODOBRIGREC != '005' OR CODRECEITA NOT IN ('063-2','100-4'))
+WHERE TIPOGUIA = 'R'
+  AND (CODOBRIGREC != '005' OR CODRECEITA NOT IN ('063-2','100-4'))
+
+   OR TIPOGUIA = 'G'
+  AND A.NROEMPRESA NOT IN (36,53)
+  AND CODRECEITA   NOT IN (100080)
 
 UNION ALL
 
@@ -507,7 +509,7 @@ SELECT DISTINCT(X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                - SUM(Y.VLRDESCITEM) - SUM(NVL(Y.VLRDESCFINANCEIRO,0)),
                'FM999G999G999D90', 'NLS_NUMERIC_CHARACTERS='',.''')||' Valor Disponivel: R$ '||
                 TO_CHAR(VLRDISPONIVEL,'FM999G999G999D90', 'NLS_NUMERIC_CHARACTERS='',.''')||' Entre em contato com o Departamento Comercial.' */
-                'nao existe saldo disponivel para o comprador para recebimento sem pedido. Entre em contato com o Departamento Comercial'
+                'Nao existe saldo disponivel para o comprador para recebimento sem pedido. Entre em contato com o Departamento Comercial'
                 AS MENSAGEM
 
   FROM MLF_AUXNOTAFISCAL X INNER JOIN MLF_AUXNFITEM Y ON Y.SEQAUXNOTAFISCAL = X.SEQAUXNOTAFISCAL
@@ -648,7 +650,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 'L' AS BLOQAUTOR,
                 73  AS CODINCONSISTENC,
                 CASE WHEN L.CODCEST IS NULL                                                                    THEN 'Cod. CEST do produto '||
-                  B.SEQPRODUTO||' no XML esta NULO - Abrir chamado para do Departamento Fiscal - CEST XML: '||NVL(TO_CHAR(L.CODCEST), 'NULO')||' - C5: '||E.CODCEST
+                  B.SEQPRODUTO||' no XML esta NULO - Solicitar troca da nota fiscal. - CEST XML: '||NVL(TO_CHAR(L.CODCEST), 'NULO')||' - C5: '||E.CODCEST
                     -- WHEN NVL(L.CODCEST,0) != NVL(E.CODCEST,0) AND NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0)   THEN 'Codigo CEST e NCM do produto '||B.SEQPRODUTO||' no  XML estao divergentes do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributario'
                      WHEN NVL(L.CODCEST,0) != NVL(E.CODCEST,0) /*AND NVL(L.M014_CD_NCM,0)  = NVL(CODNBMSH,0) */THEN 'Cod. CEST do produto '||
                   B.SEQPRODUTO||' esta divergente do cadastro no sistema - Abrir chamado para o Depto Cadastro Tributario - CEST XML: '||L.CODCEST||' - C5: '||E.CODCEST
@@ -666,12 +668,12 @@ WHERE A.CODGERALOPER = 1
     -- De/Para na Function fc5_RetIndSituacaoNF_NFe - Regra Barra CST 10 70 60 respectivamente na clausula
   AND (L.M014_DM_TRIB_ICMS IN (1,9,8) OR NVL(B.VLRICMSST,0) > 0) -- VLRICMSST > 0 - Giuliano 10/09/24 - Solic Danielle
                                      -- CST 202 e 500 (Simples Nacional) sera tratado no OR abaixo pois muda a regra
-  AND (NVL(L.CODCEST,0) != NVL(E.CODCEST,1))-- OR NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0))
+  AND (NVL(L.CODCEST,0) != NVL(E.CODCEST,0)) -- Alt 04/02/25 Giuliano | Dani pediu para liberar nulo XML x Nulo C5
   -- Trata SN
   OR A.CODGERALOPER = 1
  AND EXISTS(SELECT 1 FROM MAF_FORNECEDOR SN WHERE SN.MICROEMPRESA = 'S' AND SEQFORNECEDOR = A.SEQPESSOA)
  AND M014_CD_CFOP NOT IN (5401,5101,5102,6102,6401)
- AND (NVL(L.CODCEST,0) != NVL(E.CODCEST,1))-- OR NVL(L.M014_CD_NCM,0) != NVL(CODNBMSH,0))*/
+ AND (NVL(L.CODCEST,0) != NVL(E.CODCEST,0)) -- Alt 04/02/25 Giuliano | Dani pediu para liberar nulo XML x Nulo C5
 
 UNION ALL
 
@@ -691,7 +693,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
   WHERE E.FINALIDADEFAMILIA = 'U'
   AND   A.CODGERALOPER != 2
   AND   A.SEQPESSOA > 999 -- Fornecedores fora Emp Grupo
-  AND A.NROEMPRESA != 506
+  AND A.NROEMPRESA NOT IN (506,508)
   AND A.CODGERALOPER NOT IN (14,652,128)
 
  UNION ALL
@@ -714,7 +716,7 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
   AND  (A.CODGERALOPER = 59 AND (SELECT NAGF_BUSCACGCEMP(A.SEQPESSOA) FROM DUAL)  = (SELECT NAGF_BUSCACGCEMP(A.NROEMPRESA) FROM DUAL)  -- 59 e Mesma Razao
     OR  A.CODGERALOPER = 61 AND (SELECT NAGF_BUSCACGCEMP(A.SEQPESSOA) FROM DUAL) != (SELECT NAGF_BUSCACGCEMP(A.NROEMPRESA) FROM DUAL)) -- 61 e Mesma Razao
   AND   A.SEQPESSOA < 999
-  AND A.NROEMPRESA != 506
+  AND A.NROEMPRESA NOT IN (506,508)
   AND A.CODGERALOPER NOT IN (14,652)
 
 UNION ALL
@@ -753,9 +755,10 @@ SELECT DISTINCT (A.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
                 --CASE WHEN NVL(L.M014_VL_OP_PROP_DIST,0) = 0 THEN 'vICMSSubstituto' ELSE NULL END||
                 CASE WHEN NVL(L.M014_VL_BC_ST_RET,0)    = 0 THEN ' vBCSTRet'       ELSE NULL END||
                 CASE WHEN NVL(L.M014_VL_ICMS_ST_RET,0)  = 0 THEN ' vICMSSTRet'     ELSE NULL END||
+                CASE WHEN NVL(M014_VL_OP_PROP_DIST,0)   = 0 THEN 'vICMSSubstituto' ELSE NULL END||
                 --CASE WHEN M014_VL_BC_FCP_RET   IS NULL THEN ' vBCFCPSTRet'    ELSE NULL END||
                 --CASE WHEN M014_VL_FCP_RET      IS NULL THEN ' vFCPSTRet'      ELSE NULL END||
-                ' do produto '||B.SEQPRODUTO||' esta(o) nulo(s) no XML! Entre em contato com o Departamento Fiscal'
+                ' do produto '||B.SEQPRODUTO||' esta(o) nulo(s) no XML! Campo Obrigatório, solicite a troca da nota!'
                 MENSAGEM
 
   FROM CONSINCO.MLF_AUXNOTAFISCAL A INNER JOIN CONSINCO.MLF_AUXNFITEM B ON A.SEQAUXNOTAFISCAL = B.SEQAUXNOTAFISCAL
@@ -837,9 +840,9 @@ WHERE 1=1
   AND X.CODGERALOPER = 1
   AND X.SEQPESSOA > 999
   --AND A.DTAENTRADA BETWEEN :DT1 AND :DT2
-  AND FD.FINALIDADEFAMILIA = 'R'
+  AND FD.FINALIDADEFAMILIA IN ('R','P') -- Adicionado MP Ticket 524033 27/01/25
   AND X2.TIPCODIGO = 'E'
-  AND X2.INDUTILVENDA = 'S'
+  --AND X2.INDUTILVENDA = 'S'
   -- Inicialmente ira validar apenas a tag nula no XML
   AND X2.CODACESSO IS NOT NULL AND M014_CD_EAN_TRIB IS NULL
   --AND LPAD(X2.CODACESSO,14,0) != LPAD(NVL(L.M014_CD_EAN_TRIB,0),14,0)
@@ -904,4 +907,116 @@ SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
      OR MF.PERALIQUOTAIPI IS NULL
      OR NVL(MF.PERBASEIPI,0) = 0)
     AND X.NROEMPRESA IN (502,503)
+
+UNION ALL
+
+-- Ticket 480487 - Adicionado por Giuliano em 18/11/2024
+-- Regra: Não permite lancto com emissao pelo CGO 39 que não seja os CDs 502 e 503
+
+SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                X.NUMERONF,
+                X.NROEMPRESA,
+                0   AS SEQAUXNFITEM,
+                'B' AS BLOQAUTOR,
+                83  AS CODINCONSISTENC,
+               'NF emitida com CGO incorreto (39) para a empresa '||X.NROEMPRESA||' - Solicite a correção'
+
+  FROM MLF_AUXNOTAFISCAL X INNER JOIN MLF_AUXNFITEM XI ON X.SEQAUXNOTAFISCAL = XI.SEQAUXNOTAFISCAL
+                           INNER JOIN MAP_PRODUTO MP ON MP.SEQPRODUTO = XI.SEQPRODUTO
+                           INNER JOIN MAP_FAMILIA MF ON MF.SEQFAMILIA = MP.SEQFAMILIA
+  WHERE 1=1
+    AND EXISTS (SELECT 1 FROM MLF_NOTAFISCAL D WHERE D.CODGERALOPER = 39
+                                                 AND D.SEQPESSOA NOT IN (502,503)
+                                                 AND D.NFECHAVEACESSO = X.NFECHAVEACESSO)
+
+-- Removido Ticket 522713
+-- Ticket 501071 - Adicionado por Giuliano em 19/12/2024
+-- Regra: Barra utilização de CGO incorreto para o fornecedor específico - Produtor Rural
+/*
+SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                X.NUMERONF,
+                X.NROEMPRESA,
+                0   AS SEQAUXNFITEM,
+                'B' AS BLOQAUTOR,
+                84  AS CODINCONSISTENC,
+               'NF do fornec.: '||FANTASIA||' Produtor Rural com CGO incorreto.'
+
+  FROM MLF_AUXNOTAFISCAL X INNER JOIN GE_PESSOA G ON G.SEQPESSOA = X.SEQPESSOA
+  WHERE 1=1
+    AND CODGERALOPER NOT IN (81,82,83,84,85)
+    AND G.NROCGCCPF = 084208010001*/
+
+UNION ALL
+
+-- Ticket 508143 - Adicionado por Giuliano em 06/01/2025
+-- Regra: Valida o CGO de lançamento de acordo com o CGO de emissão da NF, para devoluções dos CDs 502 e 503
+-- Se partiu de transferencia origem indireta (CGOs 94 ou 95) o CGO de lançamento da devolucao precisa ser 55
+-- Se partiu de transferencia  origem direta (CGOs 64 ou 96) o CGO de lançamento da devolucao precisa ser 74
+
+SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                X.NUMERONF,
+                X.NROEMPRESA,
+                0   AS SEQAUXNFITEM,
+               'B' AS BLOQAUTOR,
+                85  AS CODINCONSISTENC,
+               'CGO incorreto na operação, para lançamento desta devolução utilize o CGO: '||DECODE(X.CODGERALOPER, 55, '74 ou 79', 74, 55)||'.' MSG
+
+    FROM MLF_AUXNOTAFISCAL X
+  WHERE 1=1
+    AND X.CODGERALOPER IN (55,74,79)
+    AND X.DTAEMISSAO > SYSDATE - 30
+    AND X.SEQNFREF IS NOT NULL
+
+    AND EXISTS (SELECT 1 FROM MLF_NOTAFISCAL Z
+                        WHERE Z.SEQNF = X.SEQNFREF
+                          AND Z.CODGERALOPER IN (29,32,51)
+                          AND (X.CODGERALOPER IN (74,79) AND Z.CODGERALOPER IN (51) OR
+                               X.CODGERALOPER = 55 AND Z.CODGERALOPER IN (29,32)))
+
+UNION ALL
+
+-- Ticket 508798 - Adicionado por Giuliano em 07/01/2025
+-- Validação de entrada de devolução de NF do grupo - CGOs 54 e 55 (Raza odif e mesma razao):
+
+SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                X.NUMERONF,
+                X.NROEMPRESA,
+                0   AS SEQAUXNFITEM,
+               'B' AS BLOQAUTOR,
+                86  AS CODINCONSISTENC,
+               'CGO Incorreto na operação, utilize o CGO correto: '||
+               DECODE(X.CODGERALOPER, 55,54,54,55) MSG
+
+
+    FROM MLF_AUXNOTAFISCAL X INNER JOIN MAX_EMPRESA B ON B.NROEMPRESA = X.NROEMPRESA
+                             INNER JOIN MAX_EMPRESA C ON C.NROEMPRESA = X.SEQPESSOA
+  WHERE 1=1
+    AND X.DTAEMISSAO > SYSDATE - 50
+    AND X.CODGERALOPER IN (54,55)
+    AND (SUBSTR((LPAD(B.NROCGC,13,0)),0,9)  = SUBSTR((LPAD(C.NROCGC,13,0)),0,9) AND CODGERALOPER = 55  -- Mesma razao x CGO razao dif
+     OR  SUBSTR((LPAD(B.NROCGC,13,0)),0,9) != SUBSTR((LPAD(C.NROCGC,13,0)),0,9) AND CODGERALOPER = 54) -- Razao dif x CGO mesma razao
+
+UNION ALL
+
+-- Trava de devolução para notas emitidas pelo CGO incorreto (802):
+-- Ticket 522879 Solicitacao Neides - Giuliano em 22/01/2025
+
+SELECT DISTINCT (X.SEQAUXNOTAFISCAL) AS SEQAUXNOTAFISCAL,
+                X.NUMERONF,
+                X.NROEMPRESA,
+                0   AS SEQAUXNFITEM,
+               'B' AS BLOQAUTOR,
+                87  AS CODINCONSISTENC,
+               'NF de devolução emitida com CGO incorreto, solicite a correção da NF!' MSG
+
+    FROM MLF_AUXNOTAFISCAL X
+  WHERE 1=1
+    AND X.DTAEMISSAO > SYSDATE - 50
+    AND CODGERALOPER IN (54,55)
+    AND EXISTS (SELECT * FROM CONSINCO.MLF_NOTAFISCAL Z
+                        WHERE Z.NUMERONF = X.NUMERONF
+                          AND Z.SEQPESSOA = X.NROEMPRESA
+                          AND Z.NROEMPRESA = X.SEQPESSOA
+                          AND Z.CODGERALOPER IN (802, 202,915,814,226)
+                          AND Z.DTAEMISSAO = X.DTAEMISSAO)
 ;
