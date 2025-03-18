@@ -40,9 +40,11 @@ CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_INSERE_CODESPECIEENDERECO (psSeqProdut
                                         AND E.CODESPECENDERECO = X.CODESPECENDERECO)
                     ) -- Evita duplicidade se ja existis o produto
 
-       LOOP
-       vlrLoop := 'Emp.: '||t.NROEMPRESA||' - Especie: '||t.CODESPECENDERECO;
-       INSERT INTO MAD_PRODESPENDERECO VALUES (psSeqProduto,
+    LOOP
+        vlrLoop := 'Emp.: ' || t.NROEMPRESA || ' - Especie: ' || t.CODESPECENDERECO;
+        
+        BEGIN
+            INSERT INTO MAD_PRODESPENDERECO VALUES (psSeqProduto,
                                                t.NROEMPRESA,
                                                t.CODESPECENDERECO,
                                                psQtdEmbalagem,
@@ -51,20 +53,23 @@ CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_INSERE_CODESPECIEENDERECO (psSeqProdut
                                                NULL,
                                                psUsuAlteracao,
                                                'N');
-       COMMIT;
-       vlrLoop := NULL;
-       END LOOP;
-       
-  EXCEPTION
-    WHEN OTHERS THEN
-      vlrErro := SQLERRM;
-      
-        INSERT INTO NAGT_LOG_MAD_PRODESPENDERECO VALUES (psSeqProduto,
+            
+
+        EXCEPTION 
+          WHEN OTHERS THEN
+              vlrErro := SQLERRM;
+                INSERT INTO NAGT_LOG_MAD_PRODESPENDERECO VALUES (psSeqProduto,
                                                psQtdEmbalagem,
                                                psPaleteLastro,
                                                psPaleteAltura,
                                                psUsuAlteracao,
                                                vlrLoop||' - '||vlrErro, SYSDATE);
-   COMMIT;
+        END;
         
-END; 
+        vlrLoop := NULL;
+        
+    END LOOP;
+
+    COMMIT;
+    
+END;
