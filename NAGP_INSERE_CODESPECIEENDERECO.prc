@@ -9,9 +9,7 @@ CREATE TABLE CONSINCO.NAGT_LOG_MAD_PRODESPENDERECO
         ERRO          VARCHAR2(4000),
         DATA          DATE
 
-
 SELECT * FROM NAGT_LOG_MAD_PRODESPENDERECO;
-
 
 -- Procedure
 
@@ -53,7 +51,8 @@ CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_INSERE_CODESPECIEENDERECO (psSeqProdut
                                                NULL,
                                                psUsuAlteracao,
                                                'N');
-       COMMIT;                                        
+       COMMIT;
+       vlrLoop := NULL;
        END LOOP;
        
   EXCEPTION
