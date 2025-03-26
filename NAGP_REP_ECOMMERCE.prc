@@ -7,11 +7,17 @@ BEGIN
   
   BEGIN
     
-  FOR capa IN (SELECT DISTINCT CODPROMOCAO, T.DTINICIO, T.DTFIM FROM NAGT_REMARCAPROMOCOES T 
-             WHERE 1=1 AND T.CODPROMOCAO = NVL(psCodPromocao, T.CODPROMOCAO)
-               AND T.TIPODESCONTO  = 4
-               AND T.PROMOCAOLIVRE = 0
-               AND NOT EXISTS(SELECT 1 FROM MFL_PROMOCAOPDV X WHERE X.SEQPROMOCPDV = T.CODPROMOCAO))
+  FOR capa IN (SELECT (SELECT DISTINCT MAX(SEQPROMOCPDV) 
+                         FROM CONSINCO.MFL_PROMOCAOPDV X
+                        WHERE SEQPROMOCPDV < 100000000) + ROWNUM SEQPROMOCPDV, CODPROMOCAO, DTINICIO, DTFIM
+                 FROM (SELECT DISTINCT CODPROMOCAO, T.DTINICIO, T.DTFIM
+                         FROM NAGT_REMARCAPROMOCOES T 
+                        WHERE 1=1 AND T.CODPROMOCAO = NVL(psCodPromocao, T.CODPROMOCAO)
+                          AND T.TIPODESCONTO  = 4
+                          AND T.PROMOCAOLIVRE = 0
+                          AND TRUNC(T.DTINICIO) = TRUNC(SYSDATE)
+                          -- Este not exists evita duplicidades
+                          AND NOT EXISTS(SELECT 1 FROM MFL_PROMOCAOPDV X WHERE X.DESCRICAO LIKE '%'||T.CODPROMOCAO||'%')))
                
   LOOP
   codErro := capa.CODPROMOCAO;
@@ -30,7 +36,7 @@ BEGIN
                                  INDCONTROLAVERBAPDV,
                                  CODPARCEIRO)
 
-  VALUES (capa.CODPROMOCAO,
+  VALUES (capa.SEQPROMOCPDV,
          'MEU NAGUMO - '||capa.CODPROMOCAO,
          'A',
           capa.DTINICIO,
@@ -52,7 +58,7 @@ BEGIN
                           FROM NAGT_REMARCAPROMOCOES T INNER JOIN MAP_PRODCODIGO PC ON LPAD(PC.CODACESSO,14,0) = T.CODIGOPRODUTO AND PC.TIPCODIGO IN ('E','B') AND QTDEMBALAGEM = 1
                          WHERE CODPROMOCAO = capa.CODPROMOCAO
                            AND T.TIPODESCONTO  = 4
-                           AND T.PROMOCAOLIVRE = 0))
+                           AND T.PROMOCAOLIVRE = 0)) 
   
   LOOP
  
@@ -74,7 +80,7 @@ BEGIN
                                    INDVLRREFACORDPROM)
                                   
    
-  VALUES (item.CODPROMOCAO,
+  VALUES (capa.SEQPROMOCPDV,
           item.SEQITEMPROMOC,
           item.SEQPRODUTO,
           1,
@@ -96,7 +102,7 @@ BEGIN
   ---////////// Loop ITEM e LOJA
   ---////////// Insere os itens por loja de  acordo com o codpromocao da capa ///////////
       
-  FOR item_loja IN (SELECT DISTINCT CODPROMOCAO, CODLOJA, PRECOPPROMOCIONAL, item_base.SEQITEMPROMOC,
+  FOR item_loja IN (SELECT DISTINCT CODPROMOCAO, CODLOJA, PRECOPPROMOCIONAL, item_Base.SEQITEMPROMOC,
                            NVL(NULLIF(S.PRECOVALIDPROMOC,0), S.PRECOVALIDNORMAL) PRECO_NORMAL, 
                            NVL(NULLIF(S.PRECOVALIDPROMOC,0), S.PRECOVALIDNORMAL) - PRECOPPROMOCIONAL VLRDESCONTO,
                            ROUND(((NVL(NULLIF(S.PRECOVALIDPROMOC,0), S.PRECOVALIDNORMAL) - PRECOPPROMOCIONAL) / NVL(NULLIF(S.PRECOVALIDPROMOC,0), S.PRECOVALIDNORMAL)) * 100 ,2) PERCDESCONTO
@@ -104,7 +110,8 @@ BEGIN
                       FROM NAGT_REMARCAPROMOCOES T INNER JOIN MAP_PRODCODIGO PC ON LPAD(PC.CODACESSO,14,0) = T.CODIGOPRODUTO AND PC.TIPCODIGO IN ('E','B') AND QTDEMBALAGEM = 1
                                                    INNER JOIN MAX_EMPRESA M ON M.NROEMPRESA = T.CODLOJA
                                                    INNER JOIN MRL_PRODEMPSEG S ON S.NROEMPRESA = M.NROEMPRESA AND S.NROSEGMENTO = M.NROSEGMENTOPRINC AND  S.SEQPRODUTO = PC.SEQPRODUTO AND S.QTDEMBALAGEM = PC.QTDEMBALAGEM
-                                                   INNER JOIN MFL_PROMOCPDVITEM item_base ON item_base.SEQPROMOCPDV = T.CODPROMOCAO AND item_base.SEQPRODUTO = PC.SEQPRODUTO
+                                                   INNER JOIN MFL_PROMOCAOPDV cp ON cp.DESCRICAO = 'MEU NAGUMO - '||T.CODPROMOCAO -- pra descobrir o seqpromocpdv novo e fazer o prox join
+                                                   INNER JOIN MFL_PROMOCPDVITEM item_base ON item_base.SEQPROMOCPDV = cp.Seqpromocpdv AND item_base.SEQPRODUTO = PC.SEQPRODUTO
                                                    
                      WHERE T.CODPROMOCAO = capa.CODPROMOCAO
                        AND T.TIPODESCONTO  = 4
@@ -125,7 +132,7 @@ BEGIN
       
   VALUES (1,
           1,
-          item_loja.CODPROMOCAO,
+          capa.SEQPROMOCPDV,
           item_loja.SEQITEMPROMOC,
           item_loja.VLRDESCONTO,
           item_loja.PERCDESCONTO,
@@ -154,7 +161,7 @@ BEGIN
                                  USUALTERACAO,
                                  NROBASEEXPORTACAO)
                           
-   VALUES(emp.CODPROMOCAO,
+   VALUES(capa.SEQPROMOCPDV,
           emp.CODLOJA,
           'A',
           SYSDATE,
@@ -165,10 +172,10 @@ BEGIN
    
    codErro := NULL;
    
+   COMMIT;
    END LOOP; -- Loop Capa
    
-   COMMIT;    
-   
+   COMMIT;
    EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Promoc com Erro: ' || codErro);
