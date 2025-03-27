@@ -7,15 +7,14 @@ BEGIN
   
   BEGIN
     
-  FOR capa IN (SELECT (SELECT DISTINCT MAX(SEQPROMOCPDV) 
-                         FROM CONSINCO.MFL_PROMOCAOPDV X
-                        WHERE SEQPROMOCPDV < 100000000) + ROWNUM SEQPROMOCPDV, CODPROMOCAO, DTINICIO, DTFIM
+  FOR capa IN (SELECT S_SEQPROMOCPDV.NEXTVAL SEQPROMOCPDV, CODPROMOCAO, DTINICIO, DTFIM
                  FROM (SELECT DISTINCT CODPROMOCAO, T.DTINICIO, T.DTFIM
                          FROM NAGT_REMARCAPROMOCOES T 
                         WHERE 1=1 AND T.CODPROMOCAO = NVL(psCodPromocao, T.CODPROMOCAO)
                           AND T.TIPODESCONTO  = 4
                           AND T.PROMOCAOLIVRE = 0
-                          AND TRUNC(T.DTINICIO) = TRUNC(SYSDATE)
+                          AND TRUNC(T.DTINICIO) = TRUNC(SYSDATE) 
+                          AND EXISTS (SELECT 1 FROM MAX_EMPRESA A WHERE A.NROEMPRESA = CODLOJA)
                           -- Este not exists evita duplicidades
                           AND NOT EXISTS(SELECT 1 FROM MFL_PROMOCAOPDV X WHERE X.DESCRICAO LIKE '%'||T.CODPROMOCAO||'%')))
                
@@ -58,7 +57,8 @@ BEGIN
                           FROM NAGT_REMARCAPROMOCOES T INNER JOIN MAP_PRODCODIGO PC ON LPAD(PC.CODACESSO,14,0) = T.CODIGOPRODUTO AND PC.TIPCODIGO IN ('E','B') AND QTDEMBALAGEM = 1
                          WHERE CODPROMOCAO = capa.CODPROMOCAO
                            AND T.TIPODESCONTO  = 4
-                           AND T.PROMOCAOLIVRE = 0)) 
+                           AND T.PROMOCAOLIVRE = 0
+                           AND EXISTS (SELECT 1 FROM MAX_EMPRESA A WHERE A.NROEMPRESA = CODLOJA)))
   
   LOOP
  
@@ -115,7 +115,8 @@ BEGIN
                                                    
                      WHERE T.CODPROMOCAO = capa.CODPROMOCAO
                        AND T.TIPODESCONTO  = 4
-                       AND T.PROMOCAOLIVRE = 0)
+                       AND T.PROMOCAOLIVRE = 0
+                       AND EXISTS (SELECT 1 FROM MAX_EMPRESA A WHERE A.NROEMPRESA = CODLOJA))
                        
   LOOP
     
@@ -150,7 +151,8 @@ BEGIN
                  FROM NAGT_REMARCAPROMOCOES T
                 WHERE T.CODPROMOCAO = capa.CODPROMOCAO
                   AND T.TIPODESCONTO  = 4
-                  AND T.PROMOCAOLIVRE = 0)
+                  AND T.PROMOCAOLIVRE = 0
+                  AND EXISTS (SELECT 1 FROM MAX_EMPRESA A WHERE A.NROEMPRESA = CODLOJA))
                   
    LOOP
     
