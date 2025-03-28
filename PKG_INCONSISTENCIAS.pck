@@ -243,6 +243,20 @@
                                    psTipoBloqueio     in map_incons_familia.tipobloqueio%type,
                                    pnDiasValidadeNCM  in integer,
                                    pnInseriuInconsist in out number);
+                                   
+    PROCEDURE NAGP_INC_FAM_03     (pnSeqInconsist     in map_incons_familia.seqinconsist%type,
+                                   psMotivo           in map_incons_familia.motivo%type,
+                                   psUsuAlteracao     in ge_usuario.codusuario%type,
+                                   psTipoBloqueio     in map_incons_familia.tipobloqueio%type,
+                                   pnDiasValidadeNCM  in integer,
+                                   pnInseriuInconsist in out number);
+                                   
+    PROCEDURE NAGP_INC_FAM_04     (pnSeqInconsist     in map_incons_familia.seqinconsist%type,
+                                   psMotivo           in map_incons_familia.motivo%type,
+                                   psUsuAlteracao     in ge_usuario.codusuario%type,
+                                   psTipoBloqueio     in map_incons_familia.tipobloqueio%type,
+                                   pnDiasValidadeNCM  in integer,
+                                   pnInseriuInconsist in out number);
     
 end PKG_INCONSISTENCIAS;
 /
@@ -2542,7 +2556,10 @@ procedure sp_GeraDadosCFOP_Tribut
             RAISE_APPLICATION_ERROR(-20200, SQLERRM);
       
   END NAGP_INC_FAM_01;
-                                   
+ 
+  -- Valida se foi preenchido reducao de PIS ou COFINS na familia, nao deve existir informacao
+  -- Ticket 523212
+  
   PROCEDURE NAGP_INC_FAM_02       (pnSeqInconsist     in map_incons_familia.seqinconsist%type,
                                    psMotivo           in map_incons_familia.motivo%type,
                                    psUsuAlteracao     in ge_usuario.codusuario%type,
@@ -2562,7 +2579,7 @@ procedure sp_GeraDadosCFOP_Tribut
         SELECT DISTINCT
                A.SEQFAMILIA,
                PNSEQINCONSIST,
-               PSMOTIVO,
+               'Familia com Redução de PIS/COFINS indevido!',
                SYSDATE,
                A.DTAHORALTERACAO,
                PSUSUALTERACAO,
@@ -2570,13 +2587,87 @@ procedure sp_GeraDadosCFOP_Tribut
           FROM MAP_FAMILIA     A,
                MAPX_SEQFAMILIA X
          WHERE X.SEQFAMILIA = A.SEQFAMILIA
-           AND A.SEQFAMILIA = 123456789;
+           AND (NVL(A.PERBASEPIS, 0) > 0 OR NVL(A.PERBASECOFINS, 0) > 0);
         PNINSERIUINCONSIST := SQL%ROWCOUNT;
     EXCEPTION
         WHEN OTHERS THEN
             RAISE_APPLICATION_ERROR(-20200, SQLERRM);
       
    END NAGP_INC_FAM_02;
+   
+   -- Valida o CST PIS/COFINS de acordo com a tabela DE/PARA NAGT_DEPARA_CSTPISCOFINS
+   -- Ticket 523232
+   
+    PROCEDURE NAGP_INC_FAM_03     (pnSeqInconsist     in map_incons_familia.seqinconsist%type,
+                                   psMotivo           in map_incons_familia.motivo%type,
+                                   psUsuAlteracao     in ge_usuario.codusuario%type,
+                                   psTipoBloqueio     in map_incons_familia.tipobloqueio%type,
+                                   pnDiasValidadeNCM  in integer,
+                                   pnInseriuInconsist in out number) AS
+   
+  BEGIN
+        INSERT INTO MAP_INCONS_FAMILIA
+              (SEQFAMILIA,
+               SEQINCONSIST,
+               MOTIVO,
+               DTAHORGERACAO,
+               DTAULTALTERACAO,
+               USUALTERACAO,
+               TIPOBLOQUEIO)
+        SELECT DISTINCT
+               A.SEQFAMILIA,
+               PNSEQINCONSIST,
+              'CST de PIS/COFINS incorretos, verifique!',
+               SYSDATE,
+               A.DTAHORALTERACAO,
+               PSUSUALTERACAO,
+               PSTIPOBLOQUEIO
+          FROM MAP_FAMILIA     A INNER JOIN MAPX_SEQFAMILIA X ON X.SEQFAMILIA = A.SEQFAMILIA
+         WHERE NOT EXISTS (SELECT 1 FROM NAGT_DEPARA_CSTPISCOFINS T WHERE T.ENTRADA = A.SITUACAONFPIS AND T.SAIDA = A.SITUACAONFPISSAI);
+                                 
+        PNINSERIUINCONSIST := SQL%ROWCOUNT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            RAISE_APPLICATION_ERROR(-20200, SQLERRM);
+      
+  END NAGP_INC_FAM_03;
+  
+   -- Valida o CST 060 com CEST nulo na familia
+   -- Ticket 523210
+   
+    PROCEDURE NAGP_INC_FAM_04     (pnSeqInconsist     in map_incons_familia.seqinconsist%type,
+                                   psMotivo           in map_incons_familia.motivo%type,
+                                   psUsuAlteracao     in ge_usuario.codusuario%type,
+                                   psTipoBloqueio     in map_incons_familia.tipobloqueio%type,
+                                   pnDiasValidadeNCM  in integer,
+                                   pnInseriuInconsist in out number) AS
+   
+  BEGIN
+        INSERT INTO MAP_INCONS_FAMILIA
+              (SEQFAMILIA,
+               SEQINCONSIST,
+               MOTIVO,
+               DTAHORGERACAO,
+               DTAULTALTERACAO,
+               USUALTERACAO,
+               TIPOBLOQUEIO)
+        SELECT DISTINCT
+               A.SEQFAMILIA,
+               PNSEQINCONSIST,
+              'CST 060 e familia sem CEST parametrizado, verifique!',
+               SYSDATE,
+               A.DTAHORALTERACAO,
+               PSUSUALTERACAO,
+               PSTIPOBLOQUEIO
+          FROM MAP_FAMILIA     A INNER JOIN MAPX_SEQFAMILIA X ON X.SEQFAMILIA = A.SEQFAMILIA
+                                 INNER JOIN NAGV_VALID_CEST_CST V ON V.SEQFAMILIA = A.SEQFAMILIA;
+                                 
+        PNINSERIUINCONSIST := SQL%ROWCOUNT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            RAISE_APPLICATION_ERROR(-20200, SQLERRM);
+      
+  END NAGP_INC_FAM_04;
     
 end PKG_INCONSISTENCIAS;
 /
