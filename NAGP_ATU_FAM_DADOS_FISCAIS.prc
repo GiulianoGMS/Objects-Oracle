@@ -10,18 +10,19 @@ CREATE OR REPLACE PROCEDURE NAGP_ATU_FAM_DADOS_FISCAIS (vSeqFamilia     MAP_FAMI
     
 BEGIN
     vSetClause := 'ALIQUOTAIPI = NVL(' || vAliqIPI || ', 0)';
-
+    
+    -- Para vCSTIPI_Entrada: Se for 0, deve ser substituído por NULL
     IF vCSTIPI_Entrada = 0 THEN
         vSetClause := vSetClause || ', SITUACAONFIPI = NULL';
     ELSIF vCSTIPI_Entrada IS NOT NULL THEN
-        vSetClause := vSetClause || ', SITUACAONFIPI = ' || vCSTIPI_Entrada;
+        vSetClause := vSetClause || ', SITUACAONFIPI = ''' || LPAD(vCSTIPI_Entrada, 2, '0') || '''';
     END IF;
 
     -- Para vCSTIPI_Saida: Se for 0, deve ser substituído por NULL
     IF vCSTIPI_Saida = 0 THEN
         vSetClause := vSetClause || ', SITUACAONFIPISAI = NULL';
     ELSIF vCSTIPI_Saida IS NOT NULL THEN
-        vSetClause := vSetClause || ', SITUACAONFIPISAI = ' || vCSTIPI_Saida;
+        vSetClause := vSetClause || ', SITUACAONFIPISAI = ''' || LPAD(vCSTIPI_Saida, 2, '0') || '''';
     END IF;
 
     -- Para vCodNatReceita: Se for 0, deve ser substituído por NULL
