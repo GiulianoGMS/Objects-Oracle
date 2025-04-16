@@ -35,7 +35,10 @@ BEGIN
                                LEFT JOIN MAD_PEDVENDA P ON P.NROPEDVENDA = X.NROPEDIDOVENDA
                              
     WHERE X.DTAMOVIMENTO = t.DTA
-      AND X.CODGERALOPER IN (37,48,123,610,615,613,810,916,910,911,76)
+      AND EXISTS (SELECT 1
+                     FROM NAGV_BASE_CGO_FINALIDADE PD
+                    WHERE PD.TIPO = 'V'
+                      AND PD.CGO_LIST = X.CODGERALOPER)
     
     UNION
     /* Cupom PDV TOTVS */
@@ -45,7 +48,10 @@ BEGIN
                                LEFT JOIN MAD_PEDVENDA P ON P.NROPEDVENDA = X.NROPEDIDOVENDA
                               
     WHERE X.DTAMOVIMENTO = t.DTA
-      AND X.CODGERALOPER IN (37,48,123,610,615,613,810,916,910,911,76)
+      AND EXISTS (SELECT 1
+                     FROM NAGV_BASE_CGO_FINALIDADE PD
+                    WHERE PD.TIPO = 'V'
+                      AND PD.CGO_LIST = X.CODGERALOPER)
     
     UNION
     /* Notas sem cupom */
@@ -54,7 +60,10 @@ BEGIN
                              INNER JOIN MAD_PEDVENDA P ON P.NROPEDVENDA = X.NROPEDIDOVENDA
       
      WHERE X.DTAMOVIMENTO = t.DTA
-       AND X.CODGERALOPER IN (37,48,123,610,615,613,810,916,910,911,76);
+       AND EXISTS (SELECT 1
+                     FROM NAGV_BASE_CGO_FINALIDADE PD
+                    WHERE PD.TIPO = 'V'
+                      AND PD.CGO_LIST = X.CODGERALOPER)
                        
     COMMIT;
         
