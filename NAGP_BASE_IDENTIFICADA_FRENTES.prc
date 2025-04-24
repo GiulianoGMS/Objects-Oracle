@@ -1,0 +1,38 @@
+CREATE OR REPLACE PROCEDURE NAGP_BASE_IDENTIFICADA_FRENTES (psDtaMovimento IN DATE) AS
+
+BEGIN
+ DECLARE 
+    i INTEGER := 0;
+BEGIN
+  FOR t IN (SELECT /*+ ORDERED */
+                   X.DTAMOVIMENTO DTACOMPRA, A.CPFCNPJ, 'REMARCA' FRENTE
+              FROM PDV_DESCONTO A INNER JOIN PDV_DOCTO X ON A.SEQDOCTO = X.SEQDOCTO 
+             WHERE 1=1 
+               AND TRUNC(X.DTAMOVIMENTO) = psDtaMovimento
+          
+        UNION ALL
+
+        SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
+               X.DTAMOVIMENTO DTACOMPRA, TO_NUMBER(XDF.CNPJCPF) CPF, 'TOTVS' FRENTE
+          FROM MFL_DOCTOFISCAL X INNER JOIN MFL_DOCTOFIDELIDADE XDF ON X.SEQNF = XDF.SEQNF
+         WHERE EXISTS (SELECT 1
+                         FROM NAGV_BASE_CGO_FINALIDADE PD
+                        WHERE PD.TIPO = 'V'
+                          AND PD.CGO_LIST = X.CODGERALOPER)
+           AND TRUNC(X.DTAMOVIMENTO) = psDtaMovimento)
+           
+  LOOP
+        i := i + 1;
+    
+    INSERT INTO NAGT_BASE_IDENTIFICADA_FRENTES@CONSINCODW VALUES (T.DTACOMPRA, T.CPFCNPJ, T.FRENTE);
+        
+        IF i = 100 THEN -- Define o Commit por quantidade de linhas
+            COMMIT;
+            i := 0;
+        END IF;
+        
+    END LOOP;
+
+    COMMIT;
+ END;
+END;
