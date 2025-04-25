@@ -105,18 +105,22 @@ BEGIN
   FOR item_loja IN (SELECT DISTINCT CODPROMOCAO, CODLOJA, PRECOPPROMOCIONAL, item_Base.SEQITEMPROMOC,
                            NVL(NULLIF(S.PRECOVALIDPROMOC,0), S.PRECOVALIDNORMAL) PRECO_NORMAL, 
                            NVL(NULLIF(S.PRECOVALIDPROMOC,0), S.PRECOVALIDNORMAL) - PRECOPPROMOCIONAL VLRDESCONTO,
-                           ROUND(((NVL(NULLIF(S.PRECOVALIDPROMOC,0), S.PRECOVALIDNORMAL) - PRECOPPROMOCIONAL) / NVL(NULLIF(S.PRECOVALIDPROMOC,0), S.PRECOVALIDNORMAL)) * 100 ,2) PERCDESCONTO
+                           ROUND(((NVL(NULLIF(S.PRECOVALIDPROMOC,0), S.PRECOVALIDNORMAL) - PRECOPPROMOCIONAL) / NVL(NULLIF(S.PRECOVALIDPROMOC,0), S.PRECOVALIDNORMAL)) * 100 ,2) PERCDESCONTO,
+                           CASE WHEN F.PESAVEL = 'S' THEN 0.01 ELSE 1 END APARTIRDE -- Pesavel insere 0.01
                            
                       FROM NAGT_REMARCAPROMOCOES T INNER JOIN MAP_PRODCODIGO PC ON LPAD(PC.CODACESSO,14,0) = T.CODIGOPRODUTO AND PC.TIPCODIGO IN ('E','B') AND QTDEMBALAGEM = 1
                                                    INNER JOIN MAX_EMPRESA M ON M.NROEMPRESA = T.CODLOJA
                                                    INNER JOIN MRL_PRODEMPSEG S ON S.NROEMPRESA = M.NROEMPRESA AND S.NROSEGMENTO = M.NROSEGMENTOPRINC AND  S.SEQPRODUTO = PC.SEQPRODUTO AND S.QTDEMBALAGEM = PC.QTDEMBALAGEM
                                                    INNER JOIN MFL_PROMOCAOPDV cp ON cp.DESCRICAO = 'MEU NAGUMO - '||T.CODPROMOCAO -- pra descobrir o seqpromocpdv novo e fazer o prox join
                                                    INNER JOIN MFL_PROMOCPDVITEM item_base ON item_base.SEQPROMOCPDV = cp.Seqpromocpdv AND item_base.SEQPRODUTO = PC.SEQPRODUTO
+                                                   INNER JOIN MAP_PRODUTO P ON P.SEQPRODUTO = PC.SEQPRODUTO
+                                                   INNER JOIN MAP_FAMILIA F ON F.SEQFAMILIA = P.SEQFAMILIA
                                                    
                      WHERE T.CODPROMOCAO = capa.CODPROMOCAO
                        AND T.TIPODESCONTO  = 4
                        AND T.PROMOCAOLIVRE = 0
-                       AND EXISTS (SELECT 1 FROM MAX_EMPRESA A WHERE A.NROEMPRESA = CODLOJA))
+                       AND EXISTS (SELECT 1 FROM MAX_EMPRESA A WHERE A.NROEMPRESA = CODLOJA)
+                       AND NVL(NULLIF(S.PRECOVALIDPROMOC,0), S.PRECOVALIDNORMAL) > 0)
                        
   LOOP
     
@@ -138,7 +142,7 @@ BEGIN
           item_loja.VLRDESCONTO,
           item_loja.PERCDESCONTO,
           item_loja.PRECOPPROMOCIONAL,
-          1,
+          item_loja.APARTIRDE, -- Pesavel insere 0.01
           item_loja.CODLOJA,
           1);
  
@@ -177,7 +181,7 @@ BEGIN
    COMMIT;
    END LOOP; -- Loop Capa
    
-   COMMIT;
+   --COMMIT;
    EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Promoc com Erro: ' || codErro);
@@ -190,4 +194,3 @@ BEGIN
    
 END;
 END;
-
