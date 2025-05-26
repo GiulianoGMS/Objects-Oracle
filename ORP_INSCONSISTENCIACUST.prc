@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE CONSINCO.ORP_INSCONSISTENCIACUST(pnSeqNota IN OR_NFDESPESA.SEQNOTA%TYPE,
+CREATE OR REPLACE PROCEDURE ORP_INSCONSISTENCIACUST(pnSeqNota IN OR_NFDESPESA.SEQNOTA%TYPE,
                                                              pnOk      IN OUT NUMBER) IS
 
     vnEmpresa or_nfdespesa.nroempresa%type;
@@ -140,7 +140,7 @@ BEGIN
         end if;
     end loop;
     -- Ticket 411292 | Adicionado por Giuliano em 10/07/2024
-    FOR g IN (SELECT * FROM OR_NFDESPESA N INNER JOIN GE_PESSOA G ON G.SEQPESSOA = N.SEQPESSOA
+    FOR g IN (SELECT n.codproduto FROM OR_NFDESPESA N INNER JOIN GE_PESSOA G ON G.SEQPESSOA = N.SEQPESSOA
                                            INNER JOIN MAX_EMPRESA M ON M.NROEMPRESA = N.NROEMPRESA
                                            INNER JOIN OR_NFITENSDESPESA P ON P.SEQNOTA = N.SEQNOTA
 
@@ -153,15 +153,14 @@ BEGIN
               AND N.SEQNOTA    = pnSeqnota)
 
     LOOP
-      vsCodProduto := g.CODPRODUTO;
+      vsCodProduto := g.codproduto;
 
       INSERT INTO ORX_NFDESPESAINCOSISTCUST(SEQINCONSIST, MOTIVO, SITUACAO)
           VALUES (802,'Lançamento não permitido para fornecedor Interestadual! Item: '||vsCodProduto||' - Dúvidas: Depto Fiscal.', 'P');
           pnOk := 1;
 
     END LOOP;
-    
-    -- Ticket 522853 | Adicionado por Giuliano em 24/01/2025
+ -- Ticket 522853 | Adicionado por Giuliano em 24/01/2025
     FOR h IN (SELECT I.CODPRODUTO FROM OR_NFDESPESA X INNER JOIN GE_PESSOA FORNEC    ON FORNEC.SEQPESSOA = X.SEQPESSOA
                                INNER JOIN GE_PESSOA LJ        ON LJ.SEQPESSOA     = X.NROEMPRESA
                                INNER JOIN OR_NFITENSDESPESA I ON I.SEQNOTA        = X.SEQNOTA
@@ -178,6 +177,63 @@ BEGIN
 
       INSERT INTO ORX_NFDESPESAINCOSISTCUST(SEQINCONSIST, MOTIVO, SITUACAO)
           VALUES (803,'CFOP incorreto na operação com este fornecedor! Item: '||vsCodProduto||' - Dúvidas: Depto Fiscal.', 'P');
+          pnOk := 1;
+
+    END LOOP;
+    -- Consiste Serie Nula
+    -- Solicitacao via Teams 17/03/2025 - Giuliano
+    FOR i IN (SELECT *
+                FROM OR_NFDESPESA N
+               WHERE 1 = 1
+                 AND N.SERIE IS NULL
+                 AND N.NROEMPRESA = vnEmpresa
+                 AND N.SEQNOTA    = pnSeqnota)
+
+    LOOP
+
+      INSERT INTO ORX_NFDESPESAINCOSISTCUST(SEQINCONSIST, MOTIVO, SITUACAO)
+          VALUES (804,'Não é permitido lançamento de NF sem série informada, Verifique!', 'P');
+          pnOk := 1;
+
+    END LOOP;
+    -- Consiste Ano de Emissao - Nao permite lancto com emissao (ano) menor que o ano atual -1
+    -- Solicitacao via Teams 17/03/2025 - Giuliano
+    FOR a IN (SELECT *
+                FROM OR_NFDESPESA N
+               WHERE 1 = 1
+                 AND EXTRACT(YEAR FROM DTAEMISSAO) < EXTRACT(YEAR FROM SYSDATE)  - 1
+                 AND N.NROEMPRESA = vnEmpresa
+                 AND N.SEQNOTA    = pnSeqnota)
+
+    LOOP
+
+      INSERT INTO ORX_NFDESPESAINCOSISTCUST(SEQINCONSIST, MOTIVO, SITUACAO)
+          VALUES (805,'Data de emissão incorreta, Verifique!', 'P');
+          pnOk := 1;
+
+    END LOOP;
+    
+    -- Consiste se a NF ja existe lançada em outra empresa - NroNota, Fornecedor, Serie e Subserie
+    -- Giuliano 26/05/25
+    
+    FOR t IN (SELECT NROEMPRESA
+                FROM OR_NFDESPESA N
+               WHERE 1 = 1
+                 AND EXISTS (SELECT 1 FROM OR_NFDESPESA X
+                               WHERE 2=2 
+                                 AND X.NROEMPRESA = vnEmpresa
+                                 AND X.SEQNOTA    = pnSeqnota
+                                 -- Valida duplicidade
+                                 AND X.NRONOTA     = N.NRONOTA
+                                 AND X.NROEMPRESA != N.NROEMPRESA
+                                 AND X.SEQPESSOA   = N.SEQPESSOA
+                                 AND X.SERIE       = N.SERIE
+                                 AND NVL(X.SUBSERIE,0) = NVL(N.SUBSERIE,0)))
+
+    LOOP
+
+      INSERT INTO ORX_NFDESPESAINCOSISTCUST(SEQINCONSIST, MOTIVO, SITUACAO)
+          VALUES (806,'NF ja lançada na empresa '||t.NROEMPRESA|| ', Verifique!', 'P');
           pnOk := 1;
 
     END LOOP;
