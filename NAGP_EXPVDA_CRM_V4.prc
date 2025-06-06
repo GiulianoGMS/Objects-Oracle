@@ -57,13 +57,13 @@ BEGIN
     /* Notas sem cupom */
     SELECT TO_NUMBER(G.NROCGCCPF||G.DIGCGCCPF) CPF, X.SEQNF, X.NROEMPRESA, X.DTAMOVIMENTO, PEDIDOID
       FROM MFL_DOCTOFISCAL X INNER JOIN GE_PESSOA G ON G.SEQPESSOA = X.SEQPESSOA
-                             INNER JOIN MAD_PEDVENDA P ON P.NROPEDVENDA = X.NROPEDIDOVENDA
+                             INNER JOIN MAD_PEDVENDA P ON P.NROPEDVENDA = X.NROPEDIDOVENDA AND P.NROEMPRESA = X.NROEMPRESA
       
      WHERE X.DTAMOVIMENTO = t.DTA
        AND EXISTS (SELECT 1
                      FROM NAGV_BASE_CGO_FINALIDADE PD
                     WHERE PD.TIPO = 'V'
-                      AND PD.CGO_LIST = X.CODGERALOPER)
+                      AND PD.CGO_LIST = X.CODGERALOPER);
                        
     COMMIT;
         
@@ -89,7 +89,6 @@ BEGIN
       FOR vda IN (SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/VD.IDPESSOA, 
                                                                    VD.IDFILIAL,
                                                                    VD.IDCUPOM,
-                                                                   VD.NROCUPOM,
                                                                    VD.IDPRODUTO,
                                                                    VD.DATVENDA,
                                                                    VD.NUMQTDVENDIDA,
@@ -101,16 +100,17 @@ BEGIN
                                                                    VD.TXTCANALVENDAS,
                                                                    VD.TXTTIPOVENDA,
                                                                    VD.IDFORMAPAGTO,
-                                                                   VD.TXTFORMAPAGTO 
+                                                                   VD.TXTFORMAPAGTO,
+                                                                   VD.NROCUPOM
                                                                                          
                                                                       FROM CONSINCO.NAGV_CRM_VENDAS_EXT_V2 VD 
                                                                      WHERE VD.DATA = t.DTA)
 
       LOOP
 
-        v_line := vda.IDPESSOA||';'||vda.IDFILIAL||';'||vda.IDCUPOM||';'||vda.NROCUPOM||';'||vda.IDPRODUTO||';'||vda.DATVENDA||';'||vda.NUMQTDVENDIDA||';'||
+        v_line := vda.IDPESSOA||';'||vda.IDFILIAL||';'||vda.IDCUPOM||';'||vda.IDPRODUTO||';'||vda.DATVENDA||';'||vda.NUMQTDVENDIDA||';'||
                   vda.VLRPRECOVENDAUNITARIO||';'||vda.VLRPRECOPDVUNITARIO||';'||vda.VLRDESCONTOUNITARIO||';'||vda.VLRMARGEMPDV||';'||
-                  vda.TXTCANALVENDAS||';'||vda.TXTTIPOVENDA||';'||vda.IDFORMAPAGTO||';'||vda.TXTFORMAPAGTO;
+                  vda.TXTCANALVENDAS||';'||vda.TXTTIPOVENDA||';'||vda.IDFORMAPAGTO||';'||vda.TXTFORMAPAGTO||';'||vda.NROCUPOM;
 
         v_buffer := v_buffer || v_line || CHR(10); -- Adiciona nova linha ao buffer
         
