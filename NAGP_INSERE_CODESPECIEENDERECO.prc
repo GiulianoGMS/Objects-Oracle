@@ -13,11 +13,12 @@ SELECT * FROM NAGT_LOG_MAD_PRODESPENDERECO;
 
 -- Procedure
 
-CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_INSERE_CODESPECIEENDERECO (psSeqProduto   IN MAD_PRODESPENDERECO.SEQPRODUTO%TYPE, 
-                                                                     psQtdEmbalagem IN MAD_PRODESPENDERECO.QTDEMBALAGEM%TYPE,
-                                                                     psPaleteLastro IN MAD_PRODESPENDERECO.PALETELASTRO%TYPE,
-                                                                     psPaleteAltura IN MAD_PRODESPENDERECO.PALETEALTURA%TYPE,
-                                                                     psUsuAlteracao IN MAD_PRODESPENDERECO.USUARIOALTERACAO%TYPE)
+CREATE OR REPLACE PROCEDURE NAGP_INSERE_CODESPECIEENDERECO (psSeqProduto   IN MAD_PRODESPENDERECO.SEQPRODUTO%TYPE,
+                                                            psQtdEmbalagem IN MAD_PRODESPENDERECO.QTDEMBALAGEM%TYPE,
+                                                            psPaleteLastro IN MAD_PRODESPENDERECO.PALETELASTRO%TYPE,
+                                                            psPaleteAltura IN MAD_PRODESPENDERECO.PALETEALTURA%TYPE,
+                                                            psUsuAlteracao IN MAD_PRODESPENDERECO.USUARIOALTERACAO%TYPE,
+                                                            vsRetorno      OUT VARCHAR2)
                                                                                                                                                                                                              
        AS vlrERRO VARCHAR2(4000);
           vlrLoop VARCHAR2(4000);
@@ -54,9 +55,11 @@ CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_INSERE_CODESPECIEENDERECO (psSeqProdut
                                                psUsuAlteracao,
                                                'N');
             
-
+            vsRetorno := 1;
+            
         EXCEPTION 
           WHEN OTHERS THEN
+              vsRetorno := 0;
               vlrErro := SQLERRM;
                 INSERT INTO NAGT_LOG_MAD_PRODESPENDERECO VALUES (psSeqProduto,
                                                psQtdEmbalagem,
@@ -73,3 +76,4 @@ CREATE OR REPLACE PROCEDURE CONSINCO.NAGP_INSERE_CODESPECIEENDERECO (psSeqProdut
     COMMIT;
     
 END;
+
