@@ -20,7 +20,8 @@ BEGIN
        ASSISTENTE,
        EMAIL_FORNEC,
        DTA_ALTERACAO,
-       V_USUALTERACAO
+       V_USUALTERACAO,
+       DIA_FIXO
        
     ) VALUES (
         :OLD.SEQLOTEMODELO,
@@ -31,6 +32,7 @@ BEGIN
         :OLD.ASSISTENTE,
         :OLD.EMAIL_FORNEC,
         SYSDATE,
-        V_USUALTERACAO
+        V_USUALTERACAO,
+        :OLD.DIA_FIXO
     );
 END;
