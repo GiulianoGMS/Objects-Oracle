@@ -18,6 +18,7 @@ CREATE OR REPLACE FUNCTION NAGF_CALC_SUGEST_COMPRA (pdSeqFornecedor IN MAF_FORNE
       pcPrevExtraLim  NUMBER(10);
       pdTipoEmp       VARCHAR2(10);
       pdDiasAtraso    MAF_FORNECDIVISAO.PZOMEDATRASO%TYPE;
+      pdConsEmpAbast  VARCHAR(1);
      
 
        
@@ -36,6 +37,13 @@ CREATE OR REPLACE FUNCTION NAGF_CALC_SUGEST_COMPRA (pdSeqFornecedor IN MAF_FORNE
         INTO pdTipoEmp
         FROM DWNAGT_DADOSEMPRESA E
        WHERE E.NROEMPRESA = pdNroEmpresa;
+       
+   -- Informa se considera estoque da empresa abatecedora no calculo
+      
+      SELECT NVL(INDCONSESTOQUECENTRALSUG, 'N')
+        INTO pdConsEmpAbast
+        FROM MAC_GERCOMPRA GER
+       WHERE GER.SEQGERCOMPRA = pdSeqGerCompra;
         
    -- Formula do Calculo para Sugestao
    -- Se a empresa for CD, calcula o excedente do limite (Parametrizado em estoque max odv)
@@ -91,7 +99,12 @@ CREATE OR REPLACE FUNCTION NAGF_CALC_SUGEST_COMPRA (pdSeqFornecedor IN MAF_FORNE
                        P.ESTQMINIMODV,
                        P.ESTQMAXIMODV,
                        FC5ESTOQUEDISPONIVEL(P.SEQPRODUTO, P.NROEMPRESA) ESTQ,
-                       FC5ESTOQUEDISPONIVEL(P.SEQPRODUTO, P.NROEMPRESA) - 
+                       -- Pega o estoque da Loja para calculo
+                      (FC5ESTOQUEDISPONIVEL(P.SEQPRODUTO, P.NROEMPRESA) + 
+                       -- Informa se considera estoque da empresa abatecedora no calculo
+                       CASE WHEN pdConsEmpAbast = 'S' AND P.NROEMPRESA < 500 THEN
+                       FC5ESTOQUEDISPONIVEL(P.SEQPRODUTO, M.NROEMPRESAABASTEC)
+                       ELSE 0 END) -
                        -- Pega a media de acordo com o param da capa do lote
                  ROUND(CASE WHEN pdIndTipoMedVda = 'N' THEN P.MEDVDIAGERAL
                             WHEN pdIndTipoMedVda = 'P' THEN NVL(NULLIF(P.MEDVDIAPROMOC,0),P.MEDVDIAGERAL)
@@ -100,6 +113,8 @@ CREATE OR REPLACE FUNCTION NAGF_CALC_SUGEST_COMPRA (pdSeqFornecedor IN MAF_FORNE
                        * ROWNUM) PREV_ESTQ
                   FROM DIM_TEMPO X 
                        INNER JOIN MRL_PRODUTOEMPRESA P ON 1=1
+                       INNER JOIN MAX_EMPRESA M ON M.NROEMPRESA = P.NROEMPRESA
+                       
                  WHERE X.DTA BETWEEN TRUNC(SYSDATE) AND TRUNC(SYSDATE) - 1 + NVL(pdPeriodoCalc,0) + NVL(pdDiasAtraso,0)
                    AND P.NROEMPRESA = emp.NROEMPRESA
                    AND P.SEQPRODUTO = pdSeqProduto
