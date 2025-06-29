@@ -96,6 +96,7 @@ BEGIN
                                WHERE XI.NROEMPRESA   = T.NROEMPRESA
                                  AND XI.SEQPRODUTO   = T.SEQPRODUTO
                                  AND XI.SEQGERCOMPRA = T.SEQGERCOMPRA
+                                 -- Este Case é para arredonrar apenas o CD quando for informado o PD psTipoAlt como 'QP'
                                  AND XI.NROEMPRESA = CASE WHEN psTipoAt = 'QP' THEN 507 
                                                           WHEN psTipoAt IN ('CN','CA') THEN t.NROEMPRESA END;
                                  
