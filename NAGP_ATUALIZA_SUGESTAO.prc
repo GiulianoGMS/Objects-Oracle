@@ -18,9 +18,9 @@ BEGIN
                                            pdTipoRetorno   => 'S') SUGEST_CALC,
                    GI.QTDEMBALAGEM,
                    -- De acordo com o PD psTipoAt
-                   -- QP - Arredonda a compra final no CD conforme sem alterar nas lojas.
-                   -- CA - Utiliza o calculo de MIN MAX desenvolvido internamente pelo Nagumo, arredondando a compra final on CD
-                   -- CN - Utiliza o calculo de MIN MAX desenvolvido internamente pelo Nagumo, SEM arredondar a compra final on CD
+                   -- QP - Arredonda a compra final no CD com o que ja esta populado no lote, sem alterar nas lojas.
+                   -- CA - Utiliza o calculo de MIN MAX desenvolvido internamente pelo Nagumo, arredondando a compra final no CD (Altera Lojas e CD)
+                   -- CN - Utiliza o calculo de MIN MAX desenvolvido internamente pelo Nagumo, SEM arredondar a compra final on CD (Altera Lojas e CD)
                    CASE WHEN psTipoAt = 'QP' THEN GI.QTDPEDIDA 
                         WHEN psTipoAt IN ('CN','CA') THEN
                    -- Cálculo de caixas (arredondado para cima) 
@@ -80,11 +80,15 @@ BEGIN
            )
   LOOP
     vsQtdTotalCalc := vsQtdTotalCalc + T.QTY_FINAL;
+    
     -- Aqui vai entrar a regra para arredondar a compra completa em paletes
     -- O arredondamento sera accrecentado no CD abastecedor
-    IF psTipoAt = 'CA' AND t.TIPO = 'CD' THEN -- Aqui deve entrar o PD que indica se arredonda ou nao
+    -- Apenas arredonda nos PDs 'CA' e 'QP'
+    
+    IF psTipoAt IN('CA','QP') AND t.TIPO = 'CD' THEN -- Aqui deve entrar o PD que indica se arredonda ou nao
     vcQtdTotalUpd := ((CEIL((vsQtdTotalCalc / t.QTDEMBALAGEM) / t.qtdPALETE) * t.qtdPALETE) * t.qtdEmb) - vsQtdTotalCalc + t.QTY_FINAL;
-    ELSE vcQtdTotalUpd := t.QTY_FINAL;
+ ELSIF psTipoAt = 'CN' THEN vcQtdTotalUpd := t.QTY_FINAL;
+ 
     END IF;
     
      UPDATE MAC_GERCOMPRAITEM XI SET XI.QTDSUGERIDAORIGINAL = vcQtdTotalUpd,
