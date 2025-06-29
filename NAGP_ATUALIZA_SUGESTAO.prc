@@ -1,4 +1,5 @@
-CREATE OR REPLACE PROCEDURE NAGP_ATUALIZA_SUGESTAO (psSeqGerCompra NUMBER)
+CREATE OR REPLACE PROCEDURE NAGP_ATUALIZA_SUGESTAO (psSeqGerCompra IN NUMBER,
+                                                    psTipoAt       IN VARCHAR2)
 
   IS vsQtdTotalCalc  NUMBER(38);
      vcQtdTotalUpd   NUMBER(38);
@@ -16,6 +17,12 @@ BEGIN
                                            pdIndTipoMedVda => G.INDTIPOMEDVDA,
                                            pdTipoRetorno   => 'S') SUGEST_CALC,
                    GI.QTDEMBALAGEM,
+                   -- De acordo com o PD psTipoAt
+                   -- QP - Arredonda a compra final no CD conforme sem alterar nas lojas.
+                   -- CA - Utiliza o calculo de MIN MAX desenvolvido internamente pelo Nagumo, arredondando a compra final on CD
+                   -- CN - Utiliza o calculo de MIN MAX desenvolvido internamente pelo Nagumo, SEM arredondar a compra final on CD
+                   CASE WHEN psTipoAt = 'QP' THEN GI.QTDPEDIDA 
+                        WHEN psTipoAt IN ('CN','CA') THEN
                    -- Cálculo de caixas (arredondado para cima) 
                    CASE WHEN NVL(FORMAARREDSUGABAST, 'E') = 'E' OR TIPO = 'CD' THEN -- Embalagem Normal
                    CEIL(
@@ -51,7 +58,7 @@ BEGIN
                              
                      QTDEMBALAGEM -- Multiplica para ter o total de unidades
                      END
-                     SUGEST_ARRED,
+                     END QTY_FINAL,
                      QTDEMBALAGEM qtdEmb,
                      w.PALETELASTRO * w.PALETEALTURA qtdPALETE,
                      TIPO
@@ -67,24 +74,33 @@ BEGIN
                                      AND G.SITUACAOLOTE  = 'A'
                                      AND G.TIPOSUGCOMPRA = 'M'
                                      
-             ORDER BY GI.NROEMPRESA ASC -- Nao remover
+             ORDER BY GI.SEQPRODUTO, GI.NROEMPRESA ASC -- Nao remover
              
                                      --AND G.SEQGERMODELOCOMPRA IS NOT NULL
            )
   LOOP
-    vsQtdTotalCalc := vsQtdTotalCalc + T.SUGEST_ARRED;
+    vsQtdTotalCalc := vsQtdTotalCalc + T.QTY_FINAL;
     -- Aqui vai entrar a regra para arredondar a compra completa em paletes
     -- O arredondamento sera accrecentado no CD abastecedor
-    IF 1=1 AND t.TIPO = 'CD' THEN -- Aqui deve entrar o PD que indica se arredonda ou nao
-    vcQtdTotalUpd := ((CEIL((vsQtdTotalCalc / t.QTDEMBALAGEM) / t.qtdPALETE) * t.qtdPALETE) * t.qtdEmb) - vsQtdTotalCalc + t.SUGEST_ARRED;
+    IF psTipoAt = 'CA' AND t.TIPO = 'CD' THEN -- Aqui deve entrar o PD que indica se arredonda ou nao
+    vcQtdTotalUpd := ((CEIL((vsQtdTotalCalc / t.QTDEMBALAGEM) / t.qtdPALETE) * t.qtdPALETE) * t.qtdEmb) - vsQtdTotalCalc + t.QTY_FINAL;
+    ELSE vcQtdTotalUpd := t.QTY_FINAL;
     END IF;
     
-     UPDATE MAC_GERCOMPRAITEM XI SET XI.QTDSUGERIDAORIGINAL = CASE WHEN t.TIPO = 'LOJA' THEN t.SUGEST_ARRED ELSE vcQtdTotalUpd END,
-                                     XI.QTDPEDIDA           = CASE WHEN t.TIPO = 'LOJA' THEN t.SUGEST_ARRED ELSE vcQtdTotalUpd END
+     UPDATE MAC_GERCOMPRAITEM XI SET XI.QTDSUGERIDAORIGINAL = vcQtdTotalUpd,
+                                     XI.QTDPEDIDA           = vcQtdTotalUpd
                                WHERE XI.NROEMPRESA   = T.NROEMPRESA
                                  AND XI.SEQPRODUTO   = T.SEQPRODUTO
-                                 AND XI.SEQGERCOMPRA = T.SEQGERCOMPRA;
-                                                           
+                                 AND XI.SEQGERCOMPRA = T.SEQGERCOMPRA
+                                 AND XI.NROEMPRESA = CASE WHEN psTipoAt = 'QP' THEN 507 
+                                                          WHEN psTipoAt IN ('CN','CA') THEN t.NROEMPRESA END;
+                                 
+    -- Reseta os valores após atualizar o valor do primeiro CD e primeiro Produto
+    IF 1=1 AND t.TIPO = 'CD' THEN  
+     vsQtdTotalCalc := 0;
+     vcQtdTotalUpd  := 0;
+    END IF;
+     
   END LOOP;
   
   COMMIT;
