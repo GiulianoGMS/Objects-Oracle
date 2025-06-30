@@ -85,11 +85,16 @@ BEGIN
     -- O arredondamento sera accrecentado no CD abastecedor
     -- Apenas arredonda nos PDs 'CA' e 'QP'
     
-    IF psTipoAt IN('CA','QP') AND t.TIPO = 'CD' THEN -- Aqui deve entrar o PD que indica se arredonda ou nao
+    IF t.TIPO = 'CD' THEN
+      
+      IF psTipoAt IN('CA','QP') THEN -- Aqui deve entrar o PD que indica se arredonda ou nao
     vcQtdTotalUpd := ((CEIL((vsQtdTotalCalc / t.QTDEMBALAGEM) / t.qtdPALETE) * t.qtdPALETE) * t.qtdEmb) - vsQtdTotalCalc + t.QTY_FINAL;
- ELSIF psTipoAt = 'CN' THEN vcQtdTotalUpd := t.QTY_FINAL;
- 
-    END IF;
+   ELSIF psTipoAt = 'CN' THEN vcQtdTotalUpd := t.QTY_FINAL;
+  END IF;
+  
+   ELSIF t.TIPO = 'LOJA' THEN
+    vcQtdTotalUpd := t.QTY_FINAL; 
+  END IF;
     
      UPDATE MAC_GERCOMPRAITEM XI SET XI.QTDSUGERIDAORIGINAL = vcQtdTotalUpd,
                                      XI.QTDPEDIDA           = vcQtdTotalUpd
