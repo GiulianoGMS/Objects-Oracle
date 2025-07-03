@@ -8,7 +8,8 @@ BEGIN
   
   BEGIN
     
-  FOR capa IN (SELECT S_SEQPROMOCPDV.NEXTVAL SEQPROMOCPDV, CODPROMOCAO, DTINICIO, DTFIM
+  FOR capa IN (SELECT S_SEQPROMOCPDV.NEXTVAL SEQPROMOCPDV, CODPROMOCAO, DTINICIO, DTFIM,
+                      CASE WHEN DTINICIO - DTFIM <= 100 THEN 'I' ELSE 'A' END STATUS -- Se o periodo da promocao dura mais de 100 dias replica como INATIVA
                  FROM (SELECT DISTINCT CODPROMOCAO, T.DTINICIO, T.DTFIM
                          FROM NAGT_REMARCAPROMOCOES T 
                         WHERE 1=1 AND T.CODPROMOCAO = NVL(psCodPromocao, T.CODPROMOCAO)
@@ -38,7 +39,7 @@ BEGIN
 
   VALUES (capa.SEQPROMOCPDV,
          'MEU NAGUMO - '||capa.CODPROMOCAO,
-         'A',
+          capa.STATUS,
           capa.DTINICIO,
           capa.DTFIM,
           SYSDATE,
@@ -175,7 +176,7 @@ BEGIN
                           
    VALUES(capa.SEQPROMOCPDV,
           emp.CODLOJA,
-          'A',
+          capa.STATUS,
           SYSDATE,
          'REP_AUTO',
           0);
