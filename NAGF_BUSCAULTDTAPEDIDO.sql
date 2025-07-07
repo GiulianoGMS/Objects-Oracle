@@ -11,7 +11,7 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETUR
   -- Valida Parametrizacoes na NAGT_CONTROLELOTECOMPRA
   -- Tradur o dia configurado pra utilizar no Next_Day
   
-  SELECT DIASCONFIG, DECODE(UPPER(DIASEMANA),  'SEGUNDA' , 'MONDAY',
+  SELECT DISTINCT DIASCONFIG, DECODE(UPPER(DIASEMANA),  'SEGUNDA' , 'MONDAY',
                                                'TERCA'   , 'TUESDAY',
                                                'QUARTA'  , 'WEDNESDAY',
                                                'QUINTA'  , 'THURSDAY',
@@ -50,7 +50,7 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETUR
        ELSIF v_diasemana = v_dia 
          AND v_dta = TRUNC(SYSDATE)
          AND v_datainicio < SYSDATE 
-         --AND v_diafixo IS NULL
+         AND v_diafixo IS NULL
           
         THEN
       SELECT TRUNC(SYSDATE)
@@ -76,6 +76,14 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETUR
        ELSIF v_diafixo IS NOT NULL
          AND v_diafixo = v_diahoje
         THEN v_proxped := TRUNC(SYSDATE);
+        
+        -- Aqui pega apenas para previao
+       ELSIF v_diafixo IS NOT NULL
+         AND v_diafixo != v_diahoje
+        THEN
+            SELECT DTA 
+              INTO v_proxped
+              FROM DIM_TEMPO WHERE ANOMES = TO_CHAR(SYSDATE, 'YYYYMM') AND DIA = v_diafixo;
         
       END IF;
   
