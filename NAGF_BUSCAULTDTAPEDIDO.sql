@@ -1,10 +1,12 @@
-CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETURN DATE IS
+CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETURN DATE IS
   /* Criado por Giuliano | 07/07/2023 */                                   v_proxped    DATE;
                                                                            v_diasconfig NUMBER;
                                                                            v_diasemana  VARCHAR2(10);
                                                                            v_dia        VARCHAR2(10);
                                                                            v_dta        DATE;
                                                                            v_datainicio DATE;
+                                                                           v_diafixo    NUMBER(3);
+                                                                           v_diahoje    NUMBER(3);
  BEGIN
   -- Valida Parametrizacoes na NAGT_CONTROLELOTECOMPRA
   -- Tradur o dia configurado pra utilizar no Next_Day
@@ -15,11 +17,15 @@ CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMB
                                                'QUINTA'  , 'THURSDAY',
                                                'SEXTA'   , 'FRIDAY',
                                                'SABADO'  , 'SATURDAY',
-                                               'DOMINGO' , 'SUNDAY'), DATAINICIO
+                                               'DOMINGO' , 'SUNDAY'), DATAINICIO, NAGF_MENOR_DIA_FIXO(X.SEQLOTEMODELO) DIA_FIXO
   --
-    INTO v_diasconfig, v_diasemana, v_datainicio
+    INTO v_diasconfig, v_diasemana, v_datainicio, v_diafixo
     FROM CONSINCO.NAGT_CONTROLELOTECOMPRA X
    WHERE X.SEQLOTEMODELO = p_SeqLoteModelo;
+   
+  SELECT TRIM(TO_CHAR(SYSDATE, 'DD'))
+    INTO v_diahoje
+    FROM DUAL;
   --
   -- Primeiro resultado para validar se o dia semana é igual ao dia atual
   -- GREATEST pega a maior data entre Inclusão ou Fechamento
@@ -44,6 +50,7 @@ CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMB
        ELSIF v_diasemana = v_dia 
          AND v_dta = TRUNC(SYSDATE)
          AND v_datainicio < SYSDATE 
+         --AND v_diafixo IS NULL
           
         THEN
       SELECT TRUNC(SYSDATE)
@@ -51,18 +58,27 @@ CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMB
         FROM DUAL;
   --
   -- Se não for, retorna róximo dia da semana conforme calculo
-   ELSE
+        ELSE
+          -- Sem Dia Fixo
+          IF v_diafixo IS NULL THEN
 
       SELECT NEXT_DAY((SELECT GREATEST(MAX(DTAHORINCLUSAO), NVL(MAX(DTAHORFECHAMENTO),MAX(DTAHORINCLUSAO))) -1
         FROM CONSINCO.MAC_GERCOMPRA A 
        WHERE 1=1
-         AND A.SEQGERMODELOCOMPRA = p_SeqLoteModelo 
+         AND A.SEQGERMODELOCOMPRA = p_SeqLoteModelo
          AND A.SITUACAOLOTE != 'C'
           OR A.SEQGERCOMPRA = p_SeqLoteModelo AND TIPOLOTE = 'M')
            + v_diasconfig, v_diasemana)
         INTO v_proxped
         FROM DUAL;
-
+        
+         -- Se tiver dia fixo
+       ELSIF v_diafixo IS NOT NULL
+         AND v_diafixo = v_diahoje
+        THEN v_proxped := TRUNC(SYSDATE);
+        
+      END IF;
+  
    END IF;
 
  RETURN v_proxped;
@@ -70,5 +86,5 @@ CREATE OR REPLACE FUNCTION CONSINCO.NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMB
    WHEN NO_DATA_FOUND THEN
      RETURN TRUNC(SYSDATE) + 100;
      WHEN OTHERS THEN
-     DBMS_OUTPUT.PUT_LINE(p_SeqLoteModelo);
+     DBMS_OUTPUT.PUT_LINE(p_SeqLoteModelo||' - '||SQLERRM);
 END;
