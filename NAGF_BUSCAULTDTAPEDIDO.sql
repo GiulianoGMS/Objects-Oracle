@@ -59,7 +59,7 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETUR
   --
   -- Se não for, retorna róximo dia da semana conforme calculo
         ELSE
-          -- Sem Dia Fixo
+          -- Previsao sem Dia Fixo
           IF v_diafixo IS NULL THEN
 
       SELECT NEXT_DAY((SELECT GREATEST(MAX(DTAHORINCLUSAO), NVL(MAX(DTAHORFECHAMENTO),MAX(DTAHORINCLUSAO))) -1
@@ -77,13 +77,13 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETUR
          AND v_diafixo = v_diahoje
         THEN v_proxped := TRUNC(SYSDATE);
         
-        -- Aqui pega apenas para previao
+        -- Aqui pega apenas para previao com dia fixo
        ELSIF v_diafixo IS NOT NULL
          AND v_diafixo != v_diahoje
         THEN
             SELECT DTA 
               INTO v_proxped
-              FROM DIM_TEMPO WHERE ANOMES = TO_CHAR(SYSDATE, 'YYYYMM') AND DIA = v_diafixo;
+              FROM DIM_TEMPO WHERE ANOMES = TO_CHAR(CASE WHEN v_diafixo < v_diahoje THEN ADD_MONTHS(SYSDATE,1) ELSE SYSDATE END, 'YYYYMM') AND DIA = v_diafixo;
         
       END IF;
   
