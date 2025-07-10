@@ -1,0 +1,18 @@
+CREATE OR REPLACE FUNCTION NAGF_BUSCAUFFORNEC (pnSeqNF IN NUMBER)
+
+ RETURN VARCHAR2 IS
+
+   psUF VARCHAR2(2);
+
+BEGIN
+
+   SELECT MAX(UF)
+     INTO psUF
+     FROM GE_PESSOA G
+    WHERE SEQPESSOA = (SELECT SEQPESSOA
+                                FROM MLF_NOTAFISCAL N
+                               WHERE N.SEQNF = pnSeqNF);
+
+    RETURN psUF;
+
+END;
