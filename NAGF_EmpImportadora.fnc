@@ -1,0 +1,16 @@
+CREATE OR REPLACE FUNCTION NAGF_EmpImportadora (pnNroempresa IN NUMBER)
+
+ RETURN VARCHAR2 IS
+
+   psImport VARCHAR2(2);
+
+BEGIN
+
+   SELECT NVL(INDIMPORTADORA, 'N')
+     INTO psImport
+     FROM MAX_EMPRESA E 
+    WHERE E.NROEMPRESA = pnNroEmpresa;
+    
+    RETURN psImport;
+
+END;
