@@ -17,6 +17,7 @@ CREATE OR REPLACE PACKAGE NAGPKG_SUGESTAO_COMPRA AS
 
 END NAGPKG_SUGESTAO_COMPRA;
 
+--
 
 CREATE OR REPLACE PACKAGE BODY NAGPKG_SUGESTAO_COMPRA AS
 
@@ -273,10 +274,11 @@ BEGIN
     -- Apenas arredonda nos PDs 'CA', 'QP' e 'AP'
     
     IF t.TIPO = 'CD' THEN
-   -- Arredonda de acordo com percentual para definir se calcula Palete ou Lastro
+   -- Arredonda de acordo com percentual para definir se calcula Palete ou Lastro, apenas se FormaArredSugAbast for L ou P
+   -- Exemplo: Se o total nas lojas passa de 80% do perc de sugestao, sobe o arredondamento para palete, se nao mantem lastro
       IF psTipoAt = 'AP' THEN 
     vsPercSugestao := t.PERCVARIACAOSUG;
-      IF (vsQtdTotalCalc / t.QTY_PALETE) * 100 >= vsPercSugestao THEN
+      IF (vsQtdTotalCalc / t.QTY_PALETE) * 100 >= vsPercSugestao AND vsPercSugestao > 0 THEN
     vcEmbCalc := t.QTY_PALETE;
       ELSE
     vcEmbCalc := T.QTY_LASTRO;
