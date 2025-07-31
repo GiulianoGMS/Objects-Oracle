@@ -246,7 +246,7 @@ BEGIN
                           WHEN P.FORMAARREDSUGABAST = 'L' THEN w.PALETELASTRO 
                           WHEN P.FORMAARREDSUGABAST = 'P' THEN w.PALETELASTRO * w.PALETEALTURA END qtdArred,
                      TIPO,
-                     P.PERCVARIACAOSUG,
+                     NVL(P.PERCVARIACAOSUG,0) PERCVARIACAOSUG,
                      w.PALETELASTRO QTY_LASTRO,
                      w.PALETELASTRO * w.PALETEALTURA QTY_PALETE
                      
