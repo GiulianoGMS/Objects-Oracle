@@ -16,7 +16,7 @@ BEGIN
       INTO v_Periodo
       FROM DUAL;
     -- Abre o arquivo para escrita
-    v_file := UTL_FILE.fopen('PLUSOFT', 'Ext_CRM_Produto_Full_'||v_Periodo||'.csv', 'w', 32767);
+    v_file := UTL_FILE.fopen('PLUSOFT', 'Ext_CRM_Produto_Full.csv', 'w', 32767);
 
     -- Pega o nome das colunas para inserir no cabecalho pq tenho preguica
     SELECT LISTAGG(COLUMN_NAME,';') WITHIN GROUP (ORDER BY COLUMN_ID)
@@ -44,7 +44,9 @@ BEGIN
 
       LOOP
 
-      v_line := vda.IDPRODUTO||';'||vda.TXTDESCRICAOCOMPLETA||';'||vda.TXTDESCRICAORESUMIDA||';'||vda.UNIDADE||';'||vda.TXTDEPTO||';'||vda.TXTSECAO||';'||vda.TXTCATEGORIA||';'||vda.TXTGRUPO||';'||vda.TXTSUBGRUPO||';'||vda.TXTMARCA||';'||vda.TXTFABRICANTE||';'||vda.FLGMARCAPROPRIA||';'||vda.FLGPORDUTOSAZONAL||';'||vda.FLGSERVICO||';'||vda.IDMATERIALPAI||';'||vda.TXTDESCRICAOMATERIALPAI||';'||vda.IDFORNECEDOR||';'||vda.TXTNOMEFORNECEDOR||';'||vda.EAN;
+      v_line := vda.IDPRODUTO||';'||vda.TXTDESCRICAOCOMPLETA||';'||vda.TXTDESCRICAORESUMIDA||';'||vda.UNIDADE||';'||vda.TXTDEPTO||';'||vda.TXTSECAO||';'||vda.TXTCATEGORIA||';'||vda.TXTGRUPO||';'||vda.TXTSUBGRUPO||';'||vda.TXTMARCA||';'||vda.TXTFABRICANTE||';'||vda.FLGMARCAPROPRIA||';'||vda.FLGPORDUTOSAZONAL||';'||vda.FLGSERVICO||';'||vda.IDMATERIALPAI||';'||vda.TXTDESCRICAOMATERIALPAI||';'||vda.IDFORNECEDOR||';'||vda.TXTNOMEFORNECEDOR||';'||vda.EAN
+              ||';'||VDA.DESC_HUMANIZADA||';'||VDA.IND_INTEGRA_ECOMM;
+              
       v_buffer := v_buffer || v_line || CHR(10); -- Adiciona nova linha ao buffer        
         
         IF LENGTH(v_buffer) > v_chunk_size THEN
