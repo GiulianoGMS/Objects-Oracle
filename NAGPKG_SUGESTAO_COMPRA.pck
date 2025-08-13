@@ -1,32 +1,3 @@
-CREATE OR REPLACE PACKAGE NAGPKG_SUGESTAO_COMPRA AS
-
-  FUNCTION NAGF_CALC_SUGEST_COMPRA (
-    pdSeqFornecedor IN MAF_FORNECEDOR.SEQFORNECEDOR%TYPE,
-    pdNroEmpresa    IN MAX_EMPRESA.NROEMPRESA%TYPE,
-    pdSeqProduto    IN MAP_PRODUTO.SEQPRODUTO%TYPE,
-    pdPeriodoCalc   IN MAC_GERCOMPRA.QTDMEDVDA%TYPE,
-    pdSeqGerCompra  IN MAC_GERCOMPRA.SEQGERCOMPRA%TYPE,
-    pdIndTipoMedVda IN MAC_GERCOMPRA.INDTIPOMEDVDA%TYPE,
-    pdTipoRetorno   IN VARCHAR2
-  ) RETURN NUMBER;
-
-  PROCEDURE NAGP_ATUALIZA_SUGESTAO (
-    psSeqGerCompra IN NUMBER,
-    psTipoAt       IN VARCHAR2
-  );
-  
-  PROCEDURE NAGP_RATEIA_ACRESC_SUGEST (psSeqGerCompra IN NUMBER,
-                                                       psSeqProduto   IN NUMBER,
-                                                       psQtdEmb       IN NUMBER,
-                                                       psQtdUnidade   IN NUMBER,
-                                                       pdIndTipoMedVda IN VARCHAR2
-  );
-
-END NAGPKG_SUGESTAO_COMPRA;
-
-
---
-
 CREATE OR REPLACE PACKAGE BODY NAGPKG_SUGESTAO_COMPRA AS
 
 FUNCTION NAGF_CALC_SUGEST_COMPRA (pdSeqFornecedor IN MAF_FORNECEDOR.SEQFORNECEDOR%TYPE,
@@ -321,8 +292,8 @@ BEGIN
           vcQtdTotalUpd := ((CEIL((vsQtdTotalCalc / t.qtdEmb) / vcEmbCalc) * vcEmbCalc) * t.qtdEmb) - vsQtdTotalCalc + t.QTY_FINAL;
             -- Arredonda nas lojas se o PD for igual a AL/AC e o update é atraves da Proc NAGP_RATEIA_ACRESC_SUGEST
             IF psTipoAt IN ('AL','AC') THEN
-            NAGP_RATEIA_ACRESC_SUGEST(t.SEQGERCOMPRA, t.SEQPRODUTO, t.qtdEmb, vcQtdTotalUpd, 'N');
-            indAtualiza := 'N';
+                  NAGP_RATEIA_ACRESC_SUGEST(t.SEQGERCOMPRA, t.SEQPRODUTO, t.qtdEmb, vcQtdTotalUpd, 'N');
+                  indAtualiza := 'N';
             END IF;
           END IF;
     
@@ -341,19 +312,20 @@ BEGIN
     indAtualiza := 'S'; 
     
   END IF;
-    
+     IF indAtualiza = 'S' AND psTipoAt NOT IN ('AL','AC') THEN
+       
      UPDATE MAC_GERCOMPRAITEM XI SET XI.QTDSUGERIDAORIGINAL = vcQtdTotalUpd,
                                      XI.QTDPEDIDA           = vcQtdTotalUpd
                                WHERE XI.NROEMPRESA          = T.NROEMPRESA
                                  AND XI.SEQPRODUTO          = CASE WHEN t.FormaAbastec = 'E' AND psTipoAt = 'AP'  
-                                                                OR psTipoAt IN ('AP','CA','QP') AND (NVL(t.QTY_LASTRO,0) = 0 OR NVL(t.QTY_PALETE,0) = 0 OR vcEmbCalc = 0)
+                                                                OR psTipoAt IN ('AP','CA','QP','AL') AND (NVL(t.QTY_LASTRO,0) = 0 OR NVL(t.QTY_PALETE,0) = 0 OR vcEmbCalc = 0)
                                                                 OR indAtualiza = 'N' THEN 0 -- Se Lastro ou Palete forem zero, nao atualiza
                                                               ELSE T.SEQPRODUTO END -- 'AP' nao atualiza se FormaAbastec for igual a 'E'
                                  AND XI.SEQGERCOMPRA        = T.SEQGERCOMPRA
                                  -- Este Case é para arredonrar apenas o CD quando for informado o PD psTipoAlt como 'QP'
                                  AND XI.NROEMPRESA = CASE WHEN psTipoAt IN ('QP','AP') THEN 507 
                                                           WHEN psTipoAt IN ('CN','CA') THEN t.NROEMPRESA ELSE 99999 END;
-                                 
+     END IF;                
     -- Reseta os valores após atualizar o valor do primeiro CD e primeiro Produto
     IF 1=1 AND t.TIPO = 'CD' THEN  
       
@@ -370,64 +342,86 @@ BEGIN
   
   END NAGP_ATUALIZA_SUGESTAO;
   
-PROCEDURE NAGP_RATEIA_ACRESC_SUGEST (psSeqGerCompra  IN NUMBER,
-                                     psSeqProduto    IN NUMBER,
-                                     psQtdEmb        IN NUMBER,
-                                     psQtdUnidade    IN NUMBER,
-                                     pdIndTipoMedVda IN VARCHAR2
-                                     ) 
-  IS pcQtdCxs NUMBER(38);
-  -- Este objeto faz o rateio para as lojas proporcionalmente à media de venda do item
+PROCEDURE NAGP_RATEIA_ACRESC_SUGEST (
+    psSeqGerCompra  IN NUMBER,
+    psSeqProduto    IN NUMBER,
+    psQtdEmb        IN NUMBER,
+    psQtdUnidade    IN NUMBER,
+    pdIndTipoMedVda IN VARCHAR2
+) 
+IS
+    -- Caixas arredondadas para evitar diferenças de precisão
+    pcQtdCxs NUMBER := ROUND(psQtdUnidade / psQtdEmb, 6);
 BEGIN
-  
-  pcQtdCxs := psQtdUnidade / psQtdEmb; -- Transforma unid em caixas apra o rateio correto (por cxs)
-
-  FOR t IN (WITH -- Ctes para calcular o rateio das caixas
-  
-    BASE AS
-     (SELECT NROEMPRESA,
-             MEDIA,
-             MEDIA / SUM(MEDIA) OVER() PERC,
-             FLOOR(pcQtdCxs * MEDIA / SUM(MEDIA) OVER()) CX,
-                  (pcQtdCxs * MEDIA / SUM(MEDIA) OVER()) -
-             FLOOR(pcQtdCxs * MEDIA / SUM(MEDIA) OVER()) FRACAO, SEQPRODUTO
-             
-        FROM (SELECT A.NROEMPRESA, 
-                     CASE WHEN pdIndTipoMedVda = 'N' THEN A.MEDVDIAGERAL
-                          WHEN pdIndTipoMedVda = 'P' THEN NVL(NULLIF(A.MEDVDIAPROMOC,0),A.MEDVDIAGERAL)
-                          WHEN pdIndTipoMedVda = 'E' THEN NVL(NULLIF(A.MEDVDIAFORAPROMOC,0),A.MEDVDIAGERAL) END MEDIA, A.SEQPRODUTO
+    FOR t IN (
+        WITH BASE AS (
+            SELECT 
+                NROEMPRESA,
+                MEDIA,
+                MEDIA / SUM(MEDIA) OVER() PERC,
+                FLOOR(TO_NUMBER(ROUND(psQtdUnidade / psQtdEmb, 6)) * MEDIA / SUM(MEDIA) OVER()) CX,
+                ( (TO_NUMBER(ROUND(psQtdUnidade / psQtdEmb, 6)) * MEDIA / SUM(MEDIA) OVER())
+                  - FLOOR(TO_NUMBER(ROUND(psQtdUnidade / psQtdEmb, 6)) * MEDIA / SUM(MEDIA) OVER()) ) FRACAO,
+                SEQPRODUTO
+            FROM (
+                SELECT 
+                    A.NROEMPRESA,
+                    CASE 
+                        WHEN pdIndTipoMedVda = 'N' THEN A.MEDVDIAGERAL
+                        WHEN pdIndTipoMedVda = 'P' THEN NVL(NULLIF(A.MEDVDIAPROMOC,0), A.MEDVDIAGERAL)
+                        WHEN pdIndTipoMedVda = 'E' THEN NVL(NULLIF(A.MEDVDIAFORAPROMOC,0), A.MEDVDIAGERAL)
+                    END MEDIA,
+                    A.SEQPRODUTO
                 FROM MRL_PRODUTOEMPRESA A
-               WHERE SEQPRODUTO = psSeqProduto
-                 AND CASE WHEN pdIndTipoMedVda = 'N' THEN A.MEDVDIAGERAL
-                          WHEN pdIndTipoMedVda = 'P' THEN NVL(NULLIF(A.MEDVDIAPROMOC,0),A.MEDVDIAGERAL)
-                          WHEN pdIndTipoMedVda = 'E' THEN NVL(NULLIF(A.MEDVDIAFORAPROMOC,0),A.MEDVDIAGERAL) END > 0
-                 AND A.NROEMPRESA < 500 -- Exceto CDs
-            ORDER BY CASE WHEN pdIndTipoMedVda = 'N' THEN A.MEDVDIAGERAL
-                          WHEN pdIndTipoMedVda = 'P' THEN NVL(NULLIF(A.MEDVDIAPROMOC,0),A.MEDVDIAGERAL)
-                          WHEN pdIndTipoMedVda = 'E' THEN NVL(NULLIF(A.MEDVDIAFORAPROMOC,0),A.MEDVDIAGERAL) END DESC)
-       WHERE 1=1
-       FETCH FIRST 3 ROWS ONLY), -- Aqui pego só as 3 maiores lojas por media de venda do rank
-       
-    COM_SOBRA AS
-     (SELECT BASE.*,
-             ROW_NUMBER() OVER(ORDER BY FRACAO DESC) RANK_SOBRA, -- Rankeia pra descobrir onde vai a caixa que sobrar
-             (pcQtdCxs - SUM(CX) OVER()) SOBRAM
-        FROM BASE)
-            
-    SELECT NROEMPRESA,
-           MEDIA, SEQPRODUTO,
-          (CX + CASE WHEN RANK_SOBRA <= SOBRAM THEN 1 ELSE 0 END) * psQtdEmb QtdCalculada -- Volta pra unidades pra usar no update
-      FROM COM_SOBRA
+                WHERE SEQPRODUTO = psSeqProduto
+                  AND CASE 
+                        WHEN pdIndTipoMedVda = 'N' THEN A.MEDVDIAGERAL
+                        WHEN pdIndTipoMedVda = 'P' THEN NVL(NULLIF(A.MEDVDIAPROMOC,0), A.MEDVDIAGERAL)
+                        WHEN pdIndTipoMedVda = 'E' THEN NVL(NULLIF(A.MEDVDIAFORAPROMOC,0), A.MEDVDIAGERAL)
+                      END > 0
+                  AND A.NROEMPRESA < 100
+                ORDER BY CASE 
+                            WHEN pdIndTipoMedVda = 'N' THEN A.MEDVDIAGERAL
+                            WHEN pdIndTipoMedVda = 'P' THEN NVL(NULLIF(A.MEDVDIAPROMOC,0), A.MEDVDIAGERAL)
+                            WHEN pdIndTipoMedVda = 'E' THEN NVL(NULLIF(A.MEDVDIAFORAPROMOC,0), A.MEDVDIAGERAL)
+                         END DESC
+                FETCH FIRST 3 ROWS ONLY
+            )
+        ),
+        COM_SOBRA AS (
+            SELECT 
+                BASE.*,
+                ROW_NUMBER() OVER(ORDER BY FRACAO DESC) RANK_SOBRA,
+                (TO_NUMBER(ROUND(psQtdUnidade / psQtdEmb, 6)) - SUM(CX) OVER()) SOBRAM
+            FROM BASE
+        )
+        SELECT 
+            NROEMPRESA,
+            MEDIA,
+            SEQPRODUTO,
+            (CX + CASE WHEN RANK_SOBRA <= SOBRAM THEN 1 ELSE 0 END) 
+                * psQtdEmb AS QtdCalculada
+        FROM COM_SOBRA
+        ORDER BY MEDIA DESC
+    )
+    LOOP
+        UPDATE MAC_GERCOMPRAITEM XI
+        SET XI.QTDPEDIDA = COALESCE((
+            SELECT QTDPEDIDA 
+            FROM MAC_GERCOMPRAITEM 
+            WHERE NROEMPRESA   = t.NROEMPRESA
+              AND SEQPRODUTO   = t.SEQPRODUTO
+              AND SEQGERCOMPRA = psSeqGerCompra
+        ), 0) + t.QtdCalculada
+        WHERE XI.NROEMPRESA   = t.NROEMPRESA
+          AND XI.SEQPRODUTO   = t.SEQPRODUTO
+          AND XI.SEQGERCOMPRA = psSeqGerCompra;
+    END LOOP;
 
-     ORDER BY 2 DESC)
-     
-     LOOP
-        UPDATE MAC_GERCOMPRAITEM XI SET XI.QTDPEDIDA    = NVL(XI.QTDPEDIDA,0) + NVL(t.QtdCalculada,0)
-                                  WHERE XI.NROEMPRESA   = t.NROEMPRESA
-                                    AND XI.SEQPRODUTO   = t.SEQPRODUTO
-                                    AND XI.SEQGERCOMPRA = psSeqGerCompra;
-     END LOOP;
-      
+    COMMIT;
 END;
+
   
 END NAGPKG_SUGESTAO_COMPRA;
+
+          
