@@ -1,5 +1,12 @@
 CREATE OR REPLACE PROCEDURE NAGP_EXT_XML_DIA (psDta DATE) AS
 
+  vSQLERRM   VARCHAR2(4000);
+  vNomeView  VARCHAR2(200);
+  vDiretorio VARCHAR2(200);
+  vDescricao VARCHAR2(200);
+  vChaveNfe  VARCHAR2(200);
+  vEmp       NUMBER;
+  
 BEGIN
   
   FOR nfe IN (
@@ -13,8 +20,6 @@ BEGIN
               WHERE X.DTAENTRADA = psDta
                 AND X.STATUSNF != 'C'
                 AND X.MODELONF = 55
-                AND X.SEQPESSOA != X.NROEMPRESA
-                AND ROWNUM = 1
                      
              UNION
              SELECT 'NAGV_EXTRACAO_XML' NomeView,
@@ -28,7 +33,6 @@ BEGIN
                 AND Z.STATUSDF != 'C'
                 AND Z.STATUSNFE = 4
                 AND Z.MODELODF = 55
-                AND ROWNUM = 1
                      
              UNION
              SELECT 'NAGV_EXTRACAO_XML_PDVTOTVS' NomeView,
@@ -39,16 +43,32 @@ BEGIN
                FROM MONITORPDV.TB_DOCTONFE Y 
               WHERE TRUNC(Y.DTAHORRECEBIMENTO) = psDta
                 AND Y.STATUS != 'C'
-                AND ROWNUM = 1
              )
 
-  LOOP
-      NAGP_EXT_XML(psChave       => nfe.Chavenfe,
-                   psDescricaoNF => nfe.DescricaoNF,
-                   psDiretorio   => nfe.Diretorio,
-                   psNoveView    => nfe.NomeView);
-      INSERT INTO NAGT_XML_EXTRAIDO VALUES (nfe.NomeView, nfe.Diretorio, nfe.DescricaoNF, nfe.ChaveNfe, nfe.Emp, psDta, SYSDATE);
-      COMMIT;
-  END LOOP;
+ LOOP
+    vNomeView  := nfe.NomeView;
+    vDiretorio := nfe.Diretorio;
+    vDescricao := nfe.DescricaoNF;
+    vChaveNfe  := nfe.ChaveNfe;
+    vEmp       := nfe.Emp;
 
+    BEGIN
+      NAGP_EXT_XML(
+        psChave       => vChaveNfe,
+        psDescricaoNF => vDescricao,
+        psDiretorio   => vDiretorio,
+        psNoveView    => vNomeView
+      );
+
+      INSERT INTO NAGT_XML_EXTRAIDO VALUES (vNomeView, vDiretorio, vDescricao, vChaveNfe, vEmp, psDta, SYSDATE, 'OK');
+      COMMIT;
+
+    EXCEPTION
+      WHEN OTHERS THEN
+        vSQLERRM := SQLERRM;
+        INSERT INTO NAGT_XML_EXTRAIDO VALUES (vNomeView, vDiretorio, vDescricao, vChaveNfe, vEmp, psDta, SYSDATE, vSQLERRM);
+        COMMIT;
+    END;
+    
+  END LOOP;
 END;
