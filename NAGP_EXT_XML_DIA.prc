@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE NAGP_EXT_XML_DIA (psDta DATE) AS
+CREATE OR REPLACE PROCEDURE NAGP_EXT_XML_DIA (psDta DATE, psNroEmpresa NUMBER) AS
 
   vSQLERRM   VARCHAR2(4000);
   vNomeView  VARCHAR2(200);
@@ -20,6 +20,7 @@ BEGIN
               WHERE X.DTAENTRADA = psDta
                 AND X.STATUSNF != 'C'
                 AND X.MODELONF = 55
+                AND X.NROEMPRESA = psNroEmpresa
                      
              UNION
              SELECT 'NAGV_EXTRACAO_XML' NomeView,
@@ -33,6 +34,7 @@ BEGIN
                 AND Z.STATUSDF != 'C'
                 AND Z.STATUSNFE = 4
                 AND Z.MODELODF = 55
+                AND Z.NROEMPRESA = psNroEmpresa
                      
              UNION
              SELECT 'NAGV_EXTRACAO_XML_PDVTOTVS' NomeView,
@@ -43,6 +45,7 @@ BEGIN
                FROM MONITORPDV.TB_DOCTONFE Y 
               WHERE TRUNC(Y.DTAHORRECEBIMENTO) = psDta
                 AND Y.STATUS != 'C'
+                AND Y.NROEMPRESA = psNroEmpresa
              )
 
  LOOP
