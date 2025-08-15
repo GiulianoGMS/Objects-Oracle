@@ -1,0 +1,26 @@
+CREATE OR REPLACE FUNCTION NAGF_QTDITEMNF (psSEQNF NUMBER, psSEQPRODUTO NUMBER, psTipoRet VARCHAR2)
+
+RETURN NUMBER
+  IS
+  qtdItemNF  NUMBER(38);
+  vlrItemNF  INTEGER(10,2);
+  vlrRetorno INTEGER(10,2);
+  
+  BEGIN
+    SELECT SUM(QUANTIDADE / QTDEMBALAGEM), SUM(VLRITEM) / SUM(QUANTIDADE / QTDEMBALAGEM)
+      INTO qtdItemNF, vlrItemNF
+      FROM MLF_NFITEM X
+      WHERE X.SEQNF = psSEQNF AND X.SEQPRODUTO = psSEQPRODUTO;
+  
+  IF psTipoRet = 'V' THEN 
+    vlrRetorno := vlrItemNF;
+  ELSIF psTipoRet = 'Q' THEN
+    vlrRetorno := qtdItemNF;
+  END IF;
+  
+  RETURN vlrRetorno;
+  
+  END;
+  
+  
+
