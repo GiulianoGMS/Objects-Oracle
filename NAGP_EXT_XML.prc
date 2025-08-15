@@ -23,10 +23,7 @@ BEGIN
         psDiretorio,
         psDescricaoNF||'_'||psChave_Acesso || '.xml'
     );
+    
+    -- Erros serao tratados na NAGP_EXT_XML_DIA no registro de logs
 
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        DBMS_OUTPUT.PUT_LINE('Nenhum registro encontrado para ID ' || psChave);
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Problemas na geração do arquivo: ' || SQLERRM);
 END;
