@@ -1,8 +1,7 @@
 CREATE OR REPLACE PROCEDURE NAGP_TB_LOGFALHACARGAMONITOR_WTS AS
 
--- Criado por Giuliano em 19/11/2024
--- Capta objetos invalidos e envia notificação pelo wts
--- Whats: Envia msg pelo whatsapp pela API CallMeBot
+-- Criado por Giuliano em 27/08/2025
+-- Capcta o log de erros da TB_LOGFALHACARGAMONITOR e envia por whatsapp
 
 BEGIN
   DECLARE
@@ -35,7 +34,7 @@ BEGIN
                  '*Replicacao:*%20' || msg.REPLICACAO;
 
         -- Construir a URL
-        VURL := 'http://api.callmebot.com/whatsapp.php?phone=5511986260031text=' || REPLACE(VTEXT, ' ','%20') || 'apikey='; -- Whatsapp
+        VURL := 'http://api.callmebot.com/whatsapp.php?phone=5511986260031text=' || REPLACE(VTEXT, ' ','%20') || 'apikey=7143296'; -- Whatsapp
         --VURLT:= 'https://api.callmebot.com/telegram/group.php?apikey=############&text=' || VTEXT; -- Telegram
 
         -- Enviar a mensagem
