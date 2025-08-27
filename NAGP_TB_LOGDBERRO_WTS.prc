@@ -1,8 +1,7 @@
 CREATE OR REPLACE PROCEDURE NAGP_TB_LOGDBERRO_WTS AS
 
--- Criado por Giuliano em 19/11/2024
--- Capta objetos invalidos e envia notificação pelo wts
--- Whats: Envia msg pelo whatsapp pela API CallMeBot
+-- Criado por Giuliano em 27/08/2025
+-- Capcta o log de erros da TB_LOGDBERRO e envia por whatsapp
 
 BEGIN
   DECLARE
