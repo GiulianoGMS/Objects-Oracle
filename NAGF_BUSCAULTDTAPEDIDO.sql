@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETUR
                                                                            v_datainicio DATE;
                                                                            v_diafixo    NUMBER(3);
                                                                            v_diahoje    NUMBER(3);
+                                                                           v_diafxutil  NUMBER(3);
  BEGIN
   -- Valida Parametrizacoes na NAGT_CONTROLELOTECOMPRA
   -- Tradur o dia configurado pra utilizar no Next_Day
@@ -72,10 +73,20 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETUR
         INTO v_proxped
         FROM DUAL;
         
-         -- Se tiver dia fixo
+         -- Dia Fixo
+         -- Valida se o dia fixo é util, se nao for joga pro prox dia util
+         
        ELSIF v_diafixo IS NOT NULL
-         AND v_diafixo = v_diahoje
+        THEN
+          SELECT TRIM(TO_CHAR(DTA + CASE WHEN DIADASEMANA = 'SÁBADO' THEN 2 WHEN X.DIADASEMANA = 'DOMINGO' THEN 1 ELSE 0 END, 'DD')) DTA
+            INTO v_diafxutil
+            FROM DIM_TEMPO X WHERE DIA = v_diafixo
+             AND MES = TO_CHAR(SYSDATE, 'MM')
+             AND ANO = TO_CHAR(SYSDATE, 'YYYY');
+       
+          IF v_diafxutil = v_diahoje
         THEN v_proxped := TRUNC(SYSDATE);
+         END IF;
         
         -- Aqui pega apenas para previao com dia fixo
        ELSIF v_diafixo IS NOT NULL
@@ -94,5 +105,10 @@ CREATE OR REPLACE FUNCTION NAGF_BUSCAULTDTAPEDIDO (p_SeqLoteModelo NUMBER) RETUR
    WHEN NO_DATA_FOUND THEN
      RETURN TRUNC(SYSDATE) + 100;
      WHEN OTHERS THEN
-     DBMS_OUTPUT.PUT_LINE(p_SeqLoteModelo||' - '||SQLERRM);
+        DBMS_OUTPUT.PUT_LINE(p_SeqLoteModelo||' - '||SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('Error Code: ' || SQLCODE);
+        DBMS_OUTPUT.PUT_LINE('Error Message: ' || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('Error Stack: ' || DBMS_UTILITY.FORMAT_ERROR_STACK);
+        DBMS_OUTPUT.PUT_LINE('Error Backtrace: ' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        DBMS_OUTPUT.PUT_LINE('Call Stack: ' || DBMS_UTILITY.FORMAT_CALL_STACK);
 END;
