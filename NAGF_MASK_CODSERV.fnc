@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION NAGF_MASK_CODSERV(psCodServ IN VARCHAR2,
-                                                      psCidade  IN VARCHAR2)
+                                             psCidade  IN VARCHAR2)
        RETURN VARCHAR2 IS
        vsCidade   VARCHAR2(30);
        Qtde       NUMBER;
@@ -23,10 +23,12 @@ BEGIN
         ELSE vsMask := REPLACE(psCodServ, ' ', '');
 
        END IF;
-       IF psCidade IN ('GUARULHOS', '...')
+       -- Sem ponto
+       IF psCidade IN ('GUARULHOS')
          THEN
            vsRetorno := psServTrat;
        ELSE
+       -- Com Ponto
            vsRetorno := vsMask;
        END IF;
 
