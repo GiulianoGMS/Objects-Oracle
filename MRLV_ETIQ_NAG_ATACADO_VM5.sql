@@ -43,10 +43,10 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
         '^FO475,80^A0N,150,110^FD'||LPAD(TRUNC(J.PRECOVALIDPROMOC), 4, ' ' ) || ',' || LPAD((J.PRECOVALIDPROMOC - TRUNC(J.PRECOVALIDPROMOC)) * 100, 2, 0)||'^FS' END)|| CHR(13) || CHR(10) || -- PROMOC
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,215^A0N,15,15^FDNesta Embalagem '||
-                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
+                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' WHEN J.MULTEQPEMBALAGEM = 'ML' THEN '100ml' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
                                 DECODE(SIGN(J.PRECOGERPROMOC),+1,
-                                TRANSLATE(TO_CHAR(ROUND((J.PRECOGERPROMOC/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END,2),'FM9990.00'), '.', ','),
-                                TRANSLATE(TO_CHAR(ROUND((J.PRECOGERNORMAL/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END,2),'FM9990.00'), '.', ','))END )||'^FS' || CHR(13) || CHR(10) ||
+                                TRANSLATE(TO_CHAR(ROUND((J.PRECOGERPROMOC/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END,2),'FM9990.00'), '.', ','),
+                                TRANSLATE(TO_CHAR(ROUND((J.PRECOGERNORMAL/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END,2),'FM9990.00'), '.', ','))END )||'^FS' || CHR(13) || CHR(10) ||
         '^FO690,85^A0N,090,40^FD  ^FS'    || CHR(13) || CHR(10) ||
         '^FO50,95^A0N,25,25^FDR$^FS'      || CHR(13) || CHR(10) ||
         '^FO51,125^A0N,20,20^FDDE^FS'     || CHR(13) || CHR(10) ||
@@ -86,10 +86,10 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
         '^FO475,80^A0N,150,110^FD'||LPAD(TRUNC((PPDV.PRECOPROMOCAO * J.QTDEMBALAGEM)), 4, ' ' ) || ',' || LPAD(((PPDV.PRECOPROMOCAO * J.QTDEMBALAGEM) - TRUNC((PPDV.PRECOPROMOCAO * J.QTDEMBALAGEM))) * 100, 2, 0)||'^FS' END)|| CHR(13) || CHR(10) || -- PROMOC
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,215^A0N,15,15^FDNesta Embalagem '||
-                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
+                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' WHEN J.MULTEQPEMBALAGEM = 'ML' THEN '100ml' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
                                 DECODE(SIGN(PPDV.PRECOPROMOCAO),+1,
-                                TRANSLATE(TO_CHAR(ROUND((PPDV.PRECOPROMOCAO/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
-                                TRANSLATE(TO_CHAR(ROUND((PPDV.PRECOPROMOCAO/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','))END )||'^FS' || CHR(13) || CHR(10) ||
+                                TRANSLATE(TO_CHAR(ROUND((PPDV.PRECOPROMOCAO/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
+                                TRANSLATE(TO_CHAR(ROUND((PPDV.PRECOPROMOCAO/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','))END )||'^FS' || CHR(13) || CHR(10) ||
         '^FO690,85^A0N,090,40^FD  ^FS'    || CHR(13) || CHR(10) ||
         '^FO50,95^A0N,25,25^FDR$^FS'      || CHR(13) || CHR(10) ||
         '^FO51,125^A0N,20,20^FDDE^FS'     || CHR(13) || CHR(10) ||
@@ -123,10 +123,10 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
                                                                 ))) * 100, 2, 0)||'^FS' || CHR(13) || CHR(10) || -- PROMOC
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,128^A0N,15,15^FDNesta Embalagem '||
-                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
+                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' WHEN J.MULTEQPEMBALAGEM = 'ML' THEN '100ml' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
                                 DECODE(SIGN(A.PRECOEMBPADRAO * J.QTDEMBALAGEM),+1,
-                                TRANSLATE(TO_CHAR(ROUND(((A.PRECOEMBPADRAO * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
-                                TRANSLATE(TO_CHAR(ROUND(((A.PRECOEMBPADRAO * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','))  END )||'^FS' || CHR(13) || CHR(10) ||
+                                TRANSLATE(TO_CHAR(ROUND(((A.PRECOEMBPADRAO * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
+                                TRANSLATE(TO_CHAR(ROUND(((A.PRECOEMBPADRAO * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','))  END )||'^FS' || CHR(13) || CHR(10) ||
         '^FO690,85^A0N,090,40^FD  ^FS'     || CHR(13) || CHR(10) ||
         '^FO260,60^GB230,85,1^FS'          || CHR(13) || CHR(10) ||
         '^FO260,155^GB530,85,1^FS'         || CHR(13) || CHR(10) ||
@@ -139,10 +139,10 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
                                    TRUNC((PPDV.PRECOPROMOCAO * J.QTDEMBALAGEM))) * 100, 2, 0)||'^FR^FS'|| CHR(13) || CHR(10) ||
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,221^A0N,15,15^FDNesta Embalagem '||
-                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
+                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' WHEN J.MULTEQPEMBALAGEM = 'ML' THEN '100ml' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
                                 DECODE(SIGN(PPDV.PRECOPROMOCAO * J.QTDEMBALAGEM),+1,
-                                TRANSLATE(TO_CHAR(ROUND(((PPDV.PRECOPROMOCAO * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
-                                TRANSLATE(TO_CHAR(ROUND(((PPDV.PRECOPROMOCAO * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ',')) END)||'^FS'|| CHR(13) || CHR(10) ||
+                                TRANSLATE(TO_CHAR(ROUND(((PPDV.PRECOPROMOCAO * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
+                                TRANSLATE(TO_CHAR(ROUND(((PPDV.PRECOPROMOCAO * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ',')) END)||'^FS'|| CHR(13) || CHR(10) ||
         '^FO490,155^GB300,86,51^FR^FS'     || CHR(13) || CHR(10) ||
         -- QrCode
         '^LH0,0^FO50,60^BQN,2,4 ^FDMA,qrco.de/bg0jxt^FS'     || CHR(13) || CHR(10) ||
@@ -180,10 +180,10 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
         '^FO475,80^A0N,150,110^FD'||LPAD(TRUNC((P.PRECOVALIDNORMAL)), 4, ' ' ) || ',' || LPAD(((P.PRECOVALIDNORMAL) - TRUNC((P.PRECOVALIDNORMAL))) * 100, 2, 0)||'^FS' END)|| CHR(13) || CHR(10) || -- PROMOC
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,215^A0N,15,15^FDNesta Embalagem '||
-                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
+                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' WHEN J.MULTEQPEMBALAGEM = 'ML' THEN '100ml' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
                                 DECODE(SIGN(P.PRECOVALIDNORMAL),+1,
-                                TRANSLATE(TO_CHAR(ROUND((P.PRECOVALIDNORMAL/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
-                                TRANSLATE(TO_CHAR(ROUND((P.PRECOVALIDNORMAL/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','))END )||'^FS' || CHR(13) || CHR(10) ||
+                                TRANSLATE(TO_CHAR(ROUND((P.PRECOVALIDNORMAL/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
+                                TRANSLATE(TO_CHAR(ROUND((P.PRECOVALIDNORMAL/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','))END )||'^FS' || CHR(13) || CHR(10) ||
         '^FO690,85^A0N,090,40^FD  ^FS'    || CHR(13) || CHR(10) ||
         '^FO50,95^A0N,25,25^FDR$^FS'      || CHR(13) || CHR(10) ||
         '^FO51,125^A0N,20,20^FDDE^FS'     || CHR(13) || CHR(10) ||
@@ -215,10 +215,10 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
                                                                 ))) * 100, 2, 0)||'^FS' || CHR(13) || CHR(10) || -- PROMOC
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,128^A0N,15,15^FDNesta Embalagem '||
-                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
+                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' WHEN J.MULTEQPEMBALAGEM = 'ML' THEN '100ml' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
                                 DECODE(SIGN(A.PRECOEMBPADRAO * J.QTDEMBALAGEM),+1,
-                                TRANSLATE(TO_CHAR(ROUND(((A.PRECOEMBPADRAO * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
-                                TRANSLATE(TO_CHAR(ROUND(((A.PRECOEMBPADRAO * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','))  END )||'^FS' || CHR(13) || CHR(10) ||
+                                TRANSLATE(TO_CHAR(ROUND(((A.PRECOEMBPADRAO * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
+                                TRANSLATE(TO_CHAR(ROUND(((A.PRECOEMBPADRAO * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','))  END )||'^FS' || CHR(13) || CHR(10) ||
         '^FO690,85^A0N,090,40^FD  ^FS'     || CHR(13) || CHR(10) ||
         '^FO260,60^GB230,85,1^FS'          || CHR(13) || CHR(10) ||
         '^FO260,155^GB530,85,1^FS'         || CHR(13) || CHR(10) ||
@@ -231,10 +231,10 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
                                    TRUNC((ATAC.PRECOATAC * J.QTDEMBALAGEM))) * 100, 2, 0)||'^FR^FS'|| CHR(13) || CHR(10) ||
         (CASE WHEN J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL THEN
         '^FO590,221^A0N,15,15^FDNesta Embalagem '||
-                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
+                                CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT' WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' WHEN J.MULTEQPEMBALAGEM = 'ML' THEN '100ml' ELSE J.MULTEQPEMBALAGEM END ||' R$ ' ||
                                 DECODE(SIGN(ATAC.PRECOATAC * J.QTDEMBALAGEM),+1,
-                                TRANSLATE(TO_CHAR(ROUND(((ATAC.PRECOATAC * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
-                                TRANSLATE(TO_CHAR(ROUND(((ATAC.PRECOATAC * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ',')) END)||'^FS'|| CHR(13) || CHR(10) ||
+                                TRANSLATE(TO_CHAR(ROUND(((ATAC.PRECOATAC * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
+                                TRANSLATE(TO_CHAR(ROUND(((ATAC.PRECOATAC * J.QTDEMBALAGEM)/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ',')) END)||'^FS'|| CHR(13) || CHR(10) ||
         '^FO490,155^GB300,86,51^FR^FS'     || CHR(13) || CHR(10) ||
         -- QrCode
         '^LH0,0^FO50,60^BQN,2,4 ^FDMA,qrco.de/bg0jxt^FS'     || CHR(13) || CHR(10) ||
@@ -261,11 +261,11 @@ SELECT /*+OPTIMIZER_FEATURES_ENABLE('11.2.0.4')*/
        J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL
        THEN
 CHR(13) || CHR(10) || '^FO550,250^A0N,15,16^FD' ||/* '*PRECO PAGO POR ' || J.MULTEQPEMBALAGEM ||' R$   '*/'Nesta Embalagem ' || CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT'
-                                                                                                                                                                                                                                                                    WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g'
+                                                                                                                                                                                                                                                                    WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' WHEN J.MULTEQPEMBALAGEM = 'ML' THEN '100ml'
                                                                                                                                                                                                                                                                    ELSE J.MULTEQPEMBALAGEM END ||' R$ '
       || DECODE(SIGN(J.PRECOGERPROMOC/*J.PRECOGERNORMAL*/),+1,
-       TRANSLATE(TO_CHAR(ROUND((J.PRECOGERPROMOC/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
-       TRANSLATE(TO_CHAR(ROUND((J.PRECOGERNORMAL/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','))
+       TRANSLATE(TO_CHAR(ROUND((J.PRECOGERPROMOC/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
+       TRANSLATE(TO_CHAR(ROUND((J.PRECOGERNORMAL/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','))
 || CHR(13) || CHR(10) || ''
 END)||'^FR^FS'
       || CHR(13) || CHR(10) || '^LH0,0^FO50,60^BQN,2,4 ^FDMA,qrco.de/bg0jxt^FS'  -- QrCode
@@ -293,11 +293,11 @@ END)||'^FR^FS'
        J.MULTEQPEMB IS NOT NULL  OR J.MULTEQPEMBALAGEM IS NOT NULL
        THEN
 CHR(13) || CHR(10) || '^FO550,250^A0N,15,16^FD' || /*'*PRECO PAGO POR ' || J.MULTEQPEMBALAGEM ||' R$   '*/ 'Nesta Embalagem ' || CASE WHEN J.MULTEQPEMBALAGEM = 'LI' THEN 'LT'
-                                                                                                                                                                                                                                                                    WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g'
+                                                                                                                                                                                                                                                                    WHEN  J.MULTEQPEMBALAGEM = 'GR' THEN '100g' WHEN J.MULTEQPEMBALAGEM = 'ML' THEN '100ml'
                                                                                                                                                                                                                                                                      ELSE J.MULTEQPEMBALAGEM END ||' R$ '
       || DECODE(SIGN(J.PRECOGERPROMOC/*J.PRECOGERNORMAL*/),+1,
-       TRANSLATE(TO_CHAR(ROUND((J.PRECOGERPROMOC/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
-       TRANSLATE(TO_CHAR(ROUND((J.PRECOGERNORMAL/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM = 'GR' THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','))
+       TRANSLATE(TO_CHAR(ROUND((J.PRECOGERPROMOC/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','),
+       TRANSLATE(TO_CHAR(ROUND((J.PRECOGERNORMAL/(J.MULTEQPEMB*1000)) * CASE WHEN J.MULTEQPEMBALAGEM IN ('GR','ML') THEN 100000 ELSE 1000 END ,2),'FM9990.00'), '.', ','))
 || CHR(13) || CHR(10) || ''
 END)||'^FR^FS'
       || CHR(13) || CHR(10) || '^LH0,0^FO50,60^BQN,2,4 ^FDMA,qrco.de/bg0jxt^FS'  -- QrCode
