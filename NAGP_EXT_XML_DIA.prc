@@ -66,6 +66,21 @@ BEGIN
               WHERE TRUNC(Y.DTAHORRECEBIMENTO) BETWEEN psDtaIni AND psDtaFim
                 AND Y.STATUS != 'C'
                 AND Y.NROEMPRESA = psNroEmpresa
+                
+             UNION
+             SELECT 'NAGV_EXTRACAO_XML_ORC'      NomeView,
+                    'EXT_XML_ORC'                Diretorio,
+                    'Orc'                        DescricaoNF,
+                     Y.NFeCHAVEACESSO            ChaveNfe,
+                     Y.NROEMPRESA                Emp,
+                     NULL                        Checkout,
+                     DTAEMISSAO                  Dta
+                     
+               FROM OR_NFDESPESA Y 
+              WHERE Y.DTAEMISSAO BETWEEN psDtaIni AND psDtaFim
+                AND Y.SITUACAO = 'I'
+                AND Y.NROEMPRESA = psNroEmpresa
+                AND Y.NFECHAVEACESSO IS NOT NULL
              )
 
  LOOP
