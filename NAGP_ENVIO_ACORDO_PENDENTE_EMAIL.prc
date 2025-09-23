@@ -18,7 +18,7 @@ BEGIN
       FROM NAGV_TAE_ACORDOS A
      WHERE A.COD_COMPRADOR = psCodComprador
        AND A.VENCIMENTO >= TRUNC(SYSDATE)
-       AND STATUS = 'Pendente';
+       AND STATUS IN ('Aguardando assinatura do envelope','Pendente','Envelope rejeitado', 'Envelope Cancelado', 'Fornecedor sem e-mail cadastrado.') ;
 
     IF vsQtd = 0 THEN
        RETURN; -- não há acordos
@@ -29,18 +29,20 @@ BEGIN
       INTO vsEmail, vsNome
       FROM NAGV_TAE_ACORDOS A
            INNER JOIN NAGT_EMAILCOMPRADORES B ON A.COD_COMPRADOR = B.SEQCOMPRADOR
-     WHERE A.COD_COMPRADOR = psCodComprador;
+     WHERE A.COD_COMPRADOR = psCodComprador
+       AND STATUS IN ('Aguardando assinatura do envelope','Pendente','Envelope rejeitado', 'Envelope Cancelado', 'Fornecedor sem e-mail cadastrado.');
 
     -- Monta as linhas da tabela
+    
     FOR t IN (
         SELECT A.NRO_ACORDO,
                A.VLR_ACORDO,
                TO_CHAR(A.VENCIMENTO, 'DD/MM/YYYY') VENCIMENTO,
-               INITCAP(A.TIPO_ACORDO) TIPO_ACORDO
+               INITCAP(A.TIPO_ACORDO) TIPO_ACORDO, STATUS
           FROM NAGV_TAE_ACORDOS A
          WHERE A.COD_COMPRADOR = psCodComprador
            AND A.VENCIMENTO >= TRUNC(SYSDATE)
-           AND STATUS = 'Pendente'
+           AND STATUS IN ('Aguardando assinatura do envelope','Pendente','Envelope rejeitado', 'Envelope Cancelado', 'Fornecedor sem e-mail cadastrado.')
     )
     LOOP
         vsTable := vsTable ||
@@ -50,6 +52,7 @@ BEGIN
                    '<td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.TIPO_ACORDO || '</td>' ||
                    '<td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.VENCIMENTO || '</td>' ||
                    '<td style="padding:8px 12px;text-align:right;font-size:13px;border-bottom:1px solid #e6e9ef;">R$ ' || TO_CHAR(t.VLR_ACORDO, '999G999G990D00') || '</td>' ||
+                   '<td style="padding:8px 12px;text-align:right;font-size:13px;border-bottom:1px solid #e6e9ef;"> ' || t.STATUS || '</td>' ||
                    '</tr>';
     END LOOP;
 
@@ -64,7 +67,7 @@ BEGIN
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
         <tr>
           <td align="center">
-            <table role="presentation" width="700" style="max-width:700px;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 6px 18px rgba(17,24,39,0.08);">
+            <table role="presentation" width="900" style="max-width:900px;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 6px 18px rgba(17,24,39,0.08);">
               <!-- Header -->
               <tr>
                 <td style="padding:24px 28px;background:linear-gradient(90deg,#0b6efd,#1e90ff);color:#fff;">
@@ -75,7 +78,7 @@ BEGIN
                       </td>
                       <td align="right" style="vertical-align:middle;color:#0b2545;font-size:14px;">
                         <strong style="font-size:15px;">Comercial | Supermercados Nagumo</strong><br>
-                        Acordos pendentes para envio
+                        Acordos pendentes
                       </td>
                     </tr>
                   </table>
@@ -87,7 +90,7 @@ BEGIN
                 <td style="padding:20px 28px 0 28px;">
                   <h2 style="margin:0 0 8px 0;font-size:20px;color:#0b2545;">Olá, ' || vsNome || ' :)</h2>
                   <p style="margin:0;color:#374151;font-size:14px;line-height:1.5;">
-                    Você tem <strong style="color:#0b6efd">' || vsQtd || '</strong> acordo(s) comercial(is) pendente(s) de envio para Assinatura Eletrônica!
+                    Você tem <strong style="color:#0b6efd">' || vsQtd || '</strong> acordo(s) comercial(is) pendente(s) no Tae (Totvs Assinatura Eletrônica)
                   </p>
                 </td>
               </tr>
@@ -98,10 +101,11 @@ BEGIN
                   <table role="presentation" width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse;">
                     <thead>
                       <tr>
-                        <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">#</th>
+                        <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Acordo</th>
                         <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Tipo</th>
                         <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Vencimento</th>
-                        <th style="text-align:right;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Valor</th>
+                        <th style="text-align:center;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Valor</th>
+                        <th style="text-align:center;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Status</th>
                       </tr>
                     </thead>
                     <tbody>' || vsTable || '</tbody>
@@ -118,8 +122,7 @@ BEGIN
                         <a href="https://nagumo.autosky.cloud" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0b6efd;color:#fff;text-decoration:none;font-weight:600;">Acessar Totvs-Consinco</a>
                       </td>
                       <td align="right" style="vertical-align:middle;">
-                        <p style="margin:0;font-size:12px;color:#9ca3af;">Acesse o ERP para enviar os acordos</p>
-                        <p style="margin:0;font-size:12px;color:#9ca3af;">Obs.: Verifique se existe email cadastrado para o fornecedor!</p>
+                        <p style="margin:0;font-size:12px;color:#9ca3af;">Acesse o ERP para enviar os acordos que estiverem pendentes</p>
                       </td>
                     </tr>
                   </table>
@@ -147,7 +150,7 @@ BEGIN
             </table>
 
             <!-- Small print -->
-            <table role="presentation" width="700" style="max-width:700px;margin-top:12px;">
+            <table role="presentation" width="900" style="max-width:900px;margin-top:12px;">
               <tr>
                 <td style="font-size:12px;color:#9ca3af;text-align:center;padding:8px 16px;">
                   Você está recebendo este e-mail porque é responsável por enviar este acordo.   Se não for o responsável, ignore esta mensagem.
@@ -169,7 +172,23 @@ BEGIN
         psEmailTI||vsEmail,
         'Acordos Pendentes de Envio para o TAE - Totvs Assinatura Eletrônica',
         vsHtml,
-        'N'
+        'N');
+        
+     -- Grava log
+
+    INSERT INTO NAGT_LOG_ENVIO_ACO_EMAIL (
+        COD_COMPRADOR,
+        EMAIL_DESTINO,
+        QTDE_ACORDOS,
+        HTML_EMAIL,
+        DATA_ENVIO
+    ) VALUES (
+        psCodComprador,
+        psEmailTI||vsEmail,
+        vsQtd,
+        vsHtml,
+        SYSDATE
     );
+    COMMIT;  
 
 END;
