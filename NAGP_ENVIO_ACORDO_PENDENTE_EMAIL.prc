@@ -28,7 +28,7 @@ BEGIN
     SELECT MAX(B.EMAIL), MAX(B.NOME)
       INTO vsEmail, vsNome
       FROM NAGV_TAE_ACORDOS A
-           INNER JOIN NAGT_EMAILCOMPRADORES B ON A.COD_COMPRADOR = B.SEQCOMPRADOR
+            LEFT JOIN NAGT_EMAILCOMPRADORES B ON A.COD_COMPRADOR = B.SEQCOMPRADOR
      WHERE A.COD_COMPRADOR = psCodComprador
        AND STATUS IN ('Aguardando assinatura do envelope','Pendente','Envelope rejeitado', 'Envelope Cancelado', 'Fornecedor sem e-mail cadastrado.');
 
@@ -90,7 +90,7 @@ BEGIN
                 <td style="padding:20px 28px 0 28px;">
                   <h2 style="margin:0 0 8px 0;font-size:20px;color:#0b2545;">Olá, ' || vsNome || ' :)</h2>
                   <p style="margin:0;color:#374151;font-size:14px;line-height:1.5;">
-                    Você tem <strong style="color:#0b6efd">' || vsQtd || '</strong> acordo(s) comercial(is) pendente(s) no Tae (Totvs Assinatura Eletrônica)
+                    Você tem <strong style="color:#0b6efd">' || vsQtd || '</strong> acordo(s) comercial(is) pendente(s) no TAE (Totvs Assinatura Eletrônica)
                   </p>
                 </td>
               </tr>
@@ -153,7 +153,7 @@ BEGIN
             <table role="presentation" width="900" style="max-width:900px;margin-top:12px;">
               <tr>
                 <td style="font-size:12px;color:#9ca3af;text-align:center;padding:8px 16px;">
-                  Você está recebendo este e-mail porque é responsável por enviar este acordo.   Se não for o responsável, ignore esta mensagem.
+                  Você está recebendo este e-mail porque é responsável por enviar este acordo. Se não for o responsável, ignore esta mensagem.
                 </td>
                 <td style="font-size:12px;color:#9ca3af;text-align:center;padding:8px 16px;">
                   Desenvolvido por Giuliano Gomes & Marcel Cipolla.
@@ -170,7 +170,7 @@ BEGIN
     CONSINCO.SP_ENVIA_EMAIL(
         CONSINCO.C5_TP_PARAM_SMTP(1),
         psEmailTI||vsEmail,
-        'Acordos Pendentes de Envio para o TAE - Totvs Assinatura Eletrônica',
+        'Acordos Pendentes no TAE - Totvs Assinatura Eletrônica',
         vsHtml,
         'N');
         
