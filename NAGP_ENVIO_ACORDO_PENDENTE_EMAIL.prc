@@ -36,7 +36,7 @@ BEGIN
     
     FOR t IN (
         SELECT A.NRO_ACORDO,
-               A.VLR_ACORDO,
+               TO_CHAR(A.VLR_ACORDO,'FM999G999G990D90', 'NLS_NUMERIC_CHARACTERS='',.''') VLR_ACORDO,
                TO_CHAR(A.VENCIMENTO, 'DD/MM/YYYY') VENCIMENTO,
                INITCAP(A.TIPO_ACORDO) TIPO_ACORDO, STATUS
           FROM NAGV_TAE_ACORDOS A
@@ -51,7 +51,9 @@ BEGIN
                    -- Preciei mudar o style pois a ultima linha estava ficando desproporcional
                    '<td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.TIPO_ACORDO || '</td>' ||
                    '<td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.VENCIMENTO || '</td>' ||
-                   '<td style="padding:8px 12px;text-align:right;font-size:13px;border-bottom:1px solid #e6e9ef;">R$ ' || TO_CHAR(t.VLR_ACORDO, '999G999G990D00') || '</td>' ||
+                   '<td style="padding:8px 12px;text-align:right;
+            font-size:13px;border-bottom:1px solid #e6e9ef;
+            width:120px;white-space:nowrap;"> R$ ' || t.VLR_ACORDO || '</td>' ||
                    '<td style="padding:8px 12px;text-align:right;font-size:13px;border-bottom:1px solid #e6e9ef;"> ' || t.STATUS || '</td>' ||
                    '</tr>';
     END LOOP;
