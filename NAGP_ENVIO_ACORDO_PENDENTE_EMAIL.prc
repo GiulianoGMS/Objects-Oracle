@@ -5,6 +5,7 @@ CREATE OR REPLACE PROCEDURE NAGP_ENVIO_ACORDO_PENDENTE_EMAIL (psCodComprador VAR
     vsTable  CLOB := EMPTY_CLOB();
     vsHtml   CLOB := EMPTY_CLOB();
     psEmailTI VARCHAR2(1000);
+    psNroAcordo   NUMBER(30);
 BEGIN
     -- Envia para TI em copia
     IF psEnviaTICopia = 'S' 
@@ -43,8 +44,10 @@ BEGIN
          WHERE A.COD_COMPRADOR = psCodComprador
            AND A.VENCIMENTO >= TRUNC(SYSDATE)
            AND STATUS IN ('Aguardando assinatura do envelope','Pendente','Envelope rejeitado', 'Envelope Cancelado', 'Fornecedor sem e-mail cadastrado.')
+           AND NOT EXISTS (SELECT 1 FROM NAGT_LOG_ENVIO_ACO_EMAIL L WHERE L.NRO_ACORDO = A.NRO_ACORDO AND TRUNC(L.DATA_ENVIO) = TRUNC(SYSDATE))
     )
     LOOP
+      psNroAcordo := t.Nro_Acordo;
         vsTable := vsTable ||
                    '<tr>' ||
                    '<td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.NRO_ACORDO || '</td>' ||
@@ -183,13 +186,15 @@ BEGIN
         EMAIL_DESTINO,
         QTDE_ACORDOS,
         HTML_EMAIL,
-        DATA_ENVIO
+        DATA_ENVIO,
+        NRO_ACORDO
     ) VALUES (
         psCodComprador,
         psEmailTI||vsEmail,
         vsQtd,
         vsHtml,
-        SYSDATE
+        SYSDATE,
+        psNroAcordo
     );
     COMMIT;  
 
