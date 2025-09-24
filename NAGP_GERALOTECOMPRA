@@ -69,7 +69,7 @@ DECLARE
    -- Envia email quando o lote for criado com sucesso
       IF v_DtaInclusao >= TRUNC(SYSDATE) THEN
       CONSINCO.SP_ENVIA_EMAIL(CONSINCO.C5_TP_PARAM_SMTP(1),
-                            'giuliano.gomes@nagumo.com.br;ricardo.santana@nagumo.com.br;marcel.cipolla@nagumo.com.br;'
+                            'email'
                             ||T.EMAIL||';',                                                                                                          
                             'Lote de Compras Gerado com Sucesso! Fornecedor: '|| T.FORNECEDOR,                                 
                           '<HTML>
