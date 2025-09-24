@@ -164,7 +164,7 @@ BEGIN
 
                 CONSINCO.SP_ENVIA_EMAIL(
                     CONSINCO.C5_TP_PARAM_SMTP(1),
-                    'giuliano.gomes@nagumo.com.br;ricardo.santana@nagumo.com.br;marcel.cipolla@nagumo.com.br;'
+                    'email'
                             ||T.EMAIL||';',  
                     'Lote de Compras Gerado com Sucesso! Fornecedor: ' || t.FORNECEDOR,
                     vsHtml,
@@ -181,7 +181,7 @@ BEGIN
                 -- Envia e-mail de erro
                 CONSINCO.SP_ENVIA_EMAIL(
                     CONSINCO.C5_TP_PARAM_SMTP(1),
-                    'giuliano.gomes@nagumo.com.br;ricardo.santana@nagumo.com.br;marcel.cipolla@nagumo.com.br;',
+                    'email',
                     'Erro na geração de lote de compras - Lote Modelo: ' || t.SEQLOTEMODELO,
                     'Lote Modelo: ' || t.SEQLOTEMODELO || CHR(10) ||
                     'Data: ' || TO_CHAR(SYSDATE,'DD/MM/YYYY HH24:Mi:ss') || CHR(10) ||
