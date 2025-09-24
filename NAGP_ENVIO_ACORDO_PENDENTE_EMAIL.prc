@@ -13,7 +13,7 @@ BEGIN
     -- Envia para TI em copia
     IF psEnviaTICopia = 'S' 
       THEN
-        psEmailTI := 'giuliano.gomes@nagumo.com.br;marcel.cipolla@nagumo.com.br;';
+        psEmailTI := 'emails;';
     END IF;
     
     -- Quantidade de acordos
@@ -129,7 +129,7 @@ BEGIN
                   <table role="presentation" width="100%">
                     <tr>
                       <td>
-                        <a href="https://nagumo.autosky.cloud" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0b6efd;color:#fff;text-decoration:none;font-weight:600;">Acessar Totvs-Consinco</a>
+                        <a href="<<URL>>" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0b6efd;color:#fff;text-decoration:none;font-weight:600;">Acessar Totvs-Consinco</a>
                       </td>
                       <td align="right" style="vertical-align:middle;">
                         <p style="margin:0;font-size:12px;color:#9ca3af;">Acesse o ERP para enviar os acordos que estiverem pendentes</p>
