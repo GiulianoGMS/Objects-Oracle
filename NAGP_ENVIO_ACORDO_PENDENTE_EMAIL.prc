@@ -6,6 +6,9 @@ CREATE OR REPLACE PROCEDURE NAGP_ENVIO_ACORDO_PENDENTE_EMAIL (psCodComprador VAR
     vsHtml   CLOB := EMPTY_CLOB();
     psEmailTI VARCHAR2(1000);
     psNroAcordo   NUMBER(30);
+    --psIndEnvio    VARCHAR2(1);
+    --psExiste VARCHAR2(1);
+
 BEGIN
     -- Envia para TI em copia
     IF psEnviaTICopia = 'S' 
@@ -31,6 +34,7 @@ BEGIN
       FROM NAGV_TAE_ACORDOS A
             LEFT JOIN NAGT_EMAILCOMPRADORES B ON A.COD_COMPRADOR = B.SEQCOMPRADOR
      WHERE A.COD_COMPRADOR = psCodComprador
+       AND A.VENCIMENTO >= TRUNC(SYSDATE)
        AND STATUS IN ('Aguardando assinatura do envelope','Pendente','Envelope rejeitado', 'Envelope Cancelado', 'Fornecedor sem e-mail cadastrado.');
 
     -- Monta as linhas da tabela
@@ -39,18 +43,18 @@ BEGIN
         SELECT A.NRO_ACORDO,
                TO_CHAR(A.VLR_ACORDO,'FM999G999G990D90', 'NLS_NUMERIC_CHARACTERS='',.''') VLR_ACORDO,
                TO_CHAR(A.VENCIMENTO, 'DD/MM/YYYY') VENCIMENTO,
-               INITCAP(A.TIPO_ACORDO) TIPO_ACORDO, STATUS
+               INITCAP(A.TIPO_ACORDO) TIPO_ACORDO, STATUS, SUBSTR(A.FORNECEDOR,0,30)||'..' FORNEC
           FROM NAGV_TAE_ACORDOS A
          WHERE A.COD_COMPRADOR = psCodComprador
            AND A.VENCIMENTO >= TRUNC(SYSDATE)
            AND STATUS IN ('Aguardando assinatura do envelope','Pendente','Envelope rejeitado', 'Envelope Cancelado', 'Fornecedor sem e-mail cadastrado.')
-           AND NOT EXISTS (SELECT 1 FROM NAGT_LOG_ENVIO_ACO_EMAIL L WHERE L.NRO_ACORDO = A.NRO_ACORDO AND TRUNC(L.DATA_ENVIO) = TRUNC(SYSDATE))
     )
     LOOP
       psNroAcordo := t.Nro_Acordo;
         vsTable := vsTable ||
                    '<tr>' ||
                    '<td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.NRO_ACORDO || '</td>' ||
+                   '<td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.FORNEC || '</td>' ||
                    -- Preciei mudar o style pois a ultima linha estava ficando desproporcional
                    '<td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.TIPO_ACORDO || '</td>' ||
                    '<td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.VENCIMENTO || '</td>' ||
@@ -72,7 +76,7 @@ BEGIN
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
         <tr>
           <td align="center">
-            <table role="presentation" width="900" style="max-width:900px;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 6px 18px rgba(17,24,39,0.08);">
+            <table role="presentation" width="1300" style="max-width:1300px;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 6px 18px rgba(17,24,39,0.08);">
               <!-- Header -->
               <tr>
                 <td style="padding:24px 28px;background:linear-gradient(90deg,#0b6efd,#1e90ff);color:#fff;">
@@ -107,6 +111,7 @@ BEGIN
                     <thead>
                       <tr>
                         <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Acordo</th>
+                        <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Fornecedor</th>
                         <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Tipo</th>
                         <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Vencimento</th>
                         <th style="text-align:center;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Valor</th>
@@ -155,7 +160,7 @@ BEGIN
             </table>
 
             <!-- Small print -->
-            <table role="presentation" width="900" style="max-width:900px;margin-top:12px;">
+            <table role="presentation" width="1300" style="max-width:1300px;margin-top:12px;">
               <tr>
                 <td style="font-size:12px;color:#9ca3af;text-align:center;padding:8px 16px;">
                   Você está recebendo este e-mail porque é responsável por enviar este acordo. Se não for o responsável, ignore esta mensagem.
@@ -182,20 +187,21 @@ BEGIN
      -- Grava log
 
     INSERT INTO NAGT_LOG_ENVIO_ACO_EMAIL (
+        NRO_ACORDO,
         COD_COMPRADOR,
         EMAIL_DESTINO,
         QTDE_ACORDOS,
         HTML_EMAIL,
-        DATA_ENVIO,
-        NRO_ACORDO
+        DATA_ENVIO
     ) VALUES (
+        psNroAcordo,
         psCodComprador,
         psEmailTI||vsEmail,
         vsQtd,
         vsHtml,
-        SYSDATE,
-        psNroAcordo
+        SYSDATE
+        
     );
-    COMMIT;  
+    COMMIT;
 
 END;
