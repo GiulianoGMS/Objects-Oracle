@@ -125,7 +125,7 @@ BEGIN
                   </tr>
                   <tr>
                     <td style="padding:18px 28px;">
-                      <a href="https://nagumo.autosky.cloud" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0b6efd;color:#fff;text-decoration:none;font-weight:600;">Acessar Totvs-Consinco</a>
+                      <a href="url" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0b6efd;color:#fff;text-decoration:none;font-weight:600;">Acessar Totvs-Consinco</a>
                     </td>
                   </tr>
                   <tr>
