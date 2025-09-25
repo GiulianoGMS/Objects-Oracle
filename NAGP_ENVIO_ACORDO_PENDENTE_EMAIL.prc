@@ -13,7 +13,7 @@ BEGIN
     -- Envia para TI em copia
     IF psEnviaTICopia = 'S' 
       THEN
-        psEmailTI := 'emails;';
+        psEmailTI := fEmailTI();
     END IF;
     
     -- Quantidade de acordos
@@ -38,6 +38,8 @@ BEGIN
        AND STATUS IN ('Aguardando assinatura do envelope','Pendente','Envelope rejeitado', 'Envelope Cancelado', 'Fornecedor sem e-mail cadastrado.');
 
     -- Monta as linhas da tabela
+    -- o LOOP vai lupar apenas para agregar os dados!
+    -- O email será um agrupado (unico)
     
     FOR t IN (
         SELECT A.NRO_ACORDO,
@@ -129,7 +131,7 @@ BEGIN
                   <table role="presentation" width="100%">
                     <tr>
                       <td>
-                        <a href="<<URL>>" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0b6efd;color:#fff;text-decoration:none;font-weight:600;">Acessar Totvs-Consinco</a>
+                        <a href="https://nagumo.autosky.cloud" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0b6efd;color:#fff;text-decoration:none;font-weight:600;">Acessar Totvs-Consinco</a>
                       </td>
                       <td align="right" style="vertical-align:middle;">
                         <p style="margin:0;font-size:12px;color:#9ca3af;">Acesse o ERP para enviar os acordos que estiverem pendentes</p>
@@ -175,6 +177,8 @@ BEGIN
       </table>
     </body>
     </html>';
+    
+    IF vsEmail IS NOT NULL THEN
 
     -- Envia apenas 1 e-mail consolidado
     CONSINCO.SP_ENVIA_EMAIL(
@@ -203,5 +207,7 @@ BEGIN
         
     );
     COMMIT;
-
+    
+    END IF;
+    
 END;
