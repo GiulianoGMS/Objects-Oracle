@@ -45,11 +45,14 @@ BEGIN
         SELECT A.NRO_ACORDO,
                TO_CHAR(A.VLR_ACORDO,'FM999G999G990D90', 'NLS_NUMERIC_CHARACTERS='',.''') VLR_ACORDO,
                TO_CHAR(A.VENCIMENTO, 'DD/MM/YYYY') VENCIMENTO,
+               TO_CHAR(A.DATA_EMISSAO, 'DD/MM/YYYY') EMISSAO,
                INITCAP(A.TIPO_ACORDO) TIPO_ACORDO, STATUS, SUBSTR(A.FORNECEDOR,0,30)||'..' FORNEC
           FROM NAGV_TAE_ACORDOS A
          WHERE A.COD_COMPRADOR = psCodComprador
            AND A.VENCIMENTO >= TRUNC(SYSDATE)
            AND STATUS IN ('Aguardando assinatura do envelope','Pendente','Envelope rejeitado', 'Envelope Cancelado', 'Fornecedor sem e-mail cadastrado.')
+           
+           ORDER BY DATA_EMISSAO, FORNECEDOR
     )
     LOOP
       psNroAcordo := t.Nro_Acordo;
@@ -59,6 +62,7 @@ BEGIN
                    '<td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.FORNEC || '</td>' ||
                    -- Preciei mudar o style pois a ultima linha estava ficando desproporcional
                    '<td style="max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.TIPO_ACORDO || '</td>' ||
+                   '<td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.EMISSAO || '</td>' ||
                    '<td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.VENCIMENTO || '</td>' ||
                    '<td style="padding:8px 12px;text-align:right;
             font-size:13px;border-bottom:1px solid #e6e9ef;
@@ -115,6 +119,7 @@ BEGIN
                         <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Acordo</th>
                         <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Fornecedor</th>
                         <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Tipo</th>
+                        <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Emissao</th>
                         <th style="text-align:left;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Vencimento</th>
                         <th style="text-align:center;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Valor</th>
                         <th style="text-align:center;font-size:12px;color:#6b7280;padding:10px 12px;border-bottom:1px solid #e6e9ef;">Status</th>
@@ -131,7 +136,7 @@ BEGIN
                   <table role="presentation" width="100%">
                     <tr>
                       <td>
-                        <a href="https://nagumo.autosky.cloud" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0b6efd;color:#fff;text-decoration:none;font-weight:600;">Acessar Totvs-Consinco</a>
+                        <a href="'||fUrlSky()||'" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0b6efd;color:#fff;text-decoration:none;font-weight:600;">Acessar Totvs-Consinco</a>
                       </td>
                       <td align="right" style="vertical-align:middle;">
                         <p style="margin:0;font-size:12px;color:#9ca3af;">Acesse o ERP para enviar os acordos que estiverem pendentes</p>
