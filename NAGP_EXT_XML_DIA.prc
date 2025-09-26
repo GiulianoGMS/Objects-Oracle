@@ -1,4 +1,4 @@
-CREATE OR REPLACE PROCEDURE NAGP_EXT_XML_DIA (psDtaIni DATE, psDtaFim DATE, psNroEmpresa NUMBER, indReproc VARCHAR2 DEFAULT 'N') AS
+CREATE OR REPLACE PROCEDURE NAGP_EXT_XML_DIA (psDtaIni DATE, psDtaFim DATE, psNroEmpresa NUMBER, indReproc VARCHAR2 DEFAULT 'N', IndDirGeral VARCHAR2) AS
 
   -- indReproc indica se extrai o XML novamente
   -- Se for N, confere na tabela de log NAGT_XML_EXTRAIDO se ja foi extraido e nao faz a nova extracao
@@ -14,13 +14,21 @@ CREATE OR REPLACE PROCEDURE NAGP_EXT_XML_DIA (psDtaIni DATE, psDtaFim DATE, psNr
   vDta       DATE;
   vExiste    NUMBER(30);
   pDiretorio VARCHAR2(200);
+  pDirLoja   VARCHAR2(200);
   
 BEGIN
   
   SELECT D.directory_name
-    INTO pDiretorio
+    INTO pDirLoja
     FROM ALL_DIRECTORIES D
    WHERE D.directory_name = 'EXT_XML_LOJA_'||LPAD(psNroEmpresa,3,0);
+   
+  IF IndDirGeral = 'N' THEN
+     pDiretorio := pDirloja;
+  ELSE 
+     pDiretorio := 'EXT_XML_GERAL';
+     
+  END IF;
   
   FOR nfe IN (
              SELECT 'NAGV_EXTRACAO_XML' NomeView,
@@ -31,7 +39,7 @@ BEGIN
                     NULL                Checkout,
                     DTAEMISSAO          Dta
                     
-               FROM MLF_NOTAFISCAL X 
+               FROM MLF_NOTAFISCAL X
               WHERE X.DTAEMISSAO BETWEEN psDtaIni AND psDtaFim
                 AND X.STATUSNF != 'C'
                 AND X.MODELONF = 55
@@ -62,21 +70,21 @@ BEGIN
                      Y.NROCHECKOUT               Checkout,
                      TRUNC(DTAHORRECEBIMENTO)    Dta
                      
-               FROM MONITORPDV.TB_DOCTONFE Y 
+               FROM MONITORPDV.TB_DOCTONFE Y  
               WHERE TRUNC(Y.DTAHORRECEBIMENTO) BETWEEN psDtaIni AND psDtaFim
                 AND Y.STATUS != 'C'
                 AND Y.NROEMPRESA = psNroEmpresa
                 
              UNION
              SELECT 'NAGV_EXTRACAO_XML_ORC'      NomeView,
-                    'EXT_XML_ORC'                Diretorio,
+                    DECODE(IndDirGeral, 'S', 'EXT_XML_GERAL', 'EXT_XML_ORC')                Diretorio,
                     'Orc'                        DescricaoNF,
                      Y.NFeCHAVEACESSO            ChaveNfe,
                      Y.NROEMPRESA                Emp,
                      NULL                        Checkout,
                      DTAEMISSAO                  Dta
                      
-               FROM OR_NFDESPESA Y 
+               FROM OR_NFDESPESA Y
               WHERE Y.DTAEMISSAO BETWEEN psDtaIni AND psDtaFim
                 AND Y.SITUACAO = 'I'
                 AND Y.NROEMPRESA = psNroEmpresa
