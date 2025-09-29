@@ -6,6 +6,7 @@ CREATE OR REPLACE PROCEDURE NAGP_ENVIO_ACORDO_PENDENTE_EMAIL (psCodComprador VAR
     vsHtml   CLOB := EMPTY_CLOB();
     psEmailTI VARCHAR2(1000);
     psNroAcordo   NUMBER(30);
+    vBtnWhatsapp VARCHAR2(4000);
     --psIndEnvio    VARCHAR2(1);
     --psExiste VARCHAR2(1);
 
@@ -46,8 +47,9 @@ BEGIN
                TO_CHAR(A.VLR_ACORDO,'FM999G999G990D90', 'NLS_NUMERIC_CHARACTERS='',.''') VLR_ACORDO,
                TO_CHAR(A.VENCIMENTO, 'DD/MM/YYYY') VENCIMENTO,
                TO_CHAR(A.DATA_EMISSAO, 'DD/MM/YYYY') EMISSAO,
-               INITCAP(A.TIPO_ACORDO) TIPO_ACORDO, STATUS, SUBSTR(A.FORNECEDOR,0,30)||'..' FORNEC
-          FROM NAGV_TAE_ACORDOS A
+               INITCAP(A.TIPO_ACORDO) TIPO_ACORDO, STATUS, SUBSTR(A.FORNECEDOR,0,30)||'..' FORNEC,
+               A.URL_WTS
+          FROM NAGV_TAE_ACORDOS_v2 A
          WHERE A.COD_COMPRADOR = psCodComprador
            AND A.VENCIMENTO >= TRUNC(SYSDATE)
            AND STATUS IN ('Aguardando assinatura do envelope','Pendente','Envelope rejeitado', 'Envelope Cancelado', 'Fornecedor sem e-mail cadastrado.')
@@ -56,6 +58,24 @@ BEGIN
     )
     LOOP
       psNroAcordo := t.Nro_Acordo;
+      -- Monta o link pro zap se tiver acordo no tae
+      IF t.URL_WTS IS NOT NULL THEN
+        IF t.STATUS IN ('Envelope Cancelado, Envelope rejeitado') 
+        THEN
+        vBtnWhatsapp := '<img src="https://img.icons8.com/color/20/000000/high-importance.png" 
+                          alt="Alerta" width="20" height="20" 
+                          style="margin-left:8px;vertical-align:middle;border:none;">';
+        ELSE
+        vBtnWhatsapp := ' <a href="'||t.URL_WTS||'" target="_blank" style="margin-left:8px;display:inline-block;">
+                          <img src="https://img.icons8.com/color/20/000000/whatsapp.png" alt="WhatsApp" style="vertical-align:middle;border:none;">
+                        </a>';
+        END IF;
+      ELSE 
+      vBtnWhatsapp := '<img src="https://img.icons8.com/?size=100&id=dKMGP5XqWxob&format=png" 
+                          alt="Alerta" width="20" height="20" 
+                          style="margin-left:8px;vertical-align:middle;border:none;">';
+      END IF;
+      
         vsTable := vsTable ||
                    '<tr>' ||
                    '<td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #e6e9ef;">' || t.NRO_ACORDO || '</td>' ||
@@ -67,7 +87,7 @@ BEGIN
                    '<td style="padding:8px 12px;text-align:right;
             font-size:13px;border-bottom:1px solid #e6e9ef;
             width:120px;white-space:nowrap;"> R$ ' || t.VLR_ACORDO || '</td>' ||
-                   '<td style="padding:8px 12px;text-align:right;font-size:13px;border-bottom:1px solid #e6e9ef;"> ' || t.STATUS || '</td>' ||
+                   '<td style="padding:8px 12px;text-align:right;font-size:13px;border-bottom:1px solid #e6e9ef;"> ' || t.STATUS || vBtnWhatsapp || '</td>' ||
                    '</tr>';
     END LOOP;
 
