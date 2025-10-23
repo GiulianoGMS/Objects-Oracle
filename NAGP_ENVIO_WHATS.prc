@@ -1,0 +1,25 @@
+CREATE OR REPLACE PROCEDURE NAGP_ENVIO_WHATS AS
+
+BEGIN
+  FOR bs_all IN (SELECT * FROM NAGT_API_CALL_NUMBERS X WHERE STATUS = 'A' AND TYPE = 'ALL')
+    LOOP
+
+      NAGP_WTS_V2_INVALIDOBJECTS          (bs_all.NROTELEFONE, bs_all.APIKEY); /*DBMS_SESSION.SLEEP(5); -- Segura 5 segundos pra nao dar pau na API (nao considerar spam)*/
+      NAGP_WTS_V2_JOB_RUNFAILURES         (bs_all.NROTELEFONE, bs_all.APIKEY);
+      NAGP_WTS_V2_LOCKS                   (bs_all.NROTELEFONE, bs_all.APIKEY);
+      NAGP_WTS_V2_TB_LOGDBERRO            (bs_all.NROTELEFONE, bs_all.APIKEY);
+      NAGP_WTS_V2_TB_LOGFALHACARGAMONITOR (bs_all.NROTELEFONE, bs_all.APIKEY);
+      NAGP_WTS_V2_TB_ULTCARGAMONITOR      (bs_all.Nrotelefone, bs_all.APIKEY);
+
+    END LOOP;
+
+  FOR bs_pdv IN (SELECT * FROM NAGT_API_CALL_NUMBERS X WHERE STATUS = 'A' AND TYPE = 'PDV')
+    LOOP
+
+      NAGP_WTS_V2_TB_LOGDBERRO            (bs_pdv.NROTELEFONE, bs_pdv.APIKEY);
+      NAGP_WTS_V2_TB_LOGFALHACARGAMONITOR (bs_pdv.NROTELEFONE, bs_pdv.APIKEY);
+      NAGP_WTS_V2_TB_ULTCARGAMONITOR      (bs_pdv.NROTELEFONE, bs_pdv.APIKEY);
+
+    END LOOP;
+
+END;
