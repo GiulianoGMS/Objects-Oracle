@@ -6,7 +6,7 @@ CREATE OR REPLACE PROCEDURE NAGP_ENVIO_ACORDO_PENDENTE_EMAIL (psCodComprador VAR
     vsHtml   CLOB := EMPTY_CLOB();
     psEmailTI VARCHAR2(1000);
     psNroAcordo   NUMBER(30);
-    vBtnWhatsapp VARCHAR2(4000);
+    vBtnWhatsapp CLOB := EMPTY_CLOB();
     --psIndEnvio    VARCHAR2(1);
     --psExiste VARCHAR2(1);
 
@@ -18,9 +18,9 @@ BEGIN
     END IF;
     
     -- Quantidade de acordos
-    SELECT COUNT(1)
+    SELECT COUNT(DISTINCT A.NRO_ACORDO)
       INTO vsQtd
-      FROM NAGV_TAE_ACORDOS A
+      FROM NAGV_TAE_ACORDOS_v3 A
      WHERE A.COD_COMPRADOR = psCodComprador
        AND A.VENCIMENTO >= TRUNC(SYSDATE)
        AND STATUS IN ('Aguardando assinatura do envelope','Pendente','Envelope rejeitado', 'Envelope Cancelado', 'Fornecedor sem e-mail cadastrado.') ;
@@ -32,7 +32,7 @@ BEGIN
     -- Pega dados do comprador
     SELECT MAX(B.EMAIL), MAX(B.NOME)
       INTO vsEmail, vsNome
-      FROM NAGV_TAE_ACORDOS A
+      FROM NAGV_TAE_ACORDOS_v3 A
             LEFT JOIN NAGT_EMAILCOMPRADORES B ON A.COD_COMPRADOR = B.SEQCOMPRADOR
      WHERE A.COD_COMPRADOR = psCodComprador
        AND A.VENCIMENTO >= TRUNC(SYSDATE)
@@ -43,24 +43,24 @@ BEGIN
     -- O email será um agrupado (unico)
     
     FOR t IN (
-        SELECT A.NRO_ACORDO,
+        SELECT DISTINCT A.NRO_ACORDO,
                TO_CHAR(A.VLR_ACORDO,'FM999G999G990D90', 'NLS_NUMERIC_CHARACTERS='',.''') VLR_ACORDO,
                TO_CHAR(A.VENCIMENTO, 'DD/MM/YYYY') VENCIMENTO,
                TO_CHAR(A.DATA_EMISSAO, 'DD/MM/YYYY') EMISSAO,
                INITCAP(A.TIPO_ACORDO) TIPO_ACORDO, STATUS, SUBSTR(A.FORNECEDOR,0,30)||'..' FORNEC,
                A.URL_WTS
-          FROM NAGV_TAE_ACORDOS_v2 A
+          FROM NAGV_TAE_ACORDOS_v3 A
          WHERE A.COD_COMPRADOR = psCodComprador
            AND A.VENCIMENTO >= TRUNC(SYSDATE)
            AND STATUS IN ('Aguardando assinatura do envelope','Pendente','Envelope rejeitado', 'Envelope Cancelado', 'Fornecedor sem e-mail cadastrado.')
            
-           ORDER BY DATA_EMISSAO, FORNECEDOR
+           ORDER BY STATUS, TO_CHAR(A.DATA_EMISSAO, 'DD/MM/YYYY'), SUBSTR(A.FORNECEDOR,0,30)||'..'
     )
     LOOP
       psNroAcordo := t.Nro_Acordo;
       -- Monta o link pro zap se tiver acordo no tae
       IF t.URL_WTS IS NOT NULL THEN
-        IF t.STATUS IN ('Envelope Cancelado, Envelope rejeitado') 
+        IF t.STATUS IN ('Envelope Cancelado', 'Envelope rejeitado') 
         THEN
         vBtnWhatsapp := '<img src="https://img.icons8.com/color/20/000000/high-importance.png" 
                           alt="Alerta" width="20" height="20" 
@@ -155,11 +155,12 @@ BEGIN
                 <td style="padding:12px 28px 24px 28px;">
                   <table role="presentation" width="100%">
                     <tr>
-                      <td>
-                        <a href="'||fUrlSky()||'" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0b6efd;color:#fff;text-decoration:none;font-weight:600;">Acessar Totvs-Consinco</a>
-                      </td>
+                     <td>
+                      <a href="'||fUrlSky()||'" style="display:inline-block;padding:12px 20px;border-radius:8px;background:#0b6efd;color:#fff;text-decoration:none;font-weight:600;">Acessar Totvs-Consinco</a>
+                      <a href="'||fUrlTAE()||'" style="display:inline-block;padding:12px 20px;margin-left:10px;border-radius:8px;background:#10b981;color:#fff;text-decoration:none;font-weight:600;">Acessar TAE</a>
+                     </td>
                       <td align="right" style="vertical-align:middle;">
-                        <p style="margin:0;font-size:12px;color:#9ca3af;">Acesse o ERP para enviar os acordos que estiverem pendentes</p>
+                        <p style="margin:0;font-size:12px;color:#9ca3af;">Acesse o ERP e o TAE para enviar os acordos que estiverem pendentes</p>
                       </td>
                     </tr>
                   </table>
