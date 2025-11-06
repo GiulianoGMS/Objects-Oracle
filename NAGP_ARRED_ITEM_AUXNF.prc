@@ -128,7 +128,9 @@ CREATE OR REPLACE PROCEDURE NAGP_ARRED_ITEM_AUXNF (psNumeroNF NUMBER, psNroEmpre
    UPDATE MLF_AUXNOTAFISCAL X
       SET X.VLRPRODUTOS = VLRPRODUTOS + vlrDif
     WHERE X.SEQAUXNOTAFISCAL = psSeqAuxNF;
-    
+
+  -- Valida inconsistencias e recalcula arredondamento nos impostos
+
    BEGIN PKG_MLF_RECEBIMENTO.SP_CONSISTEAUXNOTAFISCAL(psSeqAuxNF,'0'); END; 
     
    END IF;
