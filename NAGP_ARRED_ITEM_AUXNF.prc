@@ -21,6 +21,8 @@ CREATE OR REPLACE PROCEDURE NAGP_ARRED_ITEM_AUXNF (psNumeroNF NUMBER, psNroEmpre
     FROM MLF_AUXNOTAFISCAL N INNER JOIN MAX_CODGERALOPER C ON C.CODGERALOPER = N.CODGERALOPER
    WHERE N.NUMERONF = psNumeroNF AND NROEMPRESA = psNroEmpresa;
    
+  IF psSeqAuxNF IS NOT NULL THEN
+   
 -- Se for nota de compra, comeca o tratamento
 
   IF psTipoCGO = 'C' THEN
@@ -128,14 +130,14 @@ CREATE OR REPLACE PROCEDURE NAGP_ARRED_ITEM_AUXNF (psNumeroNF NUMBER, psNroEmpre
    UPDATE MLF_AUXNOTAFISCAL X
       SET X.VLRPRODUTOS = VLRPRODUTOS + vlrDif
     WHERE X.SEQAUXNOTAFISCAL = psSeqAuxNF;
-
-  -- Valida inconsistencias e recalcula arredondamento nos impostos
-
+    
    BEGIN PKG_MLF_RECEBIMENTO.SP_CONSISTEAUXNOTAFISCAL(psSeqAuxNF,'0'); END; 
     
    END IF;
    
    COMMIT;
+   END IF;
+   
    END IF;
    
 END;
