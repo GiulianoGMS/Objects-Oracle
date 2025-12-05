@@ -16,16 +16,16 @@ CREATE OR REPLACE PROCEDURE NAGP_ARRED_ITEM_AUXNF_AUTO ( vnSeqAuxNF NUMBER ) --,
    
 -- Pega SeqAuxNotaFiscal para selects posteriores e tipo do cgo para seguir com tratamento
   
-  SELECT SEQAUXNOTAFISCAL, C.TIPDOCFISCAL, N.NFECHAVEACESSO
+  SELECT SEQAUXNOTAFISCAL, CASE WHEN C.CODESPECIEFIN = 'BONIAC' THEN 'X' ELSE C.TIPDOCFISCAL END, N.NFECHAVEACESSO
     INTO psSeqAuxNF, psTipoCGO, psChave
     FROM MLF_AUXNOTAFISCAL N INNER JOIN MAX_CODGERALOPER C ON C.CODGERALOPER = N.CODGERALOPER
    WHERE N.SEQAUXNOTAFISCAL = vnSeqAuxNF; --AND NROEMPRESA = psNroEmpresa AND SEQPESSOA = pdSeqPessoa;
    
   IF psSeqAuxNF IS NOT NULL THEN
    
--- Se for nota de compra, comeca o tratamento
+-- Se for nota de compra ou bonificação, comeca o tratamento
 
-  IF psTipoCGO = 'C' THEN
+  IF psTipoCGO IN ('C', 'X') THEN
   
 -- Pega o valor total da nota para comparacao com o valor do XML
 
