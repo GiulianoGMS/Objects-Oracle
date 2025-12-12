@@ -25,21 +25,39 @@ BEGIN
     FROM ALL_DIRECTORIES D
    WHERE D.directory_name = 'EXT_XML_PDV_'||LPAD(psNroEmpresa,3,0);
   
-  FOR nfe IN (SELECT 'NAGV_EXTRACAO_XML_PDVTOTVS_v2' NomeView,
+  FOR nfe IN (SELECT 'EXT_AUTORIZADAS'            NomeView,
                      pDiretorio                   Diretorio,
                     'NFe'                         DescricaoNF,
                      N.CHAVENF                    ChaveNfe,
                      Y.NROEMPRESA                 Emp,
                      Y.NROCHECKOUT                Checkout,
                      TRUNC(DTAHORRECEBIMENTO)     Dta,
-                     X.XML 
+                     X.XML                        XML
                      
                FROM MONITORPDV.tb_docto  Y INNER JOIN MONITORPDV.TB_DOCTONFEXML X ON X.NROEMPRESA = Y.NROEMPRESA AND X.NROCHECKOUT = Y.NROCHECKOUT AND X.SEQDOCTO = Y.SEQDOCTO  
                                            INNER JOIN MONITORPDV.TB_DOCTONFE N ON N.NROEMPRESA = X.NROEMPRESA AND N.NROCHECKOUT = X.NROCHECKOUT AND N.SEQDOCTO = Y.SEQDOCTO
               WHERE Y.DTAMOVIMENTO BETWEEN psDtaIni AND psDtaFim
-                AND N.STATUS != 'C'
+                -- AND N.STATUS != 'C'
                 AND Y.NROEMPRESA = psNroEmpresa
                 AND N.CHAVENF = NVL(psChave, N.CHAVENF)
+                
+             UNION ALL -- Union Inutilizadas
+             
+             SELECT 'EXT_INUTILIZADAS'            NopmeView,
+                    pDiretorio                    Diretorio,
+                   'Inut'                         DescricaoNF,
+                   A.CHAVEINUTILIZACAO            ChaveNfe,
+                   A.NROEMPRESA                   Emp,
+                   A.NROCHECKOUT                  Checkout,
+                   A.DTAHORINUTILIZACAO           Dta,
+                   A.XMLINUTILIZACAO              XML
+                  
+              FROM MONITORPDV.TB_DOCTOINUTNFE A
+             WHERE TRUNC(A.DTAHORINUTILIZACAO) BETWEEN psDtaIni AND psDtaFim
+               AND A.NROEMPRESA = psNroEmpresa
+               AND A.CHAVEINUTILIZACAO = NVL(psChave, A.CHAVEINUTILIZACAO)
+               AND A.CODRETORNO = 102
+               AND 1=2
              )
 
  LOOP
