@@ -31,7 +31,7 @@ BEGIN
                      N.CHAVENF                    ChaveNfe,
                      Y.NROEMPRESA                 Emp,
                      Y.NROCHECKOUT                Checkout,
-                     TRUNC(DTAHORRECEBIMENTO)     Dta,
+                     DTAMOVIMENTO                 Dta,
                      X.XML                        XML
                      
                FROM MONITORPDV.tb_docto  Y INNER JOIN MONITORPDV.TB_DOCTONFEXML X ON X.NROEMPRESA = Y.NROEMPRESA AND X.NROCHECKOUT = Y.NROCHECKOUT AND X.SEQDOCTO = Y.SEQDOCTO  
@@ -40,6 +40,7 @@ BEGIN
                 -- AND N.STATUS != 'C'
                 AND Y.NROEMPRESA = psNroEmpresa
                 AND N.CHAVENF = NVL(psChave, N.CHAVENF)
+                AND N.CODRETORNO IN (100,150)
                 
              UNION ALL -- Union Inutilizadas
              
@@ -50,7 +51,7 @@ BEGIN
                    A.NROEMPRESA                   Emp,
                    A.NROCHECKOUT                  Checkout,
                    A.DTAHORINUTILIZACAO           Dta,
-                   A.XMLINUTILIZACAO              XML
+                   CONVERT(XMLINUTILIZACAO, 'AL32UTF8','WE8MSWIN1252') XML
                   
               FROM MONITORPDV.TB_DOCTOINUTNFE A
              WHERE TRUNC(A.DTAHORINUTILIZACAO) BETWEEN psDtaIni AND psDtaFim
