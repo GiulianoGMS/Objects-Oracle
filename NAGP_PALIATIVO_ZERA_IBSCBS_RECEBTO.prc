@@ -15,7 +15,6 @@ CREATE OR REPLACE PROCEDURE NAGP_PALIATIVO_ZERA_IBSCBS_RECEBTO (psSeqAuxNotaFisc
   psVlrIBSItem   NUMBER(10,4);
   psIDItem       NUMBER(10);
   psCodProd      TMP_M014_ITEM.M014_CD_PRODUTO%TYPE;
-  --psQtdCom       TMP_M014_ITEM.M014_VL_QTDE_COM%TYPE;
   
 BEGIN
   -- Se o emissor (do grupo) nao emite impostos, zera a entrada)
@@ -57,15 +56,21 @@ BEGIN
   COMMIT;
   
   -- Se forn ota do grupo, atualiza de acordo com XML pois ao alterar o CGO ele vai recalcular CBS IBS
-  ELSIF psCGO IN (59) THEN
-  
-  SELECT Y.M014_NR_ITEM, Y.M014_VL_VLRBASECBS / Y.M014_VL_QTDE_COM, ROUND(Y.M014_VL_VLRIMPOSTOCBS / Y.M014_VL_QTDE_COM,4), 
-                         Y.M014_VL_VLRBASEIBSUF / Y.M014_VL_QTDE_COM, Y.M014_VL_VLRIMPOSTOIBS / Y.M014_VL_QTDE_COM, Y.M014_CD_PRODUTO
-   
-    INTO psIDItem, psBaseCBSItem, psVlrCBSItem, psBaseIBSItem, psVlrIBSItem, psCodProd
+  ELSIF psCGO IN (59,243,55) THEN
+  -- Item Rateado
+  FOR item IN (
+  SELECT Y.M014_NR_ITEM, Y.M014_VL_VLRBASECBS / Y.M014_VL_QTDE_COM BaseCBS, ROUND(Y.M014_VL_VLRIMPOSTOCBS / Y.M014_VL_QTDE_COM,4) VlrCBS, 
+                         Y.M014_VL_VLRBASEIBSUF / Y.M014_VL_QTDE_COM BaseIBS, Y.M014_VL_VLRIMPOSTOIBS / Y.M014_VL_QTDE_COM VlrIBS, Y.M014_CD_PRODUTO COD 
        
     FROM TMP_M000_NF X INNER JOIN TMP_M014_ITEM Y ON X.M000_ID_NF = Y.M000_ID_NF
-   WHERE X.M000_NR_CHAVE_ACESSO = psChave;
+   WHERE X.M000_NR_CHAVE_ACESSO = psChave)
+   
+  LOOP
+    psBaseCBSItem := item.BaseCBS;
+    psVlrCBSItem  := item.VlrCBS;
+    psBaseIBSItem := item.BaseIBS;
+    psVlrIBSItem  := item.VlrIBS;
+    psCodProd     := item.COD;
  
   UPDATE MLF_AUXNFITEM XI SET XI.VLRBASECBS       = psBaseCBSItem * (XI.QUANTIDADE/XI.QTDEMBALAGEM),
                               XI.VLRIMPOSTOCBS    = psVlrCBSItem  * (XI.QUANTIDADE/XI.QTDEMBALAGEM),
@@ -73,12 +78,33 @@ BEGIN
                               XI.VLRIMPOSTOIBSUF  = psVlrIBSItem  * (XI.QUANTIDADE/XI.QTDEMBALAGEM)
                         WHERE XI.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal
                           AND XI.SEQPRODUTO   = psCodProd;
-  COMMIT;
+    
+  END LOOP;
+  -- Atualiza Capa     
+  FOR capa IN (   
+  SELECT X.M000_VL_VLRBASECBS BaseCBSItemCheio, X.M000_VL_VLRIMPOSTOCBS VlrCBSItemCheio, X.M000_VL_VLRBASEIBSUF BaseIBSItemCheio, X.M000_VL_VLRIMPOSTOIBS VlrIBSItemCheio
+    FROM TMP_M000_NF X
+   WHERE X.M000_NR_CHAVE_ACESSO = psChave)
+   
+  LOOP
+                          
+  UPDATE MLF_AUXNOTAFISCAL X SET X.VLRBASECBS       = capa.BaseCBSItemCheio,
+                                 X.VLRIMPOSTOCBS    = capa.VlrCBSItemCheio,
+                                 X.VLRBASEIBSUF     = capa.BaseIBSItemCheio,
+                                 X.VLRIMPOSTOIBSUF  = capa.VlrIBSItemCheio
+                           WHERE X.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal;
+  END LOOP;
   
   END IF;
+  COMMIT;
   
- EXCEPTION 
-   WHEN OTHERS THEN
-     DBMS_OUTPUT.PUT_LINE(SQLERRM); -- DBMS para nao estourar erro SQL caso outro problema surja ao rodar essa proc, nao para o processo
+ EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error Code: ' || SQLCODE);
+        DBMS_OUTPUT.PUT_LINE('Error Message: ' || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('Error Stack: ' || DBMS_UTILITY.FORMAT_ERROR_STACK);
+        DBMS_OUTPUT.PUT_LINE('Error Backtrace: ' || DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
+        DBMS_OUTPUT.PUT_LINE('Call Stack: ' || DBMS_UTILITY.FORMAT_CALL_STACK);
+     -- DBMS para nao estourar erro SQL caso outro problema surja ao rodar essa proc, nao para o processo
 
 END;
