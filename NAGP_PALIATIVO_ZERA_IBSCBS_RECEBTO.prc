@@ -16,6 +16,9 @@ CREATE OR REPLACE PROCEDURE NAGP_PALIATIVO_ZERA_IBSCBS_RECEBTO (psSeqAuxNotaFisc
   psIDItem       NUMBER(10);
   psCodProd      TMP_M014_ITEM.M014_CD_PRODUTO%TYPE;
   
+  psCGORegra     MAX_CODGERALOPER.CODGERALOPER%TYPE;
+  pdCGO          VARCHAR2(4000);
+  
 BEGIN
   -- Se o emissor (do grupo) nao emite impostos, zera a entrada)
   -- Descobre o SEQ
@@ -38,7 +41,7 @@ BEGIN
   -- ou se o fornec nao enviou no XML e ainda nao passou da data de obrigatoriedade
   
   IF psSeqPessoa < 999 AND NVL(psStatusNT,'N') != 'A'
-  OR /*psSeqPessoa > 999 AND */ (NVL(psCBS,0) = 0 OR NVL(psIBS,0) = 0) AND TRUNC(SYSDATE) < DATE '2026-02-01' THEN
+  OR (NVL(psCBS,0) = 0 OR NVL(psIBS,0) = 0) AND TRUNC(SYSDATE) < DATE '2026-02-01' THEN
   
   -- Zera itens
   UPDATE MLF_AUXNFITEM XI SET XI.VLRBASECBS         = 0,
@@ -55,8 +58,20 @@ BEGIN
                            
   COMMIT;
   
-  -- Se forn ota do grupo, atualiza de acordo com XML pois ao alterar o CGO ele vai recalcular CBS IBS
-  ELSIF psCGO IN (59,243,55) THEN
+  -- Se for nota do grupo, atualiza de acordo com XML pois ao alterar o CGO ele vai recalcular CBS IBS
+
+  ELSIF psSeqPessoa < 999 THEN
+    
+  SP_BUSCAPARAMDINAMICO('NAGUMO',0,'CGO_REP_XML_REFORMA','S', NULL,
+                        'Lista de CGOs que mantem as informacoes do XML sobre os novos impostos da Reforma Tributária no lançamento entre lojas do grupo', pdCGO);
+    
+    SELECT MAX(COLUMN_VALUE)
+      INTO psCGORegra
+      FROM TABLE(CAST(C5_COMPLEXIN.C5INTABLE(NVL(TRIM(pdCGO), 0)) AS C5INSTRTABLE))
+     WHERE COLUMN_VALUE = psCGO AND COLUMN_VALUE IS NOT NULL;
+ 
+  IF psCGORegra IS NOT NULL THEN -- Encontrou CGO no parametro dinamico
+    
   -- Item Rateado
   FOR item IN (
   SELECT Y.M014_NR_ITEM, Y.M014_VL_VLRBASECBS / Y.M014_VL_QTDE_COM BaseCBS, ROUND(Y.M014_VL_VLRIMPOSTOCBS / Y.M014_VL_QTDE_COM,4) VlrCBS, 
@@ -93,8 +108,8 @@ BEGIN
                                  X.VLRBASEIBSUF     = capa.BaseIBSItemCheio,
                                  X.VLRIMPOSTOIBSUF  = capa.VlrIBSItemCheio
                            WHERE X.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal;
-  END LOOP;
-  
+    END LOOP;
+   END IF;
   END IF;
   COMMIT;
   
