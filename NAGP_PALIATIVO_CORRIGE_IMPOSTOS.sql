@@ -12,14 +12,19 @@ CREATE OR REPLACE PROCEDURE NAGP_PALIATIVO_CORRIGE_IMPOSTOS (psSeqAuxNotaFiscal 
   psCBS       TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
   psIBS       TMP_M000_NF.M000_VL_VLRBASEIBSUF%TYPE;
   psCGO       MAX_CODGERALOPER.CODGERALOPER%TYPE;
+  psCNPJ      GE_PESSOA.NROCGCCPF%TYPE;
+  
+  psTotaoItemCBS NUMBER(10,5);
   
   -- Variaveis por Item
-  psBaseCBSItem  NUMBER(10,4);
-  psBaseIBSItem  NUMBER(10,4);
-  psVlrCBSItem   NUMBER(10,4);
-  psVlrIBSItem   NUMBER(10,4);
+  psBaseCBSItem  NUMBER(10,5);
+  psBaseIBSItem  NUMBER(10,5);
+  psVlrCBSItem   NUMBER(10,5);
+  psVlrIBSItem   NUMBER(10,5);
   psIDItem       NUMBER(10);
   psCodProd      TMP_M014_ITEM.M014_CD_PRODUTO%TYPE;
+  psBaseIBSMunItem NUMBER(10,5);
+  psVlrIBSMunItem NUMBER(10,5);
   
   psCGORegra     MAX_CODGERALOPER.CODGERALOPER%TYPE;
   pdCGO          VARCHAR2(4000);
@@ -30,9 +35,10 @@ CREATE OR REPLACE PROCEDURE NAGP_PALIATIVO_CORRIGE_IMPOSTOS (psSeqAuxNotaFiscal 
   
 BEGIN
   -- Descobre o SEQ
-  SELECT SEQPESSOA, NUMERONF, X.NFECHAVEACESSO, X.CODGERALOPER
-    INTO psSeqPessoa, psNumeroNF, psChave, psCGO
-   FROM MLF_AUXNOTAFISCAL X WHERE X.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal;
+  SELECT X.SEQPESSOA, NUMERONF, X.NFECHAVEACESSO, X.CODGERALOPER, G.NROCGCCPF
+    INTO psSeqPessoa, psNumeroNF, psChave, psCGO, psCNPJ
+   FROM MLF_AUXNOTAFISCAL X INNER JOIN GE_PESSOA G ON G.SEQPESSOA = X.SEQPESSOA
+  WHERE X.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal;
    
   -- Valida se a NT 2025002 esta ativa para o seq
   SELECT MAX(STATUS)
@@ -57,13 +63,17 @@ BEGIN
   UPDATE MLF_AUXNFITEM XI SET XI.VLRBASECBS         = 0,
                               XI.VLRIMPOSTOCBS      = 0,
                               XI.VLRBASEIBSUF       = 0,
-                              XI.VLRIMPOSTOIBSUF    = 0
+                              XI.VLRIMPOSTOIBSUF    = 0,
+                              XI.VLRBASEIBSMUN      = 0,
+                              XI.VLRIMPOSTOIBSMUN   = 0
                         WHERE XI.SEQAUXNOTAFISCAL   = psSeqAuxNotaFiscal;
   -- Zera capa
   UPDATE MLF_AUXNOTAFISCAL X SET X.VLRBASECBS       = 0,
                                  X.VLRIMPOSTOCBS    = 0,
                                  X.VLRBASEIBSUF     = 0,
-                                 X.VLRIMPOSTOIBSUF  = 0
+                                 X.VLRIMPOSTOIBSUF  = 0,
+                                 X.VLRBASEIBSMUN    = 0,
+                                 X.VLRIMPOSTOIBSMUN = 0
                            WHERE X.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal;
                            
   COMMIT;
@@ -71,7 +81,7 @@ BEGIN
   -- Paliativo 2
   -- Se for nota do grupo, atualiza de acordo com XML pois ao alterar o CGO ele vai recalcular CBS IBS
 
-  ELSIF psSeqPessoa < 999 THEN
+  ELSIF 1=1 THEN
     
   SP_BUSCAPARAMDINAMICO('NAGUMO',0,'CGO_REP_XML_REFORMA','S', NULL,
                         'Lista de CGOs que mantem as informacoes do XML sobre os novos impostos da Reforma Tributária no lançamento entre lojas do grupo', pdCGO);
@@ -85,10 +95,13 @@ BEGIN
     
   -- Item Rateado
   FOR item IN (
-  SELECT Y.M014_NR_ITEM, Y.M014_VL_VLRBASECBS / Y.M014_VL_QTDE_COM BaseCBS, ROUND(Y.M014_VL_VLRIMPOSTOCBS / Y.M014_VL_QTDE_COM,4) VlrCBS, 
-                         Y.M014_VL_VLRBASEIBSUF / Y.M014_VL_QTDE_COM BaseIBS, Y.M014_VL_VLRIMPOSTOIBS / Y.M014_VL_QTDE_COM VlrIBS, Y.M014_CD_PRODUTO COD 
+  SELECT Y.M014_NR_ITEM, NVL(Y.M014_VL_VLRBASECBS / Y.M014_VL_QTDE_COM,0) BaseCBS, NVL(ROUND(Y.M014_VL_VLRIMPOSTOCBS / Y.M014_VL_QTDE_COM,5),0) VlrCBS, 
+                         NVL(Y.M014_VL_VLRBASEIBSUF / Y.M014_VL_QTDE_COM,0) BaseIBS, NVL(Y.M014_VL_VLRIMPOSTOIBS / Y.M014_VL_QTDE_COM,0) VlrIBS, CASE WHEN psCGO = 1 THEN TO_CHAR(C.SEQPRODUTO) ELSE Y.M014_CD_PRODUTO END COD ,
+                         NVL(Y.M014_VL_VLRBASEIBSMUN / Y.M014_VL_QTDE_COM,0) BaseIbsMun, NVL(Y.M014_VL_VLRIMPOSTOIBSMUN / Y.M014_VL_QTDE_COM,0) VlrIBSMun
        
     FROM TMP_M000_NF X INNER JOIN TMP_M014_ITEM Y ON X.M000_ID_NF = Y.M000_ID_NF
+                       LEFT JOIN MAP_PRODCODIGO C ON C.CODACESSO = Y.M014_CD_PRODUTO AND psCNPJ LIKE '%'||C.CGCFORNEC||'%'
+                       
    WHERE X.M000_NR_CHAVE_ACESSO = psChave)
    
   LOOP
@@ -96,28 +109,35 @@ BEGIN
     psVlrCBSItem  := item.VlrCBS;
     psBaseIBSItem := item.BaseIBS;
     psVlrIBSItem  := item.VlrIBS;
-    psCodProd     := item.COD;
+    psCodProd        := item.COD;
+    psBaseIBSMunItem := item.BaseIBSMun;
+    psVlrIBSMunItem  := item.VlrIBSMun;
+    psTotaoItemCBS := psTotaoItemCBS + item.BaseCBS;
  
   UPDATE MLF_AUXNFITEM XI SET XI.VLRBASECBS       = psBaseCBSItem * (XI.QUANTIDADE/XI.QTDEMBALAGEM),
                               XI.VLRIMPOSTOCBS    = psVlrCBSItem  * (XI.QUANTIDADE/XI.QTDEMBALAGEM),
                               XI.VLRBASEIBSUF     = psBaseIBSItem * (XI.QUANTIDADE/XI.QTDEMBALAGEM),
-                              XI.VLRIMPOSTOIBSUF  = psVlrIBSItem  * (XI.QUANTIDADE/XI.QTDEMBALAGEM)
+                              XI.VLRIMPOSTOIBSUF  = psVlrIBSItem  * (XI.QUANTIDADE/XI.QTDEMBALAGEM),
+                              XI.VLRBASEIBSMUN    = psBaseIBSMunItem * (XI.QUANTIDADE/XI.QTDEMBALAGEM),
+                              XI.VLRIMPOSTOIBSMUN = psVlrIBSMunItem  * (XI.QUANTIDADE/XI.QTDEMBALAGEM)
                         WHERE XI.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal
                           AND XI.SEQPRODUTO   = psCodProd;
     
   END LOOP;
   -- Atualiza Capa     
   FOR capa IN (   
-  SELECT X.M000_VL_VLRBASECBS BaseCBSItemCheio, X.M000_VL_VLRIMPOSTOCBS VlrCBSItemCheio, X.M000_VL_VLRBASEIBSUF BaseIBSItemCheio, X.M000_VL_VLRIMPOSTOIBS VlrIBSItemCheio
+  SELECT X.M000_VL_VLRBASECBS BaseCBSItemCheio, X.M000_VL_VLRIMPOSTOCBS VlrCBSItemCheio, X.M000_VL_VLRBASEIBSUF BaseIBSItemCheio, X.M000_VL_VLRIMPOSTOIBS VlrIBSItemCheio, X.M000_VL_VLRBASEIBSMUN BaseIBSMunCheio, X.M000_VL_VLRIMPOSTOIBSMUN VlrIBSMunCheio
     FROM TMP_M000_NF X
    WHERE X.M000_NR_CHAVE_ACESSO = psChave)
    
   LOOP
                           
-  UPDATE MLF_AUXNOTAFISCAL X SET X.VLRBASECBS       = capa.BaseCBSItemCheio,
+  UPDATE MLF_AUXNOTAFISCAL X SET X.VLRBASECBS       = capa.Basecbsitemcheio,
                                  X.VLRIMPOSTOCBS    = capa.VlrCBSItemCheio,
                                  X.VLRBASEIBSUF     = capa.BaseIBSItemCheio,
-                                 X.VLRIMPOSTOIBSUF  = capa.VlrIBSItemCheio
+                                 X.VLRIMPOSTOIBSUF  = capa.VlrIBSItemCheio,
+                                 X.VLRBASEIBSMUN    = capa.BaseIBSMunCheio,
+                                 X.VLRIMPOSTOIBSMUN = capa.VlrIBSMunCheio
                            WHERE X.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal;
     END LOOP;
    END IF;
