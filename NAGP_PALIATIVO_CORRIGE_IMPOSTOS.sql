@@ -5,27 +5,19 @@ CREATE OR REPLACE PROCEDURE NAGP_PALIATIVO_CORRIGE_IMPOSTOS (psSeqAuxNotaFiscal 
 
   -- Variaveis 
 
-  psSeqPessoa NUMBER(7);
-  psStatusNT  VARCHAR2(1);
-  psNumeroNF  NUMBER(30);
-  psChave     MLF_AUXNOTAFISCAL.NFECHAVEACESSO%TYPE;
-  psCBS       TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
-  psIBS       TMP_M000_NF.M000_VL_VLRBASEIBSUF%TYPE;
-  psCGO       MAX_CODGERALOPER.CODGERALOPER%TYPE;
-  psCNPJ      GE_PESSOA.NROCGCCPF%TYPE;
+  psSeqPessoa    NUMBER(7);
+  psStatusNT     VARCHAR2(1);
+  psNumeroNF     NUMBER(30);
+  psChave        MLF_AUXNOTAFISCAL.NFECHAVEACESSO%TYPE;
+  psCBS          TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  psIBS          TMP_M000_NF.M000_VL_VLRBASEIBSUF%TYPE;
+  psCGO          MAX_CODGERALOPER.CODGERALOPER%TYPE;
+  psCNPJ         GE_PESSOA.NROCGCCPF%TYPE;
   
   psTotaoItemCBS NUMBER(10,5);
-  
-  -- Variaveis por Item
-  psBaseCBSItem  NUMBER(10,5);
-  psBaseIBSItem  NUMBER(10,5);
-  psVlrCBSItem   NUMBER(10,5);
-  psVlrIBSItem   NUMBER(10,5);
+  psQtdRep       NUMBER(10);
   psIDItem       NUMBER(10);
-  psCodProd      TMP_M014_ITEM.M014_CD_PRODUTO%TYPE;
-  psBaseIBSMunItem NUMBER(10,5);
-  psVlrIBSMunItem NUMBER(10,5);
-  
+  psCodProd      TMP_M014_ITEM.M014_CD_PRODUTO%TYPE;  
   psCGORegra     MAX_CODGERALOPER.CODGERALOPER%TYPE;
   pdCGO          VARCHAR2(4000);
   
@@ -94,32 +86,44 @@ BEGIN
   IF psCGORegra IS NOT NULL THEN -- Encontrou CGO no parametro dinamico
     
   -- Item Rateado
-  FOR item IN (
-  SELECT Y.M014_NR_ITEM, NVL(Y.M014_VL_VLRBASECBS / Y.M014_VL_QTDE_COM,0) BaseCBS, NVL(ROUND(Y.M014_VL_VLRIMPOSTOCBS / Y.M014_VL_QTDE_COM,5),0) VlrCBS, 
-                         NVL(Y.M014_VL_VLRBASEIBSUF / Y.M014_VL_QTDE_COM,0) BaseIBS, NVL(Y.M014_VL_VLRIMPOSTOIBS / Y.M014_VL_QTDE_COM,0) VlrIBS, CASE WHEN psCGO = 1 THEN TO_CHAR(C.SEQPRODUTO) ELSE Y.M014_CD_PRODUTO END COD ,
-                         NVL(Y.M014_VL_VLRBASEIBSMUN / Y.M014_VL_QTDE_COM,0) BaseIbsMun, NVL(Y.M014_VL_VLRIMPOSTOIBSMUN / Y.M014_VL_QTDE_COM,0) VlrIBSMun
+ FOR item IN (
+  SELECT Y.M014_NR_ITEM, NVL(Y.M014_VL_VLRBASECBS /          CASE WHEN F.PESAVEL = 'S' THEN M014_VL_QTDE_TRIB ELSE Y.M014_VL_QTDE_COM END,0) BaseCBS, 
+                         NVL(ROUND(Y.M014_VL_VLRIMPOSTOCBS / CASE WHEN F.PESAVEL = 'S' THEN M014_VL_QTDE_TRIB ELSE Y.M014_VL_QTDE_COM END,5),0) VlrCBS, 
+                         NVL(Y.M014_VL_VLRBASEIBSUF /        CASE WHEN F.PESAVEL = 'S' THEN M014_VL_QTDE_TRIB ELSE Y.M014_VL_QTDE_COM END,0) BaseIBS, 
+                         NVL(Y.M014_VL_VLRIMPOSTOIBS /       CASE WHEN F.PESAVEL = 'S' THEN M014_VL_QTDE_TRIB ELSE Y.M014_VL_QTDE_COM END,0) VlrIBS,
+                         NVL(Y.M014_VL_VLRBASEIBSMUN /       CASE WHEN F.PESAVEL = 'S' THEN M014_VL_QTDE_TRIB ELSE Y.M014_VL_QTDE_COM END,0) BaseIbsMun, 
+                         NVL(Y.M014_VL_VLRIMPOSTOIBSMUN /    CASE WHEN F.PESAVEL = 'S' THEN M014_VL_QTDE_TRIB ELSE Y.M014_VL_QTDE_COM END,0) VlrIBSMun,
+                         
+                         Y.M014_VL_VLRBASEIS        BaseISCheio,
+                         Y.M014_VL_VLRBASEIBSUF     BaseIBSUFCheio,
+                         Y.M014_VL_VLRIMPOSTOIBSUF  VlrIBSUFCheio,
+                         Y.M014_VL_VLRBASEIBSMUN    BaseIBSMunCHeio,
+                         Y.M014_VL_VLRIMPOSTOIBSMUN VlrIBSMunCheio,
+                         Y.M014_VL_VLRBASECBS       BaseCBSCheio,
+                         Y.M014_VL_VLRIMPOSTOCBS    VlrCBSCheio,
+                         
+                         CASE WHEN psCGO = 1 THEN TO_CHAR(C.SEQPRODUTO) ELSE Y.M014_CD_PRODUTO END COD
        
     FROM TMP_M000_NF X INNER JOIN TMP_M014_ITEM Y ON X.M000_ID_NF = Y.M000_ID_NF
-                       LEFT JOIN MAP_PRODCODIGO C ON C.CODACESSO = Y.M014_CD_PRODUTO AND psCNPJ LIKE '%'||C.CGCFORNEC||'%'
+                        LEFT JOIN MAP_PRODCODIGO C ON C.CODACESSO = Y.M014_CD_PRODUTO AND psCNPJ LIKE '%'||C.CGCFORNEC||'%'
+                        LEFT JOIN MAP_PRODUTO P ON P.SEQPRODUTO = C.SEQPRODUTO
+                        LEFT JOIN MAP_FAMILIA F ON F.SEQFAMILIA = C.SEQFAMILIA
                        
    WHERE X.M000_NR_CHAVE_ACESSO = psChave)
    
   LOOP
-    psBaseCBSItem := item.BaseCBS;
-    psVlrCBSItem  := item.VlrCBS;
-    psBaseIBSItem := item.BaseIBS;
-    psVlrIBSItem  := item.VlrIBS;
+  
     psCodProd        := item.COD;
-    psBaseIBSMunItem := item.BaseIBSMun;
-    psVlrIBSMunItem  := item.VlrIBSMun;
     psTotaoItemCBS := psTotaoItemCBS + item.BaseCBS;
+    -- Descobre se vai usar o valor rateado ou cheio
+    SELECT COUNT(*) OVER (PARTITION BY XI.SEQPRODUTO) QTD_REPETICOES_PROD INTO psQtdRep FROM MLF_AUXNFITEM XI WHERE XI.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal AND XI.SEQPRODUTO = psCodProd;
  
-  UPDATE MLF_AUXNFITEM XI SET XI.VLRBASECBS       = psBaseCBSItem * (XI.QUANTIDADE/XI.QTDEMBALAGEM),
-                              XI.VLRIMPOSTOCBS    = psVlrCBSItem  * (XI.QUANTIDADE/XI.QTDEMBALAGEM),
-                              XI.VLRBASEIBSUF     = psBaseIBSItem * (XI.QUANTIDADE/XI.QTDEMBALAGEM),
-                              XI.VLRIMPOSTOIBSUF  = psVlrIBSItem  * (XI.QUANTIDADE/XI.QTDEMBALAGEM),
-                              XI.VLRBASEIBSMUN    = psBaseIBSMunItem * (XI.QUANTIDADE/XI.QTDEMBALAGEM),
-                              XI.VLRIMPOSTOIBSMUN = psVlrIBSMunItem  * (XI.QUANTIDADE/XI.QTDEMBALAGEM)
+  UPDATE MLF_AUXNFITEM XI SET XI.VLRBASECBS       = CASE WHEN psQtdRep > 1 THEN item.BaseCBS    * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.BaseCBSCheio    END,
+                              XI.VLRIMPOSTOCBS    = CASE WHEN psQtdRep > 1 THEN item.VlrCBS     * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.VlrCBSCheio     END,
+                              XI.VLRBASEIBSUF     = CASE WHEN psQtdRep > 1 THEN item.BaseIBS    * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.BaseIBSUFCheio  END,
+                              XI.VLRIMPOSTOIBSUF  = CASE WHEN psQtdRep > 1 THEN item.VlrIBS     * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.VlrIBSUFCheio   END,
+                              XI.VLRBASEIBSMUN    = CASE WHEN psQtdRep > 1 THEN item.BaseIBSMun * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.BaseIBSMunCHeio END,
+                              XI.VLRIMPOSTOIBSMUN = CASE WHEN psQtdRep > 1 THEN item.VlrIBSMun  * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.VlrIBSMunCheio  END
                         WHERE XI.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal
                           AND XI.SEQPRODUTO   = psCodProd;
     
