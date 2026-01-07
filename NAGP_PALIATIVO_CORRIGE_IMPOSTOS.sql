@@ -16,12 +16,30 @@ CREATE OR REPLACE PROCEDURE NAGP_PALIATIVO_CORRIGE_IMPOSTOS (psSeqAuxNotaFiscal 
   psTipDoc       VARCHAR2(1);
   pdTipPed       VARCHAR2(1);
   
-  psTotaoItemCBS NUMBER(10,5);
   psQtdRep       NUMBER(10);
-  psIDItem       NUMBER(10);
   psCodProd      TMP_M014_ITEM.M014_CD_PRODUTO%TYPE;  
   psCGORegra     MAX_CODGERALOPER.CODGERALOPER%TYPE;
   pdCGO          VARCHAR2(4000);
+  
+  -- Variaveis por item para arred
+  
+  psBaseCBSItemToT  TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  psVlrCBSItemToT   TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  psBaseIBSItemToT  TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  psVlrIBSItemTot   TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  psBaseIBSMunItem  TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  psVlrIBSMunItem   TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  
+  -- Variaveis com as diferencas
+  
+  psBaseCBSItemCalc  TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  psVlrCBSItemCalc   TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  psBaseIBSItemCalc  TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  psVlrIBSItemCalc   TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  psBaseIBSMunItemC  TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  psVlrIBSMunItemC   TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
+  
+  psRowID VARCHAR2(300);
   
   -- Paliativo 3 -- IPI Emp Importadora
   psImp          VARCHAR2(1);
@@ -90,12 +108,12 @@ BEGIN
     
   -- Item Rateado
  FOR item IN (
- SELECT SUM(BASECBS)        BASECBS,
-        SUM(VLRCBS)         VLRCBS,
-        SUM(BASEIBS)        BASEIBS,
-        SUM(VLRIBS)         VLRIBS,
-        SUM(BASEIBSMUN)     BASEIBSMUN,
-        SUM(VLRIBSMUN)      VLRIBSMUN,
+ SELECT MAX(BASECBS)        BASECBS,
+        MAX(VLRCBS)         VLRCBS,
+        MAX(BASEIBS)        BASEIBS,
+        MAX(VLRIBS)         VLRIBS,
+        MAX(BASEIBSMUN)     BASEIBSMUN,
+        MAX(VLRIBSMUN)      VLRIBSMUN,
         
         SUM(BASEISCHEIO)    BASEISCHEIO,
         SUM(BASEIBSUFCHEIO) BASEIBSUFCHEIO,
@@ -109,7 +127,7 @@ BEGIN
    
    FROM (
        
-  SELECT Y.M014_NR_ITEM, NVL(Y.M014_VL_VLRBASECBS /          CASE WHEN F.PESAVEL = 'S' THEN M014_VL_QTDE_TRIB ELSE Y.M014_VL_QTDE_COM END,0) BaseCBS, 
+  SELECT DISTINCT        Y.M014_NR_ITEM, NVL(Y.M014_VL_VLRBASECBS /          CASE WHEN F.PESAVEL = 'S' THEN M014_VL_QTDE_TRIB ELSE Y.M014_VL_QTDE_COM END,0) BaseCBS, 
                          NVL(ROUND(Y.M014_VL_VLRIMPOSTOCBS / CASE WHEN F.PESAVEL = 'S' THEN M014_VL_QTDE_TRIB ELSE Y.M014_VL_QTDE_COM END,5),0) VlrCBS, 
                          NVL(Y.M014_VL_VLRBASEIBSUF /        CASE WHEN F.PESAVEL = 'S' THEN M014_VL_QTDE_TRIB ELSE Y.M014_VL_QTDE_COM END,0) BaseIBS, 
                          NVL(Y.M014_VL_VLRIMPOSTOIBS /       CASE WHEN F.PESAVEL = 'S' THEN M014_VL_QTDE_TRIB ELSE Y.M014_VL_QTDE_COM END,0) VlrIBS,
@@ -135,11 +153,9 @@ BEGIN
    WHERE X.M000_NR_CHAVE_ACESSO = psChave) GROUP BY COD)
    
   LOOP
-  
-    psCodProd        := item.COD;
-    psTotaoItemCBS := psTotaoItemCBS + item.BaseCBS;
+    
     -- Descobre se vai usar o valor rateado ou cheio
-    SELECT COUNT(*) QTD_REPETICOES_PROD INTO psQtdRep FROM MLF_AUXNFITEM XI WHERE XI.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal AND XI.SEQPRODUTO = psCodProd;
+    SELECT COUNT(*) QTD_REPETICOES_PROD INTO psQtdRep FROM MLF_AUXNFITEM XI WHERE XI.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal AND XI.SEQPRODUTO = item.COD;
  
   UPDATE MLF_AUXNFITEM XI SET XI.VLRBASECBS       = CASE WHEN psQtdRep > 1 THEN item.BaseCBS    * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.BaseCBSCheio    END,
                               XI.VLRIMPOSTOCBS    = CASE WHEN psQtdRep > 1 THEN item.VlrCBS     * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.VlrCBSCheio     END,
@@ -147,8 +163,9 @@ BEGIN
                               XI.VLRIMPOSTOIBSUF  = CASE WHEN psQtdRep > 1 THEN item.VlrIBS     * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.VlrIBSUFCheio   END,
                               XI.VLRBASEIBSMUN    = CASE WHEN psQtdRep > 1 THEN item.BaseIBSMun * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.BaseIBSMunCHeio END,
                               XI.VLRIMPOSTOIBSMUN = CASE WHEN psQtdRep > 1 THEN item.VlrIBSMun  * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.VlrIBSMunCheio  END
+                              
                         WHERE XI.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal
-                          AND XI.SEQPRODUTO   = psCodProd;
+                          AND XI.SEQPRODUTO   = item.COD;
                           
     psQtdRep := 0;
     
@@ -168,8 +185,45 @@ BEGIN
                                  X.VLRBASEIBSMUN    = capa.BaseIBSMunCheio,
                                  X.VLRIMPOSTOIBSMUN = capa.VlrIBSMunCheio
                            WHERE X.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal;
-    END LOOP;
-   END IF;
+   
+  -- Arredonda os valores se a div for centavos
+  
+  SELECT SUM(VLRBASECBS), SUM(VLRIMPOSTOCBS), SUM(VLRBASEIBSUF), SUM(VLRIMPOSTOIBSUF), SUM(VLRBASEIBSMUN), SUM(VLRIMPOSTOIBSMUN), MAX(ROWID)
+    INTO psBaseCBSItemToT, psVlrCBSItemToT, psBaseIBSItemToT, psVlrIBSItemTot, psBaseIBSMunItem, psVlrIBSMunItem, psRowID
+    FROM MLF_AUXNFITEM XI WHERE XI.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal;
+  
+  psBaseCBSItemCalc  := capa.Basecbsitemcheio - psBaseCBSItemToT;
+  psVlrCBSItemCalc   := capa.VlrCBSItemCheio  - psVlrCBSItemToT;
+  psBaseIBSItemCalc  := capa.BaseIBSItemCheio - psBaseIBSItemToT;
+  psVlrIBSItemCalc   := capa.VlrIBSItemCheio  - psVlrIBSItemTot;
+  psBaseIBSMunItemC  := capa.BaseIBSMunCheio  - psBaseIBSMunItem;
+  psVlrIBSMunItemC   := capa.VlrIBSMunCheio   - psVlrIBSMunItem;
+  
+  IF psBaseCBSItemCalc != 0 AND psBaseCBSItemCalc BETWEEN -0.05 AND 0.05 OR
+     psVlrCBSItemCalc  != 0 AND psVlrCBSItemCalc  BETWEEN -0.05 AND 0.05 OR
+     psBaseIBSItemCalc != 0 AND psBaseIBSItemCalc BETWEEN -0.05 AND 0.05 OR
+     psVlrIBSItemCalc  != 0 AND psVlrIBSItemCalc  BETWEEN -0.05 AND 0.05 OR 
+     psBaseIBSMunItemC != 0 AND psBaseIBSMunItemC BETWEEN -0.05 AND 0.05 OR
+     psVlrIBSMunItemC  != 0 AND psVlrIBSMunItemC  BETWEEN -0.05 AND 0.05
+     
+  THEN 
+    
+  UPDATE MLF_AUXNFITEM XI SET XI.VLRBASECBS       = XI.VLRBASECBS       + psBaseCBSItemCalc,
+                              XI.VLRIMPOSTOCBS    = XI.VLRIMPOSTOCBS    + psVlrCBSItemCalc,
+                              XI.VLRBASEIBSUF     = XI.VLRBASEIBSUF     + psBaseIBSItemCalc,
+                              XI.VLRIMPOSTOIBSUF  = XI.VLRIMPOSTOIBSUF  + psVlrIBSItemCalc,
+                              XI.VLRBASEIBSMUN    = XI.VLRBASEIBSMUN    + psBaseIBSMunItemC,
+                              XI.VLRIMPOSTOIBSMUN = XI.VLRIMPOSTOIBSMUN + psVlrIBSMunItemC
+                              
+                        WHERE XI.ROWID = psRowID
+                          AND XI.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal;
+  -- Reprocessa Inconsist
+   
+      END IF;
+     END LOOP;
+     COMMIT;
+    END IF; 
+   COMMIT;  
   END IF;
   
   -- Paliativo 3
