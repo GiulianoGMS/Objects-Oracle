@@ -8,6 +8,7 @@ CREATE OR REPLACE PROCEDURE NAGP_PALIATIVO_CORRIGE_IMPOSTOS (psSeqAuxNotaFiscal 
   psSeqPessoa    NUMBER(7);
   psStatusNT     VARCHAR2(1);
   psNumeroNF     NUMBER(30);
+  psIndImp       VARCHAR2(3);
   psChave        MLF_AUXNOTAFISCAL.NFECHAVEACESSO%TYPE;
   psCBS          TMP_M000_NF.M000_VL_VLRBASECBS%TYPE;
   psIBS          TMP_M000_NF.M000_VL_VLRBASEIBSUF%TYPE;
@@ -47,10 +48,11 @@ CREATE OR REPLACE PROCEDURE NAGP_PALIATIVO_CORRIGE_IMPOSTOS (psSeqAuxNotaFiscal 
   
 BEGIN
   -- Descobre o SEQ
-  SELECT X.SEQPESSOA, NUMERONF, X.NFECHAVEACESSO, X.CODGERALOPER, G.NROCGCCPF, C.TIPDOCFISCAL, C.TIPPEDIDOCOMPRA
-    INTO psSeqPessoa, psNumeroNF, psChave, psCGO, psCNPJ, psTipDoc, pdTipPed
+  SELECT X.SEQPESSOA, NUMERONF, X.NFECHAVEACESSO, X.CODGERALOPER, G.NROCGCCPF, C.TIPDOCFISCAL, C.TIPPEDIDOCOMPRA, M.INDIMPORTADORA
+    INTO psSeqPessoa, psNumeroNF, psChave, psCGO, psCNPJ, psTipDoc, pdTipPed, psIndImp
    FROM MLF_AUXNOTAFISCAL X INNER JOIN GE_PESSOA G ON G.SEQPESSOA = X.SEQPESSOA
                             INNER JOIN MAX_CODGERALOPER C ON C.CODGERALOPER = X.CODGERALOPER
+                            INNER JOIN MAX_EMPRESA M ON M.NROEMPRESA = X.NROEMPRESA
   WHERE X.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal;
    
   -- Valida se a NT 2025002 esta ativa para o seq
@@ -70,7 +72,7 @@ BEGIN
   -- ou se o fornec nao enviou no XML e ainda nao passou da data de obrigatoriedade
   
   IF psSeqPessoa < 999 AND NVL(psStatusNT,'N') != 'A'
-  OR (NVL(psCBS,0) = 0 OR NVL(psIBS,0) = 0) AND TRUNC(SYSDATE) < DATE '2026-02-01' THEN
+  OR (NVL(psCBS,0) = 0 OR NVL(psIBS,0) = 0) AND TRUNC(SYSDATE) < DATE '2026-02-01' AND NVL(psIndImp, 'N') != 'I' THEN
   
   -- Zera itens
   UPDATE MLF_AUXNFITEM XI SET XI.VLRBASECBS         = 0,
@@ -123,7 +125,7 @@ BEGIN
         SUM(BASECBSCHEIO)   BASECBSCHEIO,
         SUM(VLRCBSCHEIO)    VLRCBSCHEIO,
         
-        COD
+        COD, EMB_XML
    
    FROM (
        
@@ -142,27 +144,27 @@ BEGIN
                          Y.M014_VL_VLRBASECBS       BaseCBSCheio,
                          Y.M014_VL_VLRIMPOSTOCBS    VlrCBSCheio,
                          
-                         CASE WHEN psTipDoc = 'C' AND pdTipPed = 'C' THEN TO_CHAR(NVL(C.SEQPRODUTO, C2.SEQPRODUTO)) ELSE Y.M014_CD_PRODUTO END COD
+                         CASE WHEN psTipDoc IN ('C','B','O') AND pdTipPed IN ('C','E') THEN TO_CHAR(NVL(C.SEQPRODUTO, C2.SEQPRODUTO)) ELSE Y.M014_CD_PRODUTO END COD, Y.M014_DS_UNID_COM EMB_XML
        
     FROM TMP_M000_NF X INNER JOIN TMP_M014_ITEM Y ON X.M000_ID_NF = Y.M000_ID_NF
-                        LEFT JOIN MAP_PRODCODIGO C ON C.CODACESSO  = Y.M014_CD_PRODUTO AND psCNPJ LIKE '%'||C.CGCFORNEC||'%' AND C.TIPCODIGO = 'F'
-                        LEFT JOIN MAP_PRODCODIGO C2 ON C.CODACESSO = Y.M014_CD_EAN     AND psCNPJ LIKE '%'||C.CGCFORNEC||'%' AND C2.TIPCODIGO = 'E'
+                        LEFT JOIN MAP_PRODCODIGO C ON UPPER(C.CODACESSO)  = UPPER(Y.M014_CD_PRODUTO) AND psCNPJ LIKE '%'||C.CGCFORNEC||'%' AND C.TIPCODIGO = 'F'
+                        LEFT JOIN MAP_PRODCODIGO C2 ON C2.CODACESSO = Y.M014_CD_EAN    AND C2.TIPCODIGO IN ('E', 'D') --AND psCNPJ LIKE '%'||C2.CGCFORNEC||'%' AND C2.TIPCODIGO = 'E'
                         LEFT JOIN MAP_PRODUTO P ON P.SEQPRODUTO = NVL(C.SEQPRODUTO, C2.SEQPRODUTO)
                         LEFT JOIN MAP_FAMILIA F ON F.SEQFAMILIA = P.SEQFAMILIA
                        
-   WHERE X.M000_NR_CHAVE_ACESSO = psChave) GROUP BY COD)
+   WHERE X.M000_NR_CHAVE_ACESSO = psChave) GROUP BY COD, EMB_XML)
    
   LOOP
     
     -- Descobre se vai usar o valor rateado ou cheio
     SELECT COUNT(*) QTD_REPETICOES_PROD INTO psQtdRep FROM MLF_AUXNFITEM XI WHERE XI.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal AND XI.SEQPRODUTO = item.COD;
  
-  UPDATE MLF_AUXNFITEM XI SET XI.VLRBASECBS       = CASE WHEN psQtdRep > 1 THEN item.BaseCBS    * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.BaseCBSCheio    END,
-                              XI.VLRIMPOSTOCBS    = CASE WHEN psQtdRep > 1 THEN item.VlrCBS     * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.VlrCBSCheio     END,
-                              XI.VLRBASEIBSUF     = CASE WHEN psQtdRep > 1 THEN item.BaseIBS    * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.BaseIBSUFCheio  END,
-                              XI.VLRIMPOSTOIBSUF  = CASE WHEN psQtdRep > 1 THEN item.VlrIBS     * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.VlrIBSUFCheio   END,
-                              XI.VLRBASEIBSMUN    = CASE WHEN psQtdRep > 1 THEN item.BaseIBSMun * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.BaseIBSMunCHeio END,
-                              XI.VLRIMPOSTOIBSMUN = CASE WHEN psQtdRep > 1 THEN item.VlrIBSMun  * (XI.QUANTIDADE/XI.QTDEMBALAGEM) ELSE item.VlrIBSMunCheio  END
+  UPDATE MLF_AUXNFITEM XI SET XI.VLRBASECBS       = CASE WHEN psQtdRep > 1 THEN item.BaseCBS    * (XI.QUANTIDADE/CASE WHEN item.EMB_XML IN('UN','CR') THEN 1 ELSE XI.QTDEMBALAGEM END) ELSE item.BaseCBSCheio    END,
+                              XI.VLRIMPOSTOCBS    = CASE WHEN psQtdRep > 1 THEN item.VlrCBS     * (XI.QUANTIDADE/CASE WHEN item.EMB_XML IN('UN','CR') THEN 1 ELSE XI.QTDEMBALAGEM END) ELSE item.VlrCBSCheio     END,
+                              XI.VLRBASEIBSUF     = CASE WHEN psQtdRep > 1 THEN item.BaseIBS    * (XI.QUANTIDADE/CASE WHEN item.EMB_XML IN('UN','CR') THEN 1 ELSE XI.QTDEMBALAGEM END) ELSE item.BaseIBSUFCheio  END,
+                              XI.VLRIMPOSTOIBSUF  = CASE WHEN psQtdRep > 1 THEN item.VlrIBS     * (XI.QUANTIDADE/CASE WHEN item.EMB_XML IN('UN','CR') THEN 1 ELSE XI.QTDEMBALAGEM END) ELSE item.VlrIBSUFCheio   END,
+                              XI.VLRBASEIBSMUN    = CASE WHEN psQtdRep > 1 THEN item.BaseIBSMun * (XI.QUANTIDADE/CASE WHEN item.EMB_XML IN('UN','CR') THEN 1 ELSE XI.QTDEMBALAGEM END) ELSE item.BaseIBSMunCHeio END,
+                              XI.VLRIMPOSTOIBSMUN = CASE WHEN psQtdRep > 1 THEN item.VlrIBSMun  * (XI.QUANTIDADE/CASE WHEN item.EMB_XML IN('UN','CR') THEN 1 ELSE XI.QTDEMBALAGEM END) ELSE item.VlrIBSMunCheio  END
                               
                         WHERE XI.SEQAUXNOTAFISCAL = psSeqAuxNotaFiscal
                           AND XI.SEQPRODUTO   = item.COD;
