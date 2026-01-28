@@ -1,5 +1,101 @@
 CREATE OR REPLACE PROCEDURE NAGP_REP_TRIB_CGO AS
 
+-- Rotina por Giuliano em 28/01/26
+-- Ticket 681041
+
+--BEGIN
+  -- Inclui a tributacao no CGO de venda PDV
+  
+  --======================== Cmeça por SP ========================--
+  
+  --FOR tribSP IN (
+SELECT DISTINCT CODGERALOPER, NROTRIBUTACAO, CONTRIB_ICMS INDCONTRIBICMS, 
+       CASE WHEN CODGERALOPER IN (76,810) THEN 5102 END CFOPESTADO, 
+       NULL CFOPFORAESTADO, NULL CFOPEXTERIOR, NULL INDREPLICACAO, NULL INDGEROUREPLICACAO, SYSDATE DTAALTERACAO, 'REP_AUTO'
+       USUALTERACAO, 1000000 NROBASEEXPORTACAO, NULL CFOPESCRITESTADO, NULL CFOPESCRITFORAESTADO, NULL CFOPESCRITEXTERIOR
+  FROM MAP_TRIBUTACAOUF X INNER JOIN MAX_CODGERALOPER A ON 1=1 AND A.CODGERALOPER IN (76,810)
+                          INNER JOIN (SELECT 'S' CONTRIB_ICMS FROM DUAL
+                                      UNION ALL
+                                      SELECT 'N' FROM DUAL) CI ON 1=1
+ WHERE X.NROREGTRIBUTACAO = 0
+   AND X.UFEMPRESA = X.UFCLIENTEFORNEC
+   -- Apenas nao contrib
+   AND TIPTRIBUTACAO IN ('SN')
+   AND X.UFEMPRESA = 'SP' -- Só pega SP
+   AND X.SITUACAONF IN ('000','020','040','041','051')
+   AND NOT EXISTS (SELECT 1 FROM MAX_CODGERALCFOP C WHERE C.CODGERALOPER = A.CODGERALOPER AND C.NROTRIBUTACAO = X.NROTRIBUTACAO)
+
+   )
+
+  LOOP
+    INSERT INTO MAX_CODGERALCFOP VALUES(tribSP.CODGERALOPER,  tribSP.NROtribSP.UTACAO,     tribSP.INDCONtribSP.ICMS,    tribSP.CFOPESTADO,    tribSP.CFOPFORAESTADO,
+                                        tribSP.CFOPEXTERIOR,  tribSP.INDREPLICACAO,        tribSP.INDGEROUREPLICACAO,   tribSP.DTAALTERACAO,  tribSP.USUALTERACAO,
+                                        tribSP.NROBASEEXPORTACAO, tribSP.CFOPESCRITESTADO, tribSP.CFOPESCRITFORAESTADO, tribSP.CFOPESCRITEXTERIOR);
+  --  COMMIT;
+  END LOOP;
+  
+    -- Exclui a tributacao do CGO de venda do PDV que nao pertencer mais no enquadramento 
+  FOR tribCGO IN (SELECT * FROM MAX_CODGERALCFOP C
+                   WHERE C.CODGERALOPER IN (76,810)
+                     AND NOT EXISTS(SELECT 1
+                                      FROM MAP_TRIBUTACAOUF X 
+                                     WHERE X.NROREGTRIBUTACAO = 0
+                                       AND X.UFEMPRESA = X.UFCLIENTEFORNEC
+                                       AND X.UFEMPRESA = 'SP'
+                                       AND TIPTRIBUTACAO IN ('SN')
+                                       AND X.SITUACAONF IN ('000','020','040','041','051')
+                                       AND X.NROTRIBUTACAO = C.NROTRIBUTACAO))
+  LOOP
+    DELETE FROM MAX_CODGERALCFOP C WHERE C.CODGERALOPER = tribCGO.Codgeraloper AND C.NROTRIBUTACAO = tribCGO.Nrotributacao;
+  --COMMIT;
+  END LOOP;
+  
+  --======================== Cmeça por RJ ========================--
+  
+  -- Segue para RJ
+  -- FOR tribRJ IN (
+SELECT DISTINCT CODGERALOPER, NROTRIBUTACAO, CONTRIB_ICMS INDCONTRIBICMS, 
+       CASE WHEN CODGERALOPER IN (910) THEN 5102 END CFOPESTADO, 
+       NULL CFOPFORAESTADO, NULL CFOPEXTERIOR, NULL INDREPLICACAO, NULL INDGEROUREPLICACAO, SYSDATE DTAALTERACAO, 'REP_AUTO'
+       USUALTERACAO, 1000000 NROBASEEXPORTACAO, NULL CFOPESCRITESTADO, NULL CFOPESCRITFORAESTADO, NULL CFOPESCRITEXTERIOR
+  FROM MAP_TRIBUTACAOUF X INNER JOIN MAX_CODGERALOPER A ON 1=1 AND A.CODGERALOPER IN (910)
+                          INNER JOIN (SELECT 'S' CONTRIB_ICMS FROM DUAL
+                                      UNION ALL
+                                      SELECT 'N' FROM DUAL) CI ON 1=1
+ WHERE X.NROREGTRIBUTACAO = 0
+   AND X.UFEMPRESA = X.UFCLIENTEFORNEC
+   -- Apenas nao contrib
+   AND TIPTRIBUTACAO IN ('SN')
+   AND X.UFEMPRESA = 'RJ' -- Só pega RJ
+   AND X.SITUACAONF IN ('000','020','040','041','051')
+   AND NOT EXISTS (SELECT 1 FROM MAX_CODGERALCFOP C WHERE C.CODGERALOPER = A.CODGERALOPER AND C.NROTRIBUTACAO = X.NROTRIBUTACAO)
+   
+   LOOP
+    INSERT INTO MAX_CODGERALCFOP VALUES(tribRJ.CODGERALOPER,  tribRJ.NROtribRJ.UTACAO,     tribRJ.INDCONtribRJ.ICMS,    tribRJ.CFOPESTADO,    tribRJ.CFOPFORAESTADO,
+                                        tribRJ.CFOPEXTERIOR,  tribRJ.INDREPLICACAO,        tribRJ.INDGEROUREPLICACAO,   tribRJ.DTAALTERACAO,  tribRJ.USUALTERACAO,
+                                        tribRJ.NROBASEEXPORTACAO, tribRJ.CFOPESCRITESTADO, tribRJ.CFOPESCRITFORAESTADO, tribRJ.CFOPESCRITEXTERIOR);
+  --  COMMIT;
+  END LOOP;
+  
+      -- Exclui a tributacao do CGO de venda do PDV que nao pertencer mais no enquadramento 
+  FOR tribCGO IN (SELECT * FROM MAX_CODGERALCFOP C
+                   WHERE C.CODGERALOPER IN (910)
+                     AND NOT EXISTS(SELECT 1
+                                      FROM MAP_TRIBUTACAOUF X 
+                                     WHERE X.NROREGTRIBUTACAO = 0
+                                       AND X.UFEMPRESA = X.UFCLIENTEFORNEC
+                                       AND X.UFEMPRESA = 'RJ'
+                                       AND TIPTRIBUTACAO IN ('SN')
+                                       AND X.SITUACAONF IN ('000','020','040','041','051')
+                                       AND X.NROTRIBUTACAO = C.NROTRIBUTACAO))
+  LOOP
+    DELETE FROM MAX_CODGERALCFOP C WHERE C.CODGERALOPER = tribCGO.Codgeraloper AND C.NROTRIBUTACAO = tribCGO.Nrotributacao;
+  --COMMIT;
+  END LOOP;
+
+END;
+CREATE OR REPLACE PROCEDURE NAGP_REP_TRIB_CGO AS
+
 BEGIN
   -- Inclui a tributacao no CGO de venda PDV
   FOR trib IN (
